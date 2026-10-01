@@ -3,8 +3,9 @@
 //  실제 보안은 DB의 RLS(Row Level Security) 정책이 담당합니다.)
 import { createClient } from "@supabase/supabase-js";
 
-// 환경 변수 앞뒤의 공백/따옴표 실수(붙여넣기 시 흔함)를 제거
-const clean = (v: string | undefined) => (v ?? "").trim().replace(/^["']|["']$/g, "");
+// 환경 변수 붙여넣기 실수 방어: 앞뒤 공백/따옴표, 그리고 값 앞에 "NAME=" 까지 같이 붙여넣은 경우를 제거
+const clean = (v: string | undefined) =>
+  (v ?? "").trim().replace(/^["']|["']$/g, "").replace(/^NEXT_PUBLIC_[A-Z_]+=/, "").trim();
 
 const url = clean(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const key = clean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
