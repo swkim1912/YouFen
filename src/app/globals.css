@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* OP.GG 느낌의 어두운 블루 톤 팔레트 */
+:root {
+  --background: #1c1c1f;
+  --foreground: #e6e8ee;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: #31313c;
+  --color-panel2: #282830;
+  --color-line: #3f3f4b;
+  --color-brand: #5383e8;
+  --color-win: #3b82f6;
+  --color-loss: #ee5a52;
+  --color-muted: #9aa0b3;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+}
