@@ -12,7 +12,7 @@ import { cn, PUBLIC_COLS } from "@/lib/utils";
 
 // 동호인부가 주 사용자층이므로 가장 앞에 두고 기본 선택으로 한다
 const GROUPS = ["동호인", "엘리트", "전문선수"] as const;
-const DIVISION_LIST = ["전체", "초등부", "중등부", "고등부", "대학부", "일반부"] as const;
+const DIVISION_LIST = ["전체", "초등부", "중등부", "고등부", "일반부"] as const;
 const GENDERS = ["남", "여"] as const;
 const WEAPON_LIST = ["에페", "플뢰레", "사브르"] as const;
 

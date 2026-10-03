@@ -10,3 +10,5 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 
 전체 SQL은 Supabase 대시보드의 Database → Migrations 에서 확인하거나
 `supabase db pull` 로 이 폴더(`supabase/migrations`)에 내려받을 수 있습니다.
+5. `relax_score_valid_allow_below_target` — 승자가 목표 점수에 못 미쳐도 저장 가능
+6. `remove_university_division` — 종별에서 대학부 제거

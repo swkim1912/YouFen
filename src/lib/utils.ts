@@ -25,7 +25,7 @@ export const PUBLIC_COLS =
 
 export const WEAPONS = ["플뢰레", "에페", "사브르"] as const;
 export const ROLES = ["동호인", "엘리트", "전문선수", "학부모", "지도자"] as const;
-export const DIVISIONS = ["초등부", "중등부", "고등부", "대학부", "일반부"] as const;
+export const DIVISIONS = ["초등부", "중등부", "고등부", "일반부"] as const;
 export const REGIONS = [
   "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
   "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",

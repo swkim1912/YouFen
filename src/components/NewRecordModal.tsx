@@ -16,9 +16,8 @@ export function validateScore(target: number, a: number, b: number): string | nu
   if (!Number.isInteger(target) || target < 1) return "목표 점수를 올바르게 입력하세요";
   if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0) return "점수를 올바르게 입력하세요";
   if (a === b) return "무승부는 저장할 수 없습니다";
-  const max = Math.max(a, b), min = Math.min(a, b);
+  const min = Math.min(a, b); // 승자가 목표 점수에 못 미쳐도(시간 종료 등) 저장 가능
   if (min >= target) return "두 선수 모두 목표 점수를 넘을 수 없습니다";
-  if (max < target) return `승자의 점수가 ${target}점에 도달하지 않았습니다 (예: ${target}:${Math.max(0, target - 3)})`;
   return null;
 }
 
@@ -109,11 +108,11 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
       </div>
       {/* 4. 점수 */}
       <div className="mb-4 flex items-center justify-center gap-3">
-        <span className="w-24 truncate text-right text-sm">{profile?.nickname}</span>
-        <Input className="w-16 text-center" type="number" min={0} value={mine} onChange={(e) => setMine(e.target.value)} />
+        <span className="w-20 truncate text-right text-sm">{profile?.nickname}</span>
+        <Input className="w-24 text-center text-lg font-bold" type="number" min={0} value={mine} onChange={(e) => setMine(e.target.value)} />
         <span>:</span>
-        <Input className="w-16 text-center" type="number" min={0} value={theirs} onChange={(e) => setTheirs(e.target.value)} />
-        <span className="w-24 truncate text-sm">{opp?.name ?? "상대"}</span>
+        <Input className="w-24 text-center text-lg font-bold" type="number" min={0} value={theirs} onChange={(e) => setTheirs(e.target.value)} />
+        <span className="w-20 truncate text-sm">{opp?.name ?? "상대"}</span>
       </div>
       <div className="mb-4">
         <Label>피드백 노트 (선택, 나만 볼 수 있어요)</Label>

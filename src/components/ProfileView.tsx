@@ -19,6 +19,34 @@ import { cn, fmtDate } from "@/lib/utils";
 const KIND = { PRIVATE: "프라이빗", OPEN: "오픈", TOURNAMENT: "대회" } as const;
 type Filter = "ALL" | "PRIVATE" | "OPEN" | "TOURNAMENT";
 
+/** 최근 게임 승률 원 그래프 + 득점/실점(KDA 느낌) + 득실비 */
+function WinDonut({ views }: { views: RecordView[] }) {
+  const rate = winRate(views);
+  const wins = views.filter((v) => v.win).length;
+  const gf = views.reduce((a, v) => a + v.mine, 0); // 득점 합
+  const ga = views.reduce((a, v) => a + v.theirs, 0); // 실점 합
+  const ratio = ga === 0 ? "∞" : (gf / ga).toFixed(2); // 득실비: 득점 ÷ 실점
+  const R = 36, C = 2 * Math.PI * R;
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative h-24 w-24 shrink-0">
+        <svg viewBox="0 0 100 100" className="-rotate-90">
+          <circle cx="50" cy="50" r={R} fill="none" strokeWidth="14" className="stroke-loss" />
+          <circle cx="50" cy="50" r={R} fill="none" strokeWidth="14" className="stroke-win" strokeDasharray={`${(C * rate) / 100} ${C}`} />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center text-lg font-bold">{rate}%</div>
+      </div>
+      <div>
+        <div className="text-xs text-muted">{wins}승 {views.length - wins}패</div>
+        <div className="text-lg font-bold">
+          {gf} / <span className="text-loss">{ga}</span>
+        </div>
+        <div className="text-base font-extrabold text-white">{ratio}:1</div>
+      </div>
+    </div>
+  );
+}
+
 export function ProfileView({ profile, isMe, readOnly = false }: { profile: Profile; isMe: boolean; readOnly?: boolean }) {
   // readOnly: 유저 검색 화면용. 본인 프로필이어도 설정/수정/노트는 마이페이지에서만 가능
   const editable = isMe && !readOnly;
@@ -142,12 +170,7 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
               <p className="text-sm text-muted">아직 기록이 없습니다</p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <div className="text-3xl font-extrabold text-win">{winRate(recent30)}%</div>
-                  <div className="text-xs text-muted">
-                    {recent30.filter((r) => r.win).length}승 {recent30.filter((r) => !r.win).length}패
-                  </div>
-                </div>
+                <WinDonut views={recent30} />
                 {([["승률 높은 상대", best], ["승률 낮은 상대", worst]] as const).map(([title, arr]) => (
                   <div key={title}>
                     <div className="mb-1 text-xs text-muted">{title} (2경기 이상)</div>

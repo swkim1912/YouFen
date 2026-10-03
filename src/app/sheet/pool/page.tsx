@@ -161,7 +161,7 @@ function Pool() {
       const opp = slots[j];
       const a = results[me]?.[j], b = results[j]?.[me];
       if (j === me || !opp || a === undefined || b === undefined) continue;
-      if (validateScore(hits, a, b)) { skipped++; continue; } // 승자가 Hits to win 미달 등
+      if (validateScore(hits, a, b)) { skipped++; continue; } // 두 선수 모두 Hits to win 이상 등 잘못된 점수
       const isOpen = !!opp.userId; // 비유저 상대는 자동으로 프라이빗
       inserts.push({
         creator_id: user.id,
@@ -175,7 +175,7 @@ function Pool() {
         played_at: info.date ? new Date(info.date).toISOString() : undefined,
       });
     }
-    if (!inserts.length) return toast.error("등록할 경기가 없습니다 (승자가 Hits to win 점수에 도달한 경기만 등록됩니다)");
+    if (!inserts.length) return toast.error("등록할 경기가 없습니다 (내가 참가한 유효한 경기 결과가 없습니다)");
     const { error } = await supabase.from("game_records").insert(inserts);
     if (error) return toast.error(error.message);
     setRegistered(true);
