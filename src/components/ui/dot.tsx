@@ -2,7 +2,7 @@
 export function Dot({ member, className = "" }: { member: boolean; className?: string }) {
   return (
     <span
-      className={`inline-block h-2 w-2 shrink-0 rounded-full ${member ? "bg-green-500" : "bg-gray-500"} ${className}`}
+      className={`inline-block h-2 w-2 shrink-0 rounded-full ${member ? "bg-emerald-400" : "bg-muted/50"} ${className}`}
       title={member ? "유펜 회원" : "비회원"}
     />
   );

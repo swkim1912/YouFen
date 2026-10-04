@@ -20,7 +20,7 @@ export function FilterRow<T extends string>({
           <button
             key={o}
             onClick={() => onChange(o)}
-            className={cn("rounded px-3 py-1.5 text-sm", o === value ? "bg-brand text-white" : "bg-panel text-muted hover:text-foreground")}
+            className={cn("rounded px-3 py-1.5 text-sm", o === value ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}
           >
             {render ? render(o) : o}
           </button>

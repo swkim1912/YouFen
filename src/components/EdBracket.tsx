@@ -124,7 +124,7 @@ export function EdBracket({
           <div className="relative mb-2 h-10">
             {cols.map((col, c) => (
               <div key={col.size} className="absolute" style={{ left: c * (CARD_W + GAP), width: CARD_W }}>
-                <div className="text-[10px] font-bold tracking-wide text-loss">ROUND {sizes.indexOf(col.size) + 1}</div>
+                <div className="text-[11px] font-bold tracking-[0.08em] text-brand">ROUND {sizes.indexOf(col.size) + 1}</div>
                 <div className="border-b border-line pb-0.5 text-base font-bold">{roundName(col.size)}</div>
               </div>
             ))}
@@ -170,7 +170,7 @@ export function MatchCard({ cl, players, linkQuery }: { cl: Cell; players: Map<n
     const win = id != null && cl.winner === id;
     const p = id != null ? players.get(id) : undefined;
     return (
-      <div className={cn("flex h-1/2 items-stretch border-l-4", win ? "border-win/0 border-l-green-600" : "border-l-transparent")}>
+      <div className={cn("flex h-1/2 items-stretch border-l-4", win ? "border-l-win" : "border-l-transparent")}>
         <div className={cn("flex min-w-0 flex-1 flex-col justify-center px-2 leading-tight", !win && "text-muted")}>
           {id != null ? (
             <>
@@ -183,8 +183,8 @@ export function MatchCard({ cl, players, linkQuery }: { cl: Cell; players: Map<n
         </div>
         <div
           className={cn(
-            "flex w-10 shrink-0 items-center justify-center text-sm font-bold text-white",
-            isBye ? "bg-gray-500 text-[10px]" : id == null ? "bg-transparent text-muted" : win ? "bg-green-700" : "bg-red-800"
+            "flex w-10 shrink-0 items-center justify-center text-sm font-bold",
+            isBye ? "bg-white/10 text-[10px] text-muted" : id == null ? "bg-transparent text-muted" : win ? "bg-win/25 text-win" : "bg-loss/15 text-loss"
           )}
         >
           {isBye ? "BYE" : id == null ? "—" : score ?? "—"}

@@ -336,7 +336,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
         <div className="flex flex-wrap gap-1.5">
           {events.map((e) => (
             <button key={e.key} onClick={() => { setSel(e.key); setPoolSel(null); setShown(10); setShownEntries(10); }}
-              className={cn("rounded px-3 py-1.5 text-sm", e.key === curKey ? "bg-brand text-white" : "bg-panel text-muted hover:text-foreground")}>
+              className={cn("rounded px-3 py-1.5 text-sm", e.key === curKey ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>
               {genderLabel(e.gender)} {weaponLabel(e.weapon)} <span className="text-xs opacity-70">{e.n}회</span>
             </button>
           ))}
@@ -350,7 +350,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
             const enabled = l !== "오픈" || !!member; // 오픈은 유펜 회원과 연결된 선수만 (종합은 오픈 집계 전까지 대회 점수와 같음)
             return (
               <button key={l} disabled={!enabled} onClick={() => setTierMode(l)} title={enabled ? undefined : "유펜 회원과 연결된 선수만 볼 수 있습니다"}
-                className={cn("rounded px-3 py-1 text-sm", tierMode === l ? "bg-brand text-white" : enabled ? "text-muted hover:bg-white/5" : "cursor-not-allowed text-muted/50")}>{l}</button>
+                className={cn("rounded px-3 py-1 text-sm", tierMode === l ? "bg-brand font-semibold text-brand-ink" : enabled ? "text-muted hover:bg-white/5" : "cursor-not-allowed text-muted/50")}>{l}</button>
             );
           })}
           <Link href="/methodology" title="점수와 티어는 이렇게 계산됩니다" aria-label="점수 산정 방식 안내" className="ml-2 text-muted hover:text-brand"><CircleHelp size={16} /></Link>
@@ -537,7 +537,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h3 className="mr-2 font-bold">{member ? "최근 대회 경기" : "최근 전적"}</h3>
           {([["ALL", "전체"], ["POULE", "뿔"], ["ED", "ED"]] as const).map(([f, l]) => (
-            <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand text-white" : "text-muted hover:bg-white/5")}>{l}</button>
+            <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>{l}</button>
           ))}
           <Input className="ml-auto h-8 w-40" placeholder="상대 이름 검색" value={oppQ} onChange={(e) => setOppQ(e.target.value)} />
         </div>
@@ -602,7 +602,7 @@ function MatchLine({ v, opp, linkQ, withComp = false }: { v: MView; opp?: { name
     <Link href={`/competitions/${v.ev.competition.id}?event=${v.ev.id}`} className="hover:text-brand">{v.ev.competition.name}</Link>
   );
   return (
-    <div className={cn("rounded-md border-l-4 bg-panel2 px-3 py-2 text-sm", v.win ? "border-win" : "border-loss")}>
+    <div className={cn("rounded-md py-2 pl-4 pr-3 text-sm", v.win ? "bg-win/[0.08]" : "bg-loss/[0.07]")}>
       <div className="flex items-center gap-3">
         <span className={cn("w-6 shrink-0 font-bold", v.win ? "text-win" : "text-loss")}>{v.win ? "승" : "패"}</span>
         <span className="flex min-w-0 flex-1 items-center gap-1.5">

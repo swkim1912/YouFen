@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen flex-col bg-[#0a1726]">
       <header className="mx-auto flex w-full max-w-6xl items-center px-5 py-5"><Link href="/"><Logo size={34} /></Link></header>
       <main className="flex flex-1 items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-[#0CA4E1]/20 bg-[#0c1b2d]/90 p-6 shadow-2xl">
+        <div className="w-full max-w-md rounded-2xl border border-brand/20 bg-[#0c1b2d]/90 p-6 shadow-2xl">
           {recovery ? (
             <form onSubmit={save} className="space-y-3">
               <h1 className="text-xl font-extrabold">새 비밀번호 설정</h1>

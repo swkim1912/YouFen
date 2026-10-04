@@ -60,7 +60,7 @@ export function NoticePopup() {
   };
 
   return (
-    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/60 p-4" onMouseDown={close}>
+    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-[#03080e]/75 p-4 backdrop-blur-[2px]" onMouseDown={close}>
       <div
         role="dialog"
         aria-modal="true"

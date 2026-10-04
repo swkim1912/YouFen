@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 디자인 스킬(impeccable·taste-skill) 설치 폴더 — 우리 코드가 아님
+    ".claude/**",
+    ".agents/**",
   ]),
 ]);
 

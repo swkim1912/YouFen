@@ -133,7 +133,7 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
           <section className="rounded-lg border border-line bg-panel p-4">
             <div className="mb-3 flex gap-1">
               {([["ALL", "종합"], ["OPEN", "오픈"], ["TOURNAMENT", "대회"]] as const).map(([m, label]) => (
-                <button key={m} onClick={() => setMode(m)} className={cn("rounded px-3 py-1 text-sm", mode === m ? "bg-brand text-white" : "text-muted hover:bg-white/5")}>
+                <button key={m} onClick={() => setMode(m)} className={cn("rounded px-3 py-1 text-sm", mode === m ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
                   {label}
                 </button>
               ))}
@@ -183,7 +183,7 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
               {(["ALL", "PRIVATE", "OPEN", "TOURNAMENT"] as const)
                 .filter((f) => isMe || f !== "PRIVATE") // 타인에게는 프라이빗 필터 없음
                 .map((f) => (
-                  <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand text-white" : "text-muted hover:bg-white/5")}>
+                  <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
                     {f === "ALL" ? "전체" : KIND[f]}
                   </button>
                 ))}
@@ -197,9 +197,9 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
                   disabled={!editable}
                   onClick={() => setDetail(r)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-md border-l-4 bg-panel2 px-3 py-2 text-left text-sm",
-                    r.rec.status === "PENDING" ? "border-yellow-400" : r.win ? "border-win" : "border-loss",
-                    editable && "hover:bg-white/5"
+                    "flex w-full items-center gap-3 rounded-md py-2 pl-4 pr-3 text-left text-sm",
+                    r.rec.status === "PENDING" ? "bg-pending/[0.08]" : r.win ? "bg-win/[0.08]" : "bg-loss/[0.07]",
+                    editable && "hover:brightness-125"
                   )}
                 >
                   <span className={cn("w-8 font-bold", r.win ? "text-win" : "text-loss")}>

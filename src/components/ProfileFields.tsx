@@ -73,7 +73,7 @@ export function NicknameField({
     <div>
       <Label>닉네임 (2~12자, 특수문자·공백 불가)</Label>
       <Input value={value} onChange={(e) => onChange(e.target.value.trim())} maxLength={12} />
-      {msg && <p className={`mt-1 text-xs ${msg.ok ? "text-green-500" : "text-loss"}`}>{msg.text}</p>}
+      {msg && <p className={`mt-1 text-xs ${msg.ok ? "text-emerald-400" : "text-loss"}`}>{msg.text}</p>}
     </div>
   );
 }

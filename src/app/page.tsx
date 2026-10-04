@@ -63,7 +63,7 @@ function MyPage() {
           {linked.length > 1 && (
             <div className="flex flex-wrap gap-1.5">
               {linked.map((a) => (
-                <button key={a.id} onClick={() => setPick(a.id)} className={cn("rounded px-3 py-1.5 text-sm", a.id === curAthlete.id ? "bg-brand text-white" : "bg-panel text-muted hover:text-foreground")}>{a.name}</button>
+                <button key={a.id} onClick={() => setPick(a.id)} className={cn("rounded px-3 py-1.5 text-sm", a.id === curAthlete.id ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>{a.name}</button>
               ))}
             </div>
           )}

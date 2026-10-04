@@ -48,7 +48,7 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
           WebkitMaskImage: "linear-gradient(to bottom, black, transparent 85%)",
         }}
       />
-      <div className="pointer-events-none absolute -left-48 top-1/3 h-[30rem] w-[30rem] rounded-full bg-[#0CA4E1]/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-48 top-1/3 h-[30rem] w-[30rem] rounded-full bg-brand/10 blur-3xl" />
       <div className="pointer-events-none absolute -right-40 -top-32 h-[26rem] w-[26rem] rounded-full bg-[#0C86C0]/20 blur-3xl" />
 
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5">
@@ -62,11 +62,11 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
         {/* 소개 */}
         <section className="py-2 md:py-0">
           <p className="mb-5 inline-flex items-center gap-3 text-sm font-semibold tracking-wide text-white/80">
-            <span className="h-px w-8 bg-[#0CA4E1]" />
-            <span>All <span className="text-[#0CA4E1]">You</span> need to Fence</span>
+            <span className="h-px w-8 bg-brand" />
+            <span>All <span className="text-brand">You</span> need to Fence</span>
           </p>
           <h1 className="break-keep text-[2.4rem] font-extrabold leading-[1.15] tracking-tight text-white sm:text-5xl md:text-[2.5rem] lg:text-[3.1rem]">
-            내 전적부터<br />시즌 티어까지,<br /><span className="text-[#0CA4E1]">한 곳에서.</span>
+            내 전적부터<br />시즌 티어까지,<br /><span className="text-brand">한 곳에서.</span>
           </h1>
           <p className="mt-5 max-w-lg break-keep text-sm leading-relaxed text-white/60 sm:text-base">
             협회 대회 결과로 만든 랭킹과 티어를 확인하고, 직접 뛴 경기는 기록으로 남기세요. 선수 연결은 가입 후 언제든 할 수 있어요.
@@ -75,7 +75,7 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
           <ul className="mt-7 hidden max-w-xl gap-x-6 gap-y-4 sm:grid sm:grid-cols-2">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
               <li key={title} className="flex gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0CA4E1]/15 text-[#0CA4E1]"><Icon size={16} /></span>
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/15 text-brand"><Icon size={16} /></span>
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-white">{title}</span>
                   <span className="block break-keep text-xs leading-snug text-white/50">{desc}</span>
@@ -92,26 +92,26 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
                 <div key={key} className="flex flex-col items-center gap-1" style={{ transform: `translateY(${(LADDER.length - 1 - i) * -2}px)` }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`/tier/emblems/${key}-sm.svg`} alt="" width={34} height={34} className="h-[34px] w-[34px] sm:h-10 sm:w-10" />
-                  <span className="text-[10px] text-white/50">{label}</span>
+                  <span className="text-[11px] text-white/60">{label}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <Link href="/ranking" className="mt-8 hidden w-fit items-center gap-2 rounded-lg border border-[#0CA4E1]/50 px-5 py-2.5 text-sm font-semibold text-[#0CA4E1] hover:bg-[#0CA4E1]/10 md:inline-flex">
+          <Link href="/ranking" className="mt-8 hidden w-fit items-center gap-2 rounded-lg border border-brand/50 px-5 py-2.5 text-sm font-semibold text-brand hover:bg-brand/10 md:inline-flex">
             비로그인으로 이용<ArrowRight size={16} />
           </Link>
         </section>
 
         {/* 로그인 / 회원가입 카드 */}
-        <section className="w-full max-w-md justify-self-center rounded-2xl border border-[#0CA4E1]/20 bg-[#0c1b2d]/90 p-5 shadow-2xl shadow-black/40 backdrop-blur sm:p-7 md:justify-self-end">
+        <section className="w-full max-w-md justify-self-center rounded-2xl border border-brand/20 bg-[#0c1b2d]/90 p-5 shadow-2xl shadow-black/40 backdrop-blur sm:p-7 md:justify-self-end">
           <div className="mb-6 flex border-b border-white/10 text-sm font-semibold">
             {([["login", "로그인"], ["signup", "회원가입"]] as const).map(([k, label]) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => setTab(k)}
-                className={cn("-mb-px flex-1 border-b-2 pb-3 pt-1", tab === k ? "border-[#0CA4E1] text-white" : "border-transparent text-white/45 hover:text-white/75")}
+                className={cn("-mb-px flex-1 border-b-2 pb-3 pt-1", tab === k ? "border-brand text-white" : "border-transparent text-white/45 hover:text-white/75")}
               >
                 {label}
               </button>

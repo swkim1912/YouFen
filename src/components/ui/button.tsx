@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "outline" | "ghost" | "danger";
 
 const styles: Record<Variant, string> = {
-  primary: "bg-brand text-white hover:bg-brand/90",
-  outline: "border border-line bg-transparent hover:bg-white/5",
+  primary: "bg-brand font-semibold text-brand-ink hover:brightness-110",
+  outline: "border border-line bg-transparent hover:border-brand/40 hover:bg-white/5",
   ghost: "bg-transparent hover:bg-white/5",
-  danger: "bg-loss text-white hover:bg-loss/90",
+  danger: "bg-loss font-semibold text-brand-ink hover:brightness-110",
 };
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,7 +21,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none",
+        "inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-[color,background-color,border-color,filter,transform] duration-150 disabled:opacity-50 disabled:pointer-events-none",
         size === "sm" ? "h-8 px-3 text-sm" : "h-10 px-4 text-sm",
         styles[variant],
         className

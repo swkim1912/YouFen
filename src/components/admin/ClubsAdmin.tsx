@@ -134,7 +134,7 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2">
                     <b className="truncate">{c.name}</b><span className="text-xs text-muted">#{c.id} · {c.sido ?? "시도 없음"}</span>
-                    <span className={cn("rounded px-1.5 py-0.5 text-[11px]", c.confidence === "medium" ? "bg-yellow-400/20 text-yellow-400" : "bg-win/20 text-win")}>{c.confidence === "medium" ? "확인 필요" : "확인됨"}</span>
+                    <span className={cn("rounded px-1.5 py-0.5 text-[11px]", c.confidence === "medium" ? "bg-pending/20 text-pending" : "bg-win/20 text-win")}>{c.confidence === "medium" ? "확인 필요" : "확인됨"}</span>
                   </div>
                   <div className="truncate text-xs text-muted">팀 {c.teams}개 · 선수 {c.members}명 · 가입 회원 {c.member_profiles}명 — {c.team_names?.join(", ")}</div>
                 </div>

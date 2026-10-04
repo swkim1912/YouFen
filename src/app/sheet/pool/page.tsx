@@ -130,7 +130,7 @@ function Pool() {
   const save = async () => {
     if (!sheetRef.current) return;
     try {
-      const url = await toPng(sheetRef.current, { backgroundColor: "#1c1c1f", pixelRatio: 2 });
+      const url = await toPng(sheetRef.current, { backgroundColor: "#0b1520", pixelRatio: 2 });
       const a = document.createElement("a");
       a.href = url;
       a.download = `${info.title || "poole-sheet"}.png`;
@@ -233,7 +233,7 @@ function Pool() {
                     {Array.from({ length: n }, (_, j) =>
                       i === j ? (
                         // 자기 자신과의 대결 칸은 입력 불가 (검은색 처리)
-                        <td key={j} className="border border-line bg-black" />
+                        <td key={j} className="border border-line bg-[#060c13]" />
                       ) : (
                         <td
                           key={j}

@@ -23,17 +23,19 @@ export const agesFor = (tab: Tab): readonly Age[] => (tab === "엘리트" ? (["�
 
 export const ageLabel = (a: string) => `${a}부`;
 
-// 티어 색상 (OP.GG 느낌의 7단계)
+// 티어 색상: 티어 엠블럼(design/tier/tokens.json)의 색에서 뽑아, 어두운 바탕에서 글자로 읽히게 밝기만 올린 값.
+// 골드와 챌린저는 엠블럼이 둘 다 금빛이라 밝기로 구분한다(골드 = 짙은 황금, 챌린저 = 밝은 금빛).
+// tier.ts(회원 전적검색의 옛 티어)도 같은 색을 쓴다 — 바꿀 땐 같이 바꿀 것.
 export const TIER_META: Record<string, { color: string; short: string }> = {
-  브론즈: { color: "#b4753d", short: "브" },
-  실버: { color: "#a8b3c4", short: "실" },
-  골드: { color: "#f1c24b", short: "골" },
-  플래티넘: { color: "#3fc8b5", short: "플" },
-  다이아몬드: { color: "#5b8cff", short: "다" },
-  마스터: { color: "#b46bff", short: "마" },
-  챌린저: { color: "#ff6b81", short: "챌" },
+  브론즈: { color: "#cf8a5c", short: "브" },
+  실버: { color: "#b3c0cd", short: "실" },
+  골드: { color: "#d9a63a", short: "골" },
+  플래티넘: { color: "#4cc9be", short: "플" },
+  다이아몬드: { color: "#8196ff", short: "다" },
+  마스터: { color: "#bf83f2", short: "마" },
+  챌린저: { color: "#ffd76a", short: "챌" },
 };
-export const tierColor = (tier: string | null | undefined) => (tier ? TIER_META[tier]?.color : undefined) ?? "#6b7280";
+export const tierColor = (tier: string | null | undefined) => (tier ? TIER_META[tier]?.color : undefined) ?? "#6b7a8f";
 
 /** 랭킹 종류: 종합(대회+오픈) / 오픈게임 / 대회. 오픈게임 데이터가 생기기 전에는 종합 = 대회 점수 */
 export const MODES = ["종합", "오픈", "대회"] as const;
