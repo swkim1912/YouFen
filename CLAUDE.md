@@ -107,10 +107,9 @@
 - **색·글꼴 체계(2026-10-04, 브랜치 `design/polish`):** 앱 전체를 로고·랜딩과 같은 '브랜드 네이비 + Sky' 한 세계로 통일(레이아웃은 그대로). 색은 `src/app/globals.css` 의 토큰만 쓴다 — `background/panel/panel2/line`(네이비 계열), `brand`(Sky #0CA4E1, 강조색은 이것 하나), `brand-ink`(Sky·빨강 바탕 위 글자색: 흰 글자는 대비 부족이라 쓰지 않음 → 선택된 칩·주 버튼은 `bg-brand text-brand-ink`), `win/loss/pending`, `muted`. 티어 글자색(`TIER_META`, `tier.ts`)은 티어 엠블럼 색에서 뽑음(골드=짙은 황금, 챌린저=밝은 금빛으로 밝기 구분). 글꼴은 npm `pretendard`(dynamic-subset, 외부 CDN 없음), 숫자는 같은 폭(tabular-nums). 승패 줄은 왼쪽 굵은 색 막대 대신 옅은 승/패 바탕색. 디자인 스킬(impeccable, taste-skill)은 `.claude/skills/` 에 설치(린트 제외).
 
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
-- 약관 및 이메일연동 시스템까지 구현 완료
+- 관리자 페이지 및 디자인 개선 완료
 
 ## 다음 할 일 (TODO, 기존 PROGRESS.md에서 통합)
-- 디자인 개선
 - 출시 전 보안점검 및 유저 경험 점검
 
 ## 특이사항 / 참고
