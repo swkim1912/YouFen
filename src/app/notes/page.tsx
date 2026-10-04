@@ -11,7 +11,7 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { fetchUserRecords, type RecordView } from "@/lib/records";
 import type { FeedbackNote } from "@/lib/types";
-import { fmtDate } from "@/lib/utils";
+import { NOTE_MAX, NOTE_TITLE_MAX, fmtDate } from "@/lib/utils";
 import { download, exportFilename, notesToRows, toCsv, toXlsx } from "@/lib/exportNotes";
 
 export default function NotesPage() {
@@ -118,8 +118,8 @@ function Notes() {
 
       <Modal open={adding} onClose={() => setAdding(false)} title="독립 피드백 노트">
         <div className="space-y-3">
-          <div><Label>제목</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-          <div><Label>내용</Label><Textarea value={content} onChange={(e) => setContent(e.target.value)} /></div>
+          <div><Label>제목 ({NOTE_TITLE_MAX}자 이내)</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={NOTE_TITLE_MAX} /></div>
+          <div><Label>내용 ({content.length}/{NOTE_MAX}자)</Label><Textarea value={content} onChange={(e) => setContent(e.target.value)} maxLength={NOTE_MAX} /></div>
           <Button className="w-full" onClick={add}>저장</Button>
         </div>
       </Modal>

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { publicData } from "@/lib/fencing";
 import { Dot } from "./ui/dot";
 import { athletesOfMembers, isMergeable, membersOfAthletes, type MemberBrief } from "@/lib/members";
 import { Button } from "./ui/button";
@@ -41,11 +42,11 @@ export function UserSearchBox() {
     const t = setTimeout(async () => {
       const [u, a] = await Promise.all([
         supabase.from("profiles").select("id,nickname,affiliation,weapon,role").ilike("nickname", `%${q.trim()}%`).not("nickname", "is", null).limit(4),
-        // 협회 원장에 등록된 선수를 먼저 보여준다
-        supabase.from("athletes").select("id,name,is_registered,linked_profile_id,club:clubs(name)").ilike("name", `%${q.trim()}%`).order("is_registered", { ascending: false }).limit(5),
+        // 협회 원장에 등록된 선수를 먼저 보여준다 (DB 함수 data_search_athletes)
+        publicData<AthleteHit[]>("data_search_athletes", { p_q: q.trim(), p_limit: 5 }, []),
       ]);
       const members = (u.data ?? []) as Hit[];
-      let ath = (a.data ?? []) as unknown as AthleteHit[];
+      let ath = a;
       // 선수와 연결된 회원(학부모 제외)은 회원 줄 대신 선수 줄에 닉네임과 함께 보여준다
       const linked = await athletesOfMembers(members.map((m) => m.id));
       const merged = new Set(members.filter((m) => isMergeable(m) && (linked.get(m.id)?.length ?? 0) > 0).map((m) => m.id));

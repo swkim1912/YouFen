@@ -26,23 +26,11 @@ export function LinkedAthletes() {
   const [unlink, setUnlink] = useState<LinkRow | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from("athlete_links")
-      .select("athlete_id,reg_year,linked_at,athlete:athletes(id,name,gender,reg_years,club:clubs(name))")
-      .order("linked_at");
-    const list = (data ?? []) as unknown as LinkRow[];
+    // 내 연결 선수 + 그 선수가 대회에서 실제로 뛴 종목 (DB 함수 my_linked_athletes — 선수 표는 직접 읽지 않음)
+    const { data } = await supabase.rpc("my_linked_athletes");
+    const list = (data ?? []) as (LinkRow & { weapons: string[] })[];
     setRows(list);
-    // 종목: 그 선수가 대회에서 실제로 뛴 종목
-    if (list.length) {
-      const { data: ps } = await supabase.from("pool_scores").select("athlete_id,weapon").in("athlete_id", list.map((r) => r.athlete_id));
-      const m = new Map<number, string[]>();
-      for (const p of (ps ?? []) as { athlete_id: number; weapon: string }[]) {
-        const a = m.get(p.athlete_id) ?? [];
-        if (!a.includes(p.weapon)) a.push(p.weapon);
-        m.set(p.athlete_id, a);
-      }
-      setWeapons(m);
-    }
+    setWeapons(new Map(list.map((r) => [r.athlete_id, r.weapons ?? []])));
     setLoading(false);
   }, []);
 

@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { AvatarEditor } from "@/components/AvatarEditor";
 import { cn } from "@/lib/utils";
 
-interface Club { id: number; name: string; sido: string | null; confidence: "high" | "medium"; image_url: string | null; teams: number; members: number; team_names: string[] | null; member_profiles: number }
+// phones: 협회 팀 연락처(개인 휴대폰 포함) — 관리자 RPC 로만 받는다(일반 사용자는 API 로도 못 읽음)
+interface Club { id: number; name: string; sido: string | null; confidence: "high" | "medium"; image_url: string | null; phones: string[] | null; teams: number; members: number; team_names: string[] | null; member_profiles: number }
 interface Req { id: string; club_id: number; club_name: string; current_image: string | null; path: string; status: string; created_at: string; requester_nickname: string | null; requester_role: string | null; requester_club_id: number | null }
 
 const CLUB_IMG_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/club-images/`;
@@ -137,6 +138,7 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
                     <span className={cn("rounded px-1.5 py-0.5 text-[11px]", c.confidence === "medium" ? "bg-pending/20 text-pending" : "bg-win/20 text-win")}>{c.confidence === "medium" ? "확인 필요" : "확인됨"}</span>
                   </div>
                   <div className="truncate text-xs text-muted">팀 {c.teams}개 · 선수 {c.members}명 · 가입 회원 {c.member_profiles}명 — {c.team_names?.join(", ")}</div>
+                  {!!c.phones?.length && <div className="truncate text-xs text-muted">연락처 <span className="select-all">{c.phones.join(", ")}</span></div>}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <Button size="sm" variant="outline" onClick={() => { setUploadFor(c.id); setTimeout(() => fileRef.current?.click(), 0); }}>이미지</Button>

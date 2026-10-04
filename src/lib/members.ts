@@ -3,6 +3,7 @@
 //   (학부모는 자녀 여러 명을 연결할 수 있어 회원 전적이 어느 자녀의 것인지 알 수 없으므로 합치지 않고, 닉네임은 회원 프로필로 따로 보인다.)
 // 합쳐진 선수는 실명(선수 페이지)으로도 닉네임으로도 검색되고, 같은 선수 페이지(/athletes/[id])로 연결된다.
 import { supabase } from "./supabase";
+import { publicData } from "./fencing";
 
 export interface MemberBrief {
   id: string;
@@ -38,11 +39,9 @@ export async function membersOfAthletes(athletes: { id: number; linked_profile_i
 export async function athletesOfMembers(profileIds: string[]): Promise<Map<string, LinkedAthleteBrief[]>> {
   const out = new Map<string, LinkedAthleteBrief[]>();
   if (!profileIds.length) return out;
-  const { data } = await supabase
-    .from("athletes")
-    .select("id,name,is_registered,linked_profile_id,club:clubs(name)")
-    .in("linked_profile_id", profileIds);
-  for (const a of (data ?? []) as unknown as LinkedAthleteBrief[]) {
+  // 선수 표는 직접 읽지 않고 DB 함수(data_athletes_of_members, 최대 50명분)로 받는다
+  const data = await publicData<LinkedAthleteBrief[]>("data_athletes_of_members", { p_ids: profileIds.slice(0, 50) }, []);
+  for (const a of data) {
     const k = a.linked_profile_id!;
     out.set(k, [...(out.get(k) ?? []), a]);
   }

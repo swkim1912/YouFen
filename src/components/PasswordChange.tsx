@@ -13,6 +13,7 @@ import { Button } from "./ui/button";
 import { Input, Label } from "./ui/input";
 import { validatePassword } from "@/lib/password";
 import { MIN_PASSWORD } from "@/lib/legal";
+import { useTurnstile } from "./Turnstile";
 
 type Step = "closed" | "form" | "code";
 
@@ -25,6 +26,7 @@ export function PasswordChange() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
+  const cap = useTurnstile(); // ① 현재 비밀번호 확인(재로그인)에 자동가입 방지 토큰이 필요하다
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -45,9 +47,11 @@ export function PasswordChange() {
     const err = validatePassword(pw, user.email);
     if (err) return toast.error(err);
     if (pw !== pw2) return toast.error("새 비밀번호가 서로 달라요");
+    if (!cap.ready) return toast.error("자동가입 방지 확인을 마친 뒤 다시 눌러 주세요");
     setBusy(true);
     // 현재 비밀번호 확인(재로그인). 틀리면 여기서 멈춘다
-    const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: cur });
+    const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: cur, options: { captchaToken: cap.token } });
+    cap.reset();
     if (authErr) {
       setBusy(false);
       return toast.error("현재 비밀번호가 맞지 않아요");
@@ -90,6 +94,7 @@ export function PasswordChange() {
           <div><Label>현재 비밀번호</Label><Input type="password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" /></div>
           <div><Label>새 비밀번호 ({MIN_PASSWORD}자 이상, 영문+숫자 필수·특수문자 사용 가능)</Label><Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></div>
           <div><Label>새 비밀번호 확인</Label><Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" /></div>
+          {cap.widget}
           <Button type="button" className="w-full" onClick={sendCode} disabled={busy}>{busy ? "확인 중…" : "이메일로 인증 코드 받기"}</Button>
         </div>
       )}
@@ -98,6 +103,7 @@ export function PasswordChange() {
           <p className="text-xs text-muted">{user.email} 로 보낸 인증 코드를 입력해 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.</p>
           <Input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="인증 코드" />
           <Button type="button" className="w-full" onClick={change} disabled={busy}>{busy ? "변경 중…" : "비밀번호 변경하기"}</Button>
+          {cap.widget}
           <Button type="button" variant="outline" className="w-full" onClick={sendCode} disabled={busy || wait > 0}>{wait > 0 ? `코드 다시 받기 (${wait}초)` : "코드 다시 받기"}</Button>
         </div>
       )}

@@ -12,11 +12,12 @@ export interface Profile {
   affiliation: string | null;
   club_id: number | null;
   avatar_url: string | null;
-  avatar_locked: boolean;
+  avatar_locked: boolean; // 비공개 열: 내 프로필(get_my_profile)에만 들어 있다
   use_frame: boolean;
   use_badge: boolean;
   hide_records: boolean;
-  is_admin: boolean;
+  is_admin: boolean; // 비공개 열: 내 프로필(get_my_profile)에만 들어 있다
+  leader_status: "pending" | "approved" | "rejected" | null; // 지도자 승인 상태(신분이 지도자일 때만). 관리자만 바꿀 수 있다
   onboarded: boolean;
   nickname_changed_at: string | null;
   consent_version: string | null; // 동의한 약관 버전(없으면 아직 동의 전 → ConsentGate)

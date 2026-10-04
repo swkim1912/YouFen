@@ -1,6 +1,6 @@
 "use client";
 // 지도자 전용(상세 설정 안): 소속 클럽의 이미지(프로필 사진 기본값으로 쓰임) 등록을 관리자에게 신청한다.
-// - 신분이 '지도자'이고 소속 클럽이 선택된 회원에게만 보인다. 올린 이미지는 관리자가 확인·승인해야 클럽 이미지로 적용된다(서버 /api/club-image).
+// - 신분이 '지도자'이고 소속 클럽이 선택된 회원에게만 보인다(관리자의 지도자 승인 전에는 안내 문구만). 올린 이미지는 관리자가 확인·승인해야 클럽 이미지로 적용된다(서버 /api/club-image).
 // - 이미 검토 중인 신청이 있으면 새로 신청할 수 없고, 하루 3번까지 신청할 수 있다.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +30,14 @@ export function ClubImageRequest() {
   useEffect(() => { load(); }, [load]);
 
   if (!profile || profile.role !== "지도자" || clubId == null) return null;
+  // 지도자 승인 전·반려 상태면 신청 대신 안내만 보여준다
+  if (profile.leader_status !== "approved")
+    return (
+      <div className="rounded-md border border-line p-3 text-xs text-muted">
+        <b className="text-foreground">소속 클럽 이미지 신청 (지도자)</b>
+        <p className="mt-1">{profile.leader_status === "rejected" ? "지도자 신청이 반려되었어요. 신분·소속을 확인한 뒤 고객지원으로 문의해 주세요." : "관리자가 지도자 신청을 확인하고 있어요. 승인되면 클럽 이미지를 신청할 수 있어요."}</p>
+      </div>
+    );
 
   const pick = (f: File | undefined) => {
     if (fileRef.current) fileRef.current.value = "";

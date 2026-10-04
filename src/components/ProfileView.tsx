@@ -19,7 +19,7 @@ import { AvatarReport } from "./AvatarReport";
 import { fetchUserRecords, opponentStats, type RecordView } from "@/lib/records";
 import { calcTier, type TierMode } from "@/lib/tier";
 import type { FeedbackNote, Profile } from "@/lib/types";
-import { cn, fmtDate } from "@/lib/utils";
+import { cn, fmtDate, roleLabel } from "@/lib/utils";
 
 const KIND = { PRIVATE: "프라이빗", OPEN: "오픈", TOURNAMENT: "대회" } as const;
 type Filter = "ALL" | "PRIVATE" | "OPEN" | "TOURNAMENT";
@@ -107,10 +107,10 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
         <div className="flex-1">
           <div className="text-xl font-bold">
             {profile.nickname}
-            {profile.use_badge && <span className="ml-2 rounded bg-brand/20 px-1.5 py-0.5 text-xs text-brand">{profile.role}</span>}
+            {profile.use_badge && <span className="ml-2 rounded bg-brand/20 px-1.5 py-0.5 text-xs text-brand">{roleLabel(profile)}</span>}
           </div>
           <div className="text-sm text-muted">
-            {profile.gender === "남" ? "남자" : "여자"} {profile.weapon} / {profile.role} · {profile.division}
+            {profile.gender === "남" ? "남자" : "여자"} {profile.weapon} / {roleLabel(profile)} · {profile.division}
           </div>
           <div className="text-sm text-muted">{profile.affiliation} · {profile.region}</div>
         </div>

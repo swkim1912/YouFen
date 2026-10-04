@@ -10,7 +10,7 @@ import { ProfileView } from "@/components/ProfileView";
 import { LinkedAthletes } from "@/components/LinkedAthletes";
 import { AthleteView } from "@/components/AthleteView";
 import { isMergeable } from "@/lib/members";
-import { supabase } from "@/lib/supabase";
+import { publicData } from "@/lib/fencing";
 import { useAuth } from "@/components/AuthProvider";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +37,8 @@ function MyPage() {
   useEffect(() => {
     if (!pid) return;
     let live = true;
-    supabase.from("athletes").select("id,name").eq("linked_profile_id", pid).order("id").then(({ data }) => {
-      if (live) setLinked((data ?? []) as { id: number; name: string }[]);
+    publicData<{ id: number; name: string }[]>("data_athletes_of_members", { p_ids: [pid] }, []).then((data) => {
+      if (live) setLinked(data);
     });
     return () => { live = false; };
   }, [pid, tab]);

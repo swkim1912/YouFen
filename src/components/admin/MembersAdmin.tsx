@@ -6,12 +6,13 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { fmtDateTime, postJson, rpcOk } from "@/lib/adminApi";
+import { roleLabel } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Label, Select } from "@/components/ui/input";
 
 interface Member {
-  id: string; nickname: string | null; email: string | null; role: string | null; weapon: string | null; region: string | null; affiliation: string | null;
+  id: string; nickname: string | null; email: string | null; role: string | null; leader_status: string | null; weapon: string | null; region: string | null; affiliation: string | null;
   avatar_locked: boolean; is_admin: boolean; consent_version: string | null; onboarded: boolean; created_at: string; last_sign_in_at: string | null;
   banned_until: string | null; linked: number; tickets: number;
 }
@@ -70,7 +71,7 @@ export function MembersAdmin() {
                 <span className="select-all text-xs text-muted">{m.email}</span>
               </div>
               <div className="text-xs text-muted">
-                {[m.role, m.weapon, m.region, m.affiliation].filter(Boolean).join(" · ")} · 가입 {fmtDateTime(m.created_at)} · 마지막 접속 {fmtDateTime(m.last_sign_in_at)} · 연결 선수 {m.linked}명 · 문의 {m.tickets}건 · 약관 {m.consent_version ?? "미동의"}
+                {[roleLabel(m), m.weapon, m.region, m.affiliation].filter(Boolean).join(" · ")} · 가입 {fmtDateTime(m.created_at)} · 마지막 접속 {fmtDateTime(m.last_sign_in_at)} · 연결 선수 {m.linked}명 · 문의 {m.tickets}건 · 약관 {m.consent_version ?? "미동의"}
               </div>
               {!m.is_admin && (
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
