@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
-import { PlayerPicker, type PickedPlayer } from "@/components/PlayerPicker";
+import { PlayerPicker, playerLabel, type PickedPlayer } from "@/components/PlayerPicker";
 import { validateScore } from "@/components/NewRecordModal";
 import { SheetShareBar, SheetShareButton } from "@/components/SheetShareBar";
 import { Modal, Confirm } from "@/components/ui/modal";
@@ -115,7 +115,7 @@ function Pool() {
       idx = n;
       ops.push({ p: ["n"], v: n + 1 });
     }
-    ops.push({ p: ["players", String(idx)], v: { id: crypto.randomUUID(), name: picked.name, userId: picked.userId } });
+    ops.push({ p: ["players", String(idx)], v: { id: crypto.randomUUID(), name: picked.name, userId: picked.userId, realName: picked.realName ?? null } });
     patch(ops);
     setPicked(null);
     setAddOpen(false);
@@ -198,13 +198,13 @@ function Pool() {
     toast.success(`${inserts.length}경기를 등록했습니다. 유펜 유저 상대에게 수락 요청이 발송됩니다${skipped ? ` (${skipped}경기 제외)` : ""}`);
   };
 
-  const names = slots.map((s, i) => s?.name ?? `참가자 ${i + 1}`);
+  const names = slots.map((s, i) => (s ? playerLabel(s) : `참가자 ${i + 1}`));
   const available = (except: string) => slots.map((s, i) => ({ s, i })).filter(({ s, i }) => s && String(i) !== except);
 
   const editable = sheet.mode === "local" || sheet.mode === "live";
   return (
     <div className="space-y-3">
-      <SheetShareBar mode={sheet.mode} members={sheet.members} onCopy={sheet.copyLink} onLeave={sheet.leaveShare} />
+      <SheetShareBar sheet={sheet} kind="pool" />
       {editable && <>
       {/* 컨트롤 */}
       <div className="flex flex-wrap items-center gap-2">
@@ -322,14 +322,14 @@ function Pool() {
           <Select value={selA} onChange={(e) => setSelA(e.target.value)}>
             <option value="">선수 A</option>
             {/* 중복 선택 방지: B에서 고른 사람은 A 목록에서 제외 */}
-            {available(selB).map(({ s, i }) => <option key={i} value={i}>{i + 1}. {s!.name}</option>)}
+            {available(selB).map(({ s, i }) => <option key={i} value={i}>{i + 1}. {playerLabel(s!)}</option>)}
           </Select>
           <Input className="w-16 text-center" value={sa} onChange={(e) => setSa(e.target.value)} />
           <span>:</span>
           <Input className="w-16 text-center" value={sb} onChange={(e) => setSb(e.target.value)} />
           <Select value={selB} onChange={(e) => setSelB(e.target.value)}>
             <option value="">선수 B</option>
-            {available(selA).map(({ s, i }) => <option key={i} value={i}>{i + 1}. {s!.name}</option>)}
+            {available(selA).map(({ s, i }) => <option key={i} value={i}>{i + 1}. {playerLabel(s!)}</option>)}
           </Select>
         </div>
         <div className="mt-4 flex justify-end gap-2">

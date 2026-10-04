@@ -1,6 +1,7 @@
 "use client";
 // 마이페이지 '상세정보' 탭: 내 계정에 연결된 선수 목록(협회 등록 확인 시즌·종목·소속)과 연결/해제.
-// 한 계정에 여러 선수를 연결할 수 있다(학부모의 자녀 등). 해제하면 선수가 비어 다른 계정(또는 같은 계정, 같은 번호로)이 다시 연결할 수 있다.
+// 연결 개수: 학부모·지도자는 여러 명(최대 10), 그 외 신분(선수 본인)은 1명 — DB link_athlete 가 같은 규칙으로 막는다.
+// 해제하면 선수가 비어 다른 계정(또는 같은 계정, 같은 번호로)이 다시 연결할 수 있다.
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -10,6 +11,7 @@ import { weaponLabel } from "@/lib/fencing";
 import { Button } from "./ui/button";
 import { Confirm } from "./ui/modal";
 import { LinkAthleteModal } from "./LinkAthleteModal";
+import { useAuth } from "./AuthProvider";
 
 interface LinkRow {
   athlete_id: number;
@@ -19,6 +21,7 @@ interface LinkRow {
 }
 
 export function LinkedAthletes() {
+  const { profile } = useAuth();
   const [rows, setRows] = useState<LinkRow[]>([]);
   const [weapons, setWeapons] = useState<Map<number, string[]>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -48,13 +51,18 @@ export function LinkedAthletes() {
   };
 
   const thisYear = new Date().getFullYear();
+  const multi = profile?.role === "학부모" || profile?.role === "지도자"; // 여러 선수를 연결할 수 있는 신분
+  const canLink = !loading && (multi ? rows.length < 10 : rows.length === 0);
 
   return (
     <section className="rounded-lg border border-line bg-panel p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-bold">연결된 선수</h3>
-        <Button size="sm" onClick={() => setOpen(true)}><Plus size={14} className="mr-1" />선수 연결</Button>
+        {canLink && <Button size="sm" onClick={() => setOpen(true)}><Plus size={14} className="mr-1" />선수 연결</Button>}
       </div>
+      {!loading && !multi && rows.length > 0 && (
+        <p className="-mt-1 mb-3 text-xs text-muted">선수 본인 계정은 선수를 한 명만 연결할 수 있어요. 자녀·지도 선수를 여러 명 연결하려면 상세 설정에서 신분을 학부모 또는 지도자로 바꿔 주세요.</p>
+      )}
       {loading ? (
         <p className="text-sm text-muted">불러오는 중…</p>
       ) : rows.length === 0 ? (

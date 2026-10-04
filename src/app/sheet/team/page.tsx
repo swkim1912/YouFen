@@ -10,7 +10,7 @@ import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { ArrowLeftRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { PlayerPicker, type PickedPlayer } from "@/components/PlayerPicker";
+import { PlayerPicker, playerLabel, type PickedPlayer } from "@/components/PlayerPicker";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Confirm } from "@/components/ui/modal";
@@ -86,7 +86,7 @@ function Team() {
   const setTeamName = (t: "A" | "B", v: string) => patch([{ p: ["teamName", t], v }], { debounceKey: `team.${t}` });
   const setSlot = (k: string) => (p: PickedPlayer | null) => patch([p ? { p: ["slots", k], v: p } : { p: ["slots", k], d: 1 }]);
   const nameOf = (num: number, swap: string | null) =>
-    (swap ? slots[swap]?.name : slots[`P${num}`]?.name) ?? (swap ? "교체" : `선수 ${num}`);
+    (() => { const p = swap ? slots[swap] : slots[`P${num}`]; return p ? playerLabel(p) : swap ? "교체" : `선수 ${num}`; })();
 
   // 교체 후보: 그 팀에 등록된 모든 선수(1~3번/4~6번, 교체, 주장) 중 원래 선수를 뺀 나머지
   const swapOptions = (team: "A" | "B", num: number) =>
@@ -160,7 +160,7 @@ function Team() {
   const editable = sheet.mode === "local" || sheet.mode === "live";
   return (
     <div className="space-y-3">
-      <SheetShareBar mode={sheet.mode} members={sheet.members} onCopy={sheet.copyLink} onLeave={sheet.leaveShare} />
+      <SheetShareBar sheet={sheet} kind="team" />
       {editable && <>
       <div className="flex justify-end gap-2">
         {sheet.mode === "local" && <SheetShareButton onShare={sheet.startShare} />}
@@ -219,8 +219,8 @@ function Team() {
                   </span>
                   {swapOpen === `A${i}` && (
                     <Select className="mt-1 h-8 text-xs" value={subA[i] ?? ""} onChange={(e) => chooseSwap("A", i, e.target.value)}>
-                      <option value="">원래 선수 ({slots[`P${a}`]?.name ?? `선수 ${a}`})</option>
-                      {swapOptions("A", a).map((k) => <option key={k} value={k}>{slots[k]!.name}{k.startsWith("Sub") ? " (교체)" : k.startsWith("Capt") ? " (주장)" : ""}</option>)}
+                      <option value="">원래 선수 ({slots[`P${a}`] ? playerLabel(slots[`P${a}`]!) : `선수 ${a}`})</option>
+                      {swapOptions("A", a).map((k) => <option key={k} value={k}>{playerLabel(slots[k]!)}{k.startsWith("Sub") ? " (교체)" : k.startsWith("Capt") ? " (주장)" : ""}</option>)}
                     </Select>
                   )}
                 </td>
@@ -235,8 +235,8 @@ function Team() {
                   </span>
                   {swapOpen === `B${i}` && (
                     <Select className="mt-1 h-8 text-xs" value={subB[i] ?? ""} onChange={(e) => chooseSwap("B", i, e.target.value)}>
-                      <option value="">원래 선수 ({slots[`P${b}`]?.name ?? `선수 ${b}`})</option>
-                      {swapOptions("B", b).map((k) => <option key={k} value={k}>{slots[k]!.name}{k.startsWith("Sub") ? " (교체)" : k.startsWith("Capt") ? " (주장)" : ""}</option>)}
+                      <option value="">원래 선수 ({slots[`P${b}`] ? playerLabel(slots[`P${b}`]!) : `선수 ${b}`})</option>
+                      {swapOptions("B", b).map((k) => <option key={k} value={k}>{playerLabel(slots[k]!)}{k.startsWith("Sub") ? " (교체)" : k.startsWith("Capt") ? " (주장)" : ""}</option>)}
                     </Select>
                   )}
                 </td>
