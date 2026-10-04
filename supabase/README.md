@@ -35,6 +35,7 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 29. `search_athletes_exact_first` (2026-10-05) — `data_search_athletes` 정렬을 이름 정확히 일치 → 앞부분 일치 → 포함 순으로(흔한 이름이 결과 한도에 잘리던 문제). 회원 탈퇴는 DB 변경 없이 서버 API `/api/account` 가 처리(연쇄 삭제 규칙 사용).
 30. `security_hardening_3_created_at` (2026-10-05 재점검) — 하루 생성 한도 우회 차단: 일반 사용자 요청에서 `game_records`·`feedback_notes`·`athlete_claim_requests`·`avatar_reports` 의 `created_at` 을 만들 때는 지금 시각, 수정할 때는 원래 값으로 고정(트리거 `records_guard`/`notes_guard`(수정에도 실행)/`claims_guard`/`reports_guard`). `email_available`·`nickname_available` 에 접속 IP 별 요청 제한(`private.throttle`, VOLATILE plpgsql 로 변경).
 31. `collab_sheets_and_club_mark_requests` (2026-10-05) — ① 기록지 공동 편집: `shared_sheets`(내용 jsonb·버전, 64KB) / `shared_sheet_members`, 참여자만 읽기(RLS, Realtime postgres_changes 도 참여자에게만), 쓰기는 RPC `sheet_create`(하루 20개)·`sheet_join`(참여자 30명)·`sheet_patch`(경로별 설정·삭제를 서버에서 차례로 적용), `supabase_realtime` 발행에 추가, pg_cron `shared-sheets-cleanup`(매일, 5일 동안 수정 없는 기록지 삭제 — 마이그레이션 `shared_sheets_cleanup_5_days` 로 7일→5일). ② 클럽 마크 신청: `club_image_requests.reason`(3~500자)·`consented_at`, `admin_club_image_requests` 가 사유·동의 시각 반환.
+32. `link_athlete_one_per_account` (2026-10-05) — 선수 연결 개수: 학부모·지도자만 최대 10명, 그 외 신분은 계정 하나에 1명(이미 여러 명 연결된 계정은 그대로, 새 연결만 막음).
 
 ## 대회 결과 데이터
 - 수집/갱신 절차: `supabase/refresh_competitions.sql` (대회 목록 → 종목 등록 → 종목별 원문 수집 → `build_comp` 정규화). 현재 2022-01 ~ 2026-09 개인전 96개 대회(95개 결과): 종목 1,607개(결과 있음), 선수 7,993명, 참가 75,066건, 예선 198,884경기, 예선ED 6,840경기, 본선ED 49,629경기. 단체전은 미수집.

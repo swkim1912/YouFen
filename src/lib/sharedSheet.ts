@@ -9,6 +9,7 @@
 //   다른 사람의 수정은 Supabase Realtime(postgres_changes, 참여자만 받음)으로 받아 버전이 더 새로우면 서버 문서를 바꾼다.
 //   글자 입력은 debounceKey 로 묶어 잠시 멈췄을 때 한 번만 보낸다(키 입력마다 서버 요청을 하지 않도록).
 // - 접속 중인 사람은 Realtime presence 로 닉네임을 모은다.
+// - 공동 편집 중 다른 메뉴를 누르면 확인 팝업(leaveTo), 이 기기에 '최근 공동 편집 기록지'(localStorage)를 남겨 다시 들어올 수 있게 한다.
 // DB: shared_sheets / shared_sheet_members, RPC sheet_create·sheet_join·sheet_patch (supabase/README.md 31)
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -155,20 +156,51 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
     return pending.reduce((d, e) => applyOps(d, e.ops), base);
   }, [shareId, localDoc, serverDoc, pending]);
 
-  const linkOf = (id: string) => `${window.location.origin}${pathname}?share=${id}`;
+  const link = shareId && typeof window !== "undefined" ? `${window.location.origin}${pathname}?share=${shareId}` : "";
+  const [linkOpen, setLinkOpen] = useState(false); // 공동 편집 링크 팝업 (만든 직후 자동으로 열림)
+  const [leaveTo, setLeaveTo] = useState<string | null>(null); // 다른 메뉴로 나가려 할 때 확인 팝업에 쓸 주소
 
-  const copyLink = useCallback(async (id = shareId) => {
-    if (!id) return;
+  // 이 기기의 '최근 공동 편집 기록지' 목록에 남긴다(다른 메뉴로 나갔다가 다시 들어올 수 있게) — 제목이 바뀌면 같이 갱신
+  const title = (doc as { info?: { title?: string } }).info?.title ?? "";
+  useEffect(() => {
+    if (mode === "live" && shareId) rememberSheet(kind, shareId, title);
+    if (mode === "missing" && shareId) forgetSheet(shareId);
+  }, [mode, shareId, kind, title]);
+
+  // 공동 편집 중 다른 메뉴(링크)를 누르면 한 번 더 확인하고, 새로고침·탭 닫기는 브라우저 확인 창을 띄운다
+  useEffect(() => {
+    if (mode !== "live") return;
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.searchParams.get("share") === shareId) return; // 같은 기록지
+      e.preventDefault();
+      e.stopPropagation(); // Next 의 Link 이동도 막는다(문서 캡처 단계에서 먼저 처리)
+      setLeaveTo(url.pathname + url.search + url.hash);
+    };
+    const onUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("beforeunload", onUnload);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("beforeunload", onUnload);
+    };
+  }, [mode, shareId]);
+
+  const copyLink = useCallback(async () => {
+    if (!link) return;
     try {
-      await navigator.clipboard.writeText(linkOf(id));
-      toast.success("공동 편집 링크를 복사했어요. 함께 편집할 회원에게 보내 주세요");
+      await navigator.clipboard.writeText(link);
+      toast.success("링크를 복사했어요. 함께 편집할 회원에게 보내 주세요");
     } catch {
-      toast.info(`링크: ${linkOf(id)}`, { duration: 10000 });
+      toast.error("자동 복사가 안 돼요. 링크를 길게 눌러 직접 복사해 주세요");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareId, pathname]);
+  }, [link]);
 
-  /** 공동 편집 시작: 지금까지 적은 내용으로 공동 기록지를 만들고 링크를 복사한 뒤 그 주소로 이동 */
+  /** 공동 편집 시작: 지금까지 적은 내용으로 공동 기록지를 만들고 그 주소로 이동한 뒤 링크 팝업을 연다 */
   const startShare = useCallback(async () => {
     if (!user) return toast.error("공동 편집은 로그인한 회원만 이용할 수 있어요");
     const { data, error } = await supabase.rpc("sheet_create", { p_kind: kind, p_data: localDoc });
@@ -177,9 +209,9 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
     verRef.current = 1;
     setServerDoc(localDoc);
     setMode("loading");
-    await copyLink(id);
+    setLinkOpen(true);
     router.replace(`${pathname}?share=${id}`);
-  }, [user, kind, localDoc, copyLink, router, pathname]);
+  }, [user, kind, localDoc, router, pathname]);
 
   /** 혼자 편집으로 전환: 지금 보이는 내용을 이 기기로 복사하고 공동 편집 주소에서 나온다(다른 사람의 기록지는 그대로) */
   const leaveShare = useCallback(() => {
@@ -190,5 +222,51 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
     router.replace(pathname);
   }, [doc, router, pathname, setPending]);
 
-  return { doc, patch, mode, members, startShare, leaveShare, copyLink: () => copyLink() };
+  /** 기록지 나가기: 빈 기록지로 돌아간다(공동 기록지는 그대로 남아 링크·최근 목록으로 다시 들어올 수 있음) */
+  const exitShare = useCallback(() => {
+    setLocalDoc(initialRef.current());
+    setServerDoc(null);
+    setPending(() => []);
+    verRef.current = 0;
+    router.replace(pathname);
+  }, [router, pathname, setPending]);
+
+  /** 나가기 확인 팝업에서 '나가기'를 누르면 원래 가려던 메뉴로 이동 */
+  const confirmLeave = useCallback(() => {
+    const to = leaveTo;
+    setLeaveTo(null);
+    if (to) router.push(to);
+  }, [leaveTo, router]);
+
+  return {
+    doc, patch, mode, members, startShare, leaveShare, exitShare,
+    link, copyLink, linkOpen, setLinkOpen,
+    leaveTo, confirmLeave, cancelLeave: () => setLeaveTo(null),
+  };
+}
+
+// ---- 이 기기의 최근 공동 편집 기록지 (localStorage, 최대 5개) ----
+export interface RecentSheet { id: string; kind: string; title: string; at: number }
+const RECENT_KEY = "youfen.recentSheets";
+
+export function recentSheets(kind: string): RecentSheet[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as RecentSheet[];
+    // 서버는 5일 동안 수정이 없으면 지우므로 그보다 오래된 항목은 보여주지 않는다
+    return list.filter((x) => x.kind === kind && Date.now() - x.at < 5 * 24 * 3600 * 1000);
+  } catch {
+    return [];
+  }
+}
+function rememberSheet(kind: string, id: string, title: string) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as RecentSheet[]).filter((x) => x.id !== id);
+    localStorage.setItem(RECENT_KEY, JSON.stringify([{ id, kind, title, at: Date.now() }, ...list].slice(0, 5)));
+  } catch { /* 저장소를 못 쓰는 환경이면 목록 없이 동작 */ }
+}
+function forgetSheet(id: string) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as RecentSheet[]).filter((x) => x.id !== id);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+  } catch { /* 무시 */ }
 }

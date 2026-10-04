@@ -4,6 +4,7 @@ export interface PoolPlayer {
   id: string; // 로컬 식별자
   name: string;
   userId: string | null; // 유펜 유저면 profiles.id
+  realName?: string | null; // 선수와 연결된 회원의 실명(표시용, PlayerPicker)
 }
 // results[i][j] = i번 선수가 j번 선수와 싸워 낸 점수 (i 입장), 없으면 undefined
 export type PoolResults = (number | undefined)[][];
