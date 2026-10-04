@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Clause, LegalPage } from "@/components/LegalPage";
 import { OPERATOR, SERVICE_NAME } from "@/lib/legal";
 
-export const metadata = { title: "이용약관 · 유펜 YouFen" };
+export const metadata = { title: "이용약관" };
 
 export default function TermsPage() {
   return (
@@ -31,7 +31,7 @@ export default function TermsPage() {
         <p>① 가입은 <b>만 14세 이상</b>인 사람만 할 수 있습니다. 가입 시 만 14세 이상임을 확인하며, 사실과 다르면 운영자는 계정을 정지·삭제할 수 있습니다.</p>
         <p>② 회원은 이메일 인증을 마쳐야 가입이 완료됩니다. 허위 정보를 입력하거나 타인의 정보를 사용해서는 안 됩니다.</p>
         <p>③ 계정은 1인 1계정을 원칙으로 하며, 계정과 비밀번호의 관리 책임은 회원에게 있습니다. 제3자에게 양도·대여할 수 없습니다.</p>
-        <p>④ 회원은 언제든지 탈퇴할 수 있으며, 탈퇴 절차는 <Link href="/support" className="text-brand">고객지원</Link>에서 접수합니다.</p>
+        <p>④ 회원은 언제든지 탈퇴할 수 있으며, 마이 펜싱 &gt; 상세정보 &gt; 회원 탈퇴에서 직접 탈퇴할 수 있습니다(어려운 경우 <Link href="/support" className="text-brand">고객지원</Link>으로 요청).</p>
       </Clause>
 
       <Clause title="제5조 (서비스의 내용)">

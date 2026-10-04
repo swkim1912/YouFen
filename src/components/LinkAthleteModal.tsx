@@ -11,6 +11,8 @@ import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Input, Label, Select, Textarea } from "./ui/input";
 
+const LIMIT = 30; // 한 번에 보여줄 후보 수(DB 함수 최대값). 같은 이름 선수는 현재 최대 19명이라 이름을 끝까지 입력하면 모두 나온다
+
 interface Cand {
   id: number;
   name: string;
@@ -37,8 +39,8 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
     const term = q.trim();
     if (term.length < 2) return setCands([]);
     const t = setTimeout(async () => {
-      // 선수 연결용 검색(p_link): 협회 등록 이력 있는 선수만, 연결 안 된 선수 먼저, 최대 20명 (DB 함수 data_search_athletes)
-      setCands(await publicData<Cand[]>("data_search_athletes", { p_q: term, p_limit: 20, p_link: true }, []));
+      // 선수 연결용 검색(p_link): 협회 등록 이력 있는 선수만. 순서 = 이름이 정확히 같은 선수 → 입력으로 시작하는 이름 → 포함, 그 안에서 연결 안 된 선수 먼저 (DB 함수 data_search_athletes)
+      setCands(await publicData<Cand[]>("data_search_athletes", { p_q: term, p_limit: LIMIT, p_link: true }, []));
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
@@ -76,7 +78,9 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
       {!sel ? (
         <div className="space-y-3">
           <p className="text-sm text-muted">협회에 등록된 내 이름(또는 자녀 이름)을 검색하고, 소속·등록연도를 보고 맞는 선수를 선택하세요.</p>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="선수 이름 (2자 이상)" autoFocus />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="선수 이름 전체 (예: 홍길동)" autoFocus />
+          {/* 결과가 한도만큼 차면 잘렸을 수 있으므로 이름 전체 입력을 안내 */}
+          {cands.length >= LIMIT && <p className="text-xs text-pending">검색 결과가 많아 {LIMIT}명까지만 보여요. 이름을 끝까지 입력하면 같은 이름의 선수가 맨 위에 모두 나와요.</p>}
           <div className="max-h-72 space-y-1.5 overflow-auto">
             {cands.map((c) => (
               <button key={c.id} onClick={() => setSel(c)} className="flex w-full items-center gap-3 rounded-md bg-panel2 px-3 py-2 text-left text-sm hover:bg-white/5">

@@ -12,6 +12,7 @@ import { AppShell } from "@/components/AppShell";
 import { FilterRow } from "@/components/FilterRow";
 import { Podium, type PodiumEntry } from "@/components/Podium";
 import { TierPill } from "@/components/TierBadge";
+import { usePageTitle } from "@/lib/pageTitle";
 import { supabase } from "@/lib/supabase";
 import { isMergeable } from "@/lib/members";
 import {
@@ -115,6 +116,9 @@ function Ranking() {
     };
   });
 
+  // 브라우저 탭 제목도 지금 보고 있는 랭킹으로 (예: "동호인 일반부 남자 에페 랭킹 · 유펜 YouFen")
+  usePageTitle(`${tab} ${ageLabel(curAge)} ${genderLabel(gender)} ${weaponLabel(weapon)} 랭킹`);
+
   const shown = useMemo(() => {
     const t = q.trim();
     return (rows ?? []).filter((r) => !t || r.athlete?.name.includes(t) || r.current_team?.includes(t));
@@ -181,7 +185,7 @@ function Ranking() {
         <div className="overflow-hidden rounded-lg border border-line bg-panel">
           <div className="grid grid-cols-[1.75rem_1fr_3.75rem_2.5rem] items-center gap-2 border-b border-line bg-panel2 px-3 py-2 text-xs text-muted sm:grid-cols-[3rem_1fr_1fr_6rem_9rem_4rem_6rem]">
             <span>순위</span><span>이름</span><span className="hidden sm:block">소속</span><span>티어</span><span className="text-right sm:text-left">점수</span>
-            <span className="hidden text-right sm:block">대회 수</span><span className="hidden text-right sm:block">최근 대회</span>
+            <span className="hidden text-right sm:block" title="이 시즌(2년) 안에 실제로 참가한 대회 수">대회 수</span><span className="hidden text-right sm:block">최근 대회</span>
           </div>
           {shown.map((r) =>
             r.athlete ? (
@@ -200,7 +204,7 @@ function Ranking() {
                     <span className="block h-full rounded" style={{ width: `${Math.min(100, r.tour_score / 10)}%`, backgroundColor: tierColor(r.tier) }} />
                   </span>
                 </span>
-                <span className="hidden text-right text-xs text-muted sm:block">{Number(r.n_eff).toFixed(1)}</span>
+                <span className="hidden text-right text-xs text-muted sm:block">{r.n_events}회</span>
                 <span className="hidden text-right text-xs text-muted sm:block">{fmtDay(r.last_date)}</span>
               </Link>
             ) : null

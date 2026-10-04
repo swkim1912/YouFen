@@ -1,6 +1,7 @@
 "use client";
 // 우측 메뉴바 '+' 버튼으로 여는 게임 기록 생성 팝업.
-// 프라이빗 / 오픈 선택 → 상대 선택 → 목표 점수 → 점수 → (피드백 노트) → 완료
+// 프라이빗 / 오픈 선택 → 상대 선택 → 경기 날짜 → 목표 점수 → 점수 → (피드백 노트) → 완료
+// 경기 날짜: 기본은 오늘이고, 오늘이면 저장한 시각(DB 기본값 now())으로 기록한다. 지난 날짜를 고르면 그날 정오로 저장(화면에는 날짜만 보임).
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -9,7 +10,7 @@ import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Input, Label, Textarea } from "./ui/input";
 import { PlayerPicker, type PickedPlayer } from "./PlayerPicker";
-import { NOTE_MAX, cn } from "@/lib/utils";
+import { NOTE_MAX, cn, localDay } from "@/lib/utils";
 
 /** 점수 검증 (모든 기록 입력에서 공통 사용). 오류 메시지 또는 null */
 export function validateScore(target: number, a: number, b: number): string | null {
@@ -29,10 +30,11 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
   const [mine, setMine] = useState("");
   const [theirs, setTheirs] = useState("");
   const [note, setNote] = useState("");
+  const [day, setDay] = useState(localDay()); // 경기 날짜 (YYYY-MM-DD)
   const [busy, setBusy] = useState(false);
 
   const reset = () => {
-    setOpp(null); setMine(""); setTheirs(""); setNote(""); setKind("PRIVATE"); setTarget("15");
+    setOpp(null); setMine(""); setTheirs(""); setNote(""); setKind("PRIVATE"); setTarget("15"); setDay(localDay());
   };
 
   const submit = async () => {
@@ -40,6 +42,8 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
     if (!opp) return toast.error("상대를 선택해 주세요");
     const err = validateScore(Number(target), Number(mine), Number(theirs));
     if (err) return toast.error(err);
+    const today = localDay();
+    if (!day || day > today || day < "1990-01-01") return toast.error("경기 날짜를 확인해 주세요 (오늘 이전 날짜만 고를 수 있어요)");
 
     // 상대가 비유저이면 수락받을 대상이 없으므로 자동으로 프라이빗 기록으로 저장
     const finalKind = kind === "OPEN" && !opp.userId ? "PRIVATE" : kind;
@@ -57,6 +61,8 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
         target_score: Number(target),
         my_score: Number(mine),
         opp_score: Number(theirs),
+        // 오늘이면 보내지 않아 저장 시각(now())이 되고, 지난 날짜면 그날 정오(기기 시간)로 저장
+        ...(day !== today && { played_at: new Date(`${day}T12:00:00`).toISOString() }),
       })
       .select("id")
       .single();
@@ -101,13 +107,19 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
           <PlayerPicker value={opp} onChange={setOpp} />
         </div>
       </div>
-      {/* 3. 목표 점수 */}
+      {/* 3. 경기 날짜 (기본 오늘 = 저장한 시각) */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Label className="mb-0">경기 날짜</Label>
+        <Input className="w-40" type="date" value={day} min="1990-01-01" max={localDay()} onChange={(e) => setDay(e.target.value)} />
+        {day === localDay() && <span className="text-xs text-muted">오늘 · 저장한 시각으로 기록돼요</span>}
+      </div>
+      {/* 4. 목표 점수 */}
       <div className="mb-3 flex items-center gap-2">
         <Label className="mb-0">목표 점수</Label>
         <Input className="w-20" type="number" min={1} value={target} onChange={(e) => setTarget(e.target.value)} />
         <span className="text-sm text-muted">점 내기</span>
       </div>
-      {/* 4. 점수 */}
+      {/* 5. 점수 */}
       <div className="mb-4 flex items-center justify-center gap-3">
         <span className="w-20 truncate text-right text-sm">{profile?.nickname}</span>
         <Input className="w-24 text-center text-lg font-bold" type="number" min={0} value={mine} onChange={(e) => setMine(e.target.value)} />

@@ -25,6 +25,7 @@ import {
   type AthleteRow, type EventMeta, type MatchRow, type PoolKey, type PoolScore,
 } from "@/lib/fencing";
 import { cn, fmtDate } from "@/lib/utils";
+import { usePageTitle } from "@/lib/pageTitle";
 
 interface EntryRow {
   event_id: string;
@@ -65,6 +66,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
   const [open, setOpen] = useState<Set<string>>(new Set()); // 경기 펼친 대회(event id)
   const [shownEntries, setShownEntries] = useState(10);
   const [filter, setFilter] = useState<"ALL" | "POULE" | "ED">("ALL");
+  usePageTitle(own ? null : athlete?.name); // 선수 페이지 탭 제목 = 선수 이름 (마이 펜싱에서 쓸 때는 그대로)
   const [oppQ, setOppQ] = useState("");
   const { user } = useAuth();
   // 연결된 유펜 회원(학부모 제외): 선수 페이지에 닉네임·회원 전적을 합쳐 보여준다

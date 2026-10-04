@@ -12,6 +12,14 @@ export function fmtDate(iso: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** 오늘 날짜 "2026-10-05" (사용자 기기 시간 기준 — UTC 로 자르면 한국 오전 9시 전에는 어제 날짜가 됨). <input type="date"> 값용 */
+export function localDay(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 회원 탈퇴 확인 문구 — 탈퇴 창(AccountDelete)과 서버(/api/account)가 같은 값을 쓴다 */
+export const DELETE_CONFIRM = "회원 탈퇴";
+
 /** 닉네임 형식 검사: 2~12자, 한글/영문/숫자만 (공백·특수문자 불가). 오류 메시지 또는 null */
 export function validateNickname(n: string): string | null {
   if (n.length < 2 || n.length > 12) return "닉네임은 2~12자여야 합니다";

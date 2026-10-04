@@ -15,6 +15,7 @@ import { Dot } from "@/components/ui/dot";
 import { Avatar } from "@/components/Avatar";
 import { athletesOfMembers, isMergeable, membersOfAthletes, type MemberBrief } from "@/lib/members";
 import { useAuth } from "@/components/AuthProvider";
+import { usePageTitle } from "@/lib/pageTitle";
 
 interface AthleteHit {
   id: number;
@@ -42,6 +43,7 @@ function Inner() {
   const [results, setResults] = useState<Profile[] | null>(null);
   const [athletes, setAthletes] = useState<AthleteHit[]>([]);
   const [picked, setPicked] = useState<Profile | null>(null);
+  usePageTitle(picked?.nickname ?? (q ? `'${q}' 검색` : null)); // 탭 제목: 연 회원 닉네임 또는 검색어
 
   useEffect(() => {
     setPicked(null);
