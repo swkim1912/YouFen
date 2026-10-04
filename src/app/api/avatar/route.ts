@@ -1,7 +1,7 @@
 // 프로필 사진 서버 API.
 //  POST   multipart(file)          : 사진 올리기 → 형식·용량 검사 → EXIF 제거·512px 정사각 webp 재인코딩 → Google Vision SafeSearch 검열 → 버킷 저장 → profiles.avatar_url
 //  PATCH  {mode:"default", n:1} | {mode:"club"} : 기본 프로필 N번 / 소속팀 이미지(기본)로 되돌리기 (올린 파일은 삭제)
-//  DELETE ?target=<uid>            : 관리자가 다른 사용자의 사진을 지우고 이후 등록을 막는다 (신고 처리)
+//  DELETE ?target=<uid>[&lock=0]   : 관리자가 다른 사용자의 사진을 지우고 이후 등록을 막는다 (신고 처리). lock=0 이면 지우기만
 // 보안: 클라이언트는 버킷에 직접 쓸 수 없고(쓰기 정책 없음), avatar_url 에 사진 URL 을 직접 넣을 수도 없다(DB 트리거) → 항상 이 API(검열)를 거친다.
 // 필요한 서버 환경변수: SUPABASE_SERVICE_ROLE_KEY, GOOGLE_VISION_API_KEY. 없으면 올리기는 닫는다(검열 없이 열지 않음).
 // 비용 보호: Vision 은 월 1,000건까지만 무료 → 이번 달 호출이 VISION_MONTHLY_LIMIT 에 닿으면 사진 올리기를 막는다(기본 950, 시간대·동시 요청 오차 여유).
@@ -140,9 +140,12 @@ export async function DELETE(req: Request) {
   if (!a.isAdmin) return fail(403, "관리자만 사용할 수 있습니다");
   const target = new URL(req.url).searchParams.get("target");
   if (!target || !/^[0-9a-f-]{36}$/i.test(target)) return fail(400, "잘못된 요청입니다");
-  const { error } = await a.admin.from("profiles").update({ avatar_url: null, avatar_locked: true }).eq("id", target);
+  // lock=0 이면 사진만 지우고 변경 제한은 걸지 않는다(기본은 제한)
+  const lock = new URL(req.url).searchParams.get("lock") !== "0";
+  const { error } = await a.admin.from("profiles").update(lock ? { avatar_url: null, avatar_locked: true } : { avatar_url: null }).eq("id", target);
   if (error) return fail(500, "처리하지 못했어요");
   await clearFiles(a.admin, target);
   await a.admin.from("avatar_reports").update({ status: "resolved" }).eq("target_id", target).eq("status", "open");
+  await a.admin.from("admin_audit").insert({ admin_id: a.uid, action: lock ? "avatar_remove_lock" : "avatar_remove", target });
   return Response.json({ ok: true });
 }

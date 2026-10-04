@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchUserRecords, type RecordView } from "@/lib/records";
 import type { FeedbackNote } from "@/lib/types";
 import { fmtDate } from "@/lib/utils";
+import { download, exportFilename, notesToRows, toCsv, toXlsx } from "@/lib/exportNotes";
 
 export default function NotesPage() {
   return (
@@ -31,6 +32,7 @@ function Notes() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [delId, setDelId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -60,6 +62,21 @@ function Notes() {
     load();
   };
 
+  // 내 노트 전체를 파일로 내보내기 (검색 필터와 상관없이 전부). 브라우저 안에서 만들어 바로 내려받는다.
+  const exportAs = async (kind: "csv" | "xlsx") => {
+    if (notes.length === 0) return toast.error("내보낼 노트가 없습니다");
+    setExporting(true);
+    try {
+      const rows = notesToRows(notes, games);
+      if (kind === "csv") download(toCsv(rows), exportFilename("csv"), "text/csv;charset=utf-8");
+      else download(await toXlsx(rows), exportFilename("xlsx"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      toast.success(`노트 ${notes.length}개를 내보냈어요`);
+    } catch {
+      toast.error("내보내지 못했어요. 다시 시도해 주세요");
+    }
+    setExporting(false);
+  };
+
   // 검색: 제목/내용/상대 이름에 대한 단순 텍스트 매칭
   const filtered = notes.filter((n) => {
     if (!q.trim()) return true;
@@ -69,9 +86,11 @@ function Notes() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="text-lg font-bold">피드백 노트</h1>
-        <Input className="ml-auto w-56" placeholder="단어·기술명·상대 이름 검색" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input className="ml-auto w-full sm:w-56" placeholder="단어·기술명·상대 이름 검색" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Button variant="outline" onClick={() => exportAs("xlsx")} disabled={exporting} title="엑셀(.xlsx)로 내보내기">엑셀 내보내기</Button>
+        <Button variant="outline" onClick={() => exportAs("csv")} disabled={exporting} title="CSV(엑셀·구글 시트에서 열림)로 내보내기">CSV</Button>
         <Button onClick={() => setAdding(true)}>노트 추가</Button>
       </div>
       {filtered.length === 0 && <p className="py-16 text-center text-muted">노트가 없습니다</p>}

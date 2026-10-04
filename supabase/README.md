@@ -23,6 +23,11 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 18. `profiles_public_columns_grant_and_no_example` — `profiles.club_id/avatar_locked` 공개 컬럼 SELECT 권한, 연결 RPC 메시지에서 번호 예시 제거.
 19. `athletes_linked_profile_id` — `athletes.linked_profile_id`(연결 회원 id, 트리거 유지).
 20. `consent_and_support_tickets` — `profiles.consent_version/consent_at/age14_confirmed`(+`profiles_guard`·`handle_new_user` 갱신, 14세 미만 차단), RPC `record_consent`, `support_tickets`(RLS 본인·관리자) + RPC `submit_support`(속도 제한).
+21. `admin_notices_jobs_overview` — `is_admin_user()`, `notices`(RLS), `admin_jobs`(RLS 관리자 읽기), RPC `admin_enqueue_job`/`admin_cancel_job`/`admin_overview`.
+22. `admin_refresh_functions` — 증분 갱신 함수(`private.team_page`/`player_page`/`assign_club`/`merge_new_players`/`event_changed`/`job_step`/`advance_job`).
+23. `admin_job_cron` — pg_cron 설치, 20초마다 `private.advance_job()` 호출.
+24. `admin_management_rpcs` — `admin_audit`, `club_image_requests`, 버킷 `club-images`, RPC `admin_members/reports/claims/clubs/club_image_requests/audit_recent/merge_clubs/unlink_athlete` 등.
+25. `admin_overview_open_counts` — 현황 숫자를 '처리할 일' 기준으로.
 17. `avatar_vision_calls` — Vision 호출 기록(월·일 한도 계산용, 서버만 접근).
 
 ## 대회 결과 데이터

@@ -72,11 +72,7 @@ function Inner() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-extrabold">대회</h1>
-        <p className="text-sm text-muted">
-          {tab} {ageLabel(curAge)} {genderLabel(gender)} {weaponLabel(weapon)}
-          {rows && <> {rows.length}개 대회의 전체 결과를 확인하세요.</>}
-        </p>
+        <h1 className="text-2xl font-extrabold">대회</h1>
       </div>
       <div className="space-y-2">
         <FilterRow label="구분" options={TABS} value={tab} onChange={setTab} />

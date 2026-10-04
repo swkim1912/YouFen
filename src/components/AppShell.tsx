@@ -6,12 +6,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Bell, ChevronDown, ClipboardList, Home, LogIn, Medal, NotebookPen, Plus, Trophy } from "lucide-react";
+import { Bell, ChevronDown, ClipboardList, Home, LogIn, Medal, NotebookPen, Plus, ShieldCheck, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
 import { Logo } from "./Logo";
 import { SiteFooter } from "./SiteFooter";
 import { ConsentGate } from "./auth/ConsentGate";
+import { NoticePopup } from "./NoticePopup";
 import { NewRecordModal } from "./NewRecordModal";
 import { UserSearchBox } from "./UserSearchBox";
 import { Modal } from "./ui/modal";
@@ -99,6 +100,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
           <button onClick={soon} className={mobLink}>커뮤니티</button>
           <button onClick={soon} className={mobLink}>아카데미</button>
           <Link href="/methodology" className={cn(mobLink, path === "/methodology" && "text-foreground")}>점수 안내</Link>
+          {profile?.is_admin && <Link href="/admin" className={cn(mobLink, path === "/admin" && "text-foreground")}>관리자</Link>}
           {loggedIn ? (
             <button onClick={signOut} className={cn(mobLink, "ml-auto")}>로그아웃</button>
           ) : (
@@ -144,6 +146,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
           </div>
         )}
         {loggedIn && <Link href="/notes" className={itemCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>}
+        {profile?.is_admin && <Link href="/admin" className={itemCls(path === "/admin")}><ShieldCheck size={20} />관리자</Link>}
         <div className="mt-auto w-full">
           {loggedIn ? (
             <button onClick={signOut} className="w-full py-2 text-[11px] text-muted hover:text-foreground">로그아웃</button>
@@ -189,6 +192,8 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
 
       <SiteFooter className="pb-20 md:pb-5" />
       {loggedIn && <ConsentGate />}
+      {/* 공지 팝업: 동의·온보딩이 끝난 로그인 회원에게만 */}
+      {loggedIn && profile?.onboarded && profile.consent_version && <NoticePopup />}
 
       {loggedIn && <NewRecordModal open={showNew} onClose={() => setShowNew(false)} onSaved={() => setRefreshKey((k) => k + 1)} />}
 
