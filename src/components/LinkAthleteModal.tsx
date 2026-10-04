@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { publicData } from "@/lib/fencing";
 import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Input, Label, Select, Textarea } from "./ui/input";
@@ -36,15 +37,8 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
     const term = q.trim();
     if (term.length < 2) return setCands([]);
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from("athletes")
-        .select("id,name,gender,reg_years,is_linked,club:clubs(name)")
-        .ilike("name", `%${term.replace(/[%_]/g, "")}%`)
-        .neq("reg_years", "{}")
-        .order("is_linked")
-        .order("name")
-        .limit(20);
-      setCands((data ?? []) as unknown as Cand[]);
+      // 선수 연결용 검색(p_link): 협회 등록 이력 있는 선수만, 연결 안 된 선수 먼저, 최대 20명 (DB 함수 data_search_athletes)
+      setCands(await publicData<Cand[]>("data_search_athletes", { p_q: term, p_limit: 20, p_link: true }, []));
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
@@ -119,6 +113,10 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
             체육인번호는 스포츠지원포털에서 확인할 수 있어요 <ExternalLink size={12} />
           </a>
           <p className="text-xs text-muted">입력한 번호는 선수 본인 확인과 동명이인 구분에만 쓰이며, 다른 사용자에게 보이지 않습니다. 한 선수는 한 계정에만 연결할 수 있고, 자녀 등 여러 선수를 연결할 수 있습니다.</p>
+          {/* 실명 공개 안내: 연결하면 닉네임 ↔ 실명이 공개적으로 이어진다(학부모 신분은 합치지 않음 — lib/members.ts isMergeable) */}
+          <p className="rounded-md border border-pending/40 bg-pending/[0.08] p-2.5 text-xs text-foreground">
+            <b className="text-pending">공개 안내</b> 연결하면 이 선수 페이지(실명)에 내 <b>닉네임·프로필 사진·공개 전적</b>이 함께 표시되고, 닉네임으로 검색해도 이 선수 페이지가 나와요. 즉 <b>닉네임과 실명이 연결되어 공개</b>됩니다. (신분이 학부모면 합쳐 보이지 않아요.) 원하지 않으면 언제든 연결을 해제할 수 있어요.
+          </p>
 
           {err && (
             <div className="rounded-md border border-loss/50 bg-loss/10 p-3 text-sm">
@@ -126,7 +124,7 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
               {err.code === "taken" && (
                 <div className="mt-2 space-y-2">
                   <Label>본인이 맞다면 문의 내용을 남겨주세요</Label>
-                  <Textarea value={claimMsg} onChange={(e) => setClaimMsg(e.target.value)} placeholder="예: 제가 본인입니다. 예전 계정을 더 이상 쓸 수 없어요." />
+                  <Textarea value={claimMsg} onChange={(e) => setClaimMsg(e.target.value)} maxLength={1000} placeholder="예: 제가 본인입니다. 예전 계정을 더 이상 쓸 수 없어요." />
                   <Button size="sm" variant="outline" onClick={sendClaim}>문의 보내기</Button>
                 </div>
               )}

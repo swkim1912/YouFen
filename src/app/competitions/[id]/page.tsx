@@ -9,9 +9,8 @@ import { AppShell } from "@/components/AppShell";
 import { Dot } from "@/components/ui/dot";
 import { Button } from "@/components/ui/button";
 import { EdBracket } from "@/components/EdBracket";
-import { supabase } from "@/lib/supabase";
 import {
-  WEAPON_VALUES, GENDER_VALUES, fetchAll, fmtRange, genderLabel, rankColor, weaponLabel,
+  WEAPON_VALUES, GENDER_VALUES, fmtRange, publicData, genderLabel, rankColor, weaponLabel,
   type MatchRow, type Tab, type Age, type GenderValue, type WeaponValue,
 } from "@/lib/fencing";
 import { cn } from "@/lib/utils";
@@ -51,16 +50,11 @@ function Inner() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [c, e] = await Promise.all([
-        supabase.from("competitions").select("id,name,start_date,end_date").eq("id", id).maybeSingle(),
-        supabase
-          .from("comp_events")
-          .select("id,name,division,tab,age,weapon,gender,entrants,has_ed,winner:athletes!winner_athlete_id(id,name)")
-          .eq("competition_id", id).gt("entrants", 0).order("id"),
-      ]);
+      // 대회 정보 + 결과가 있는 종목 목록 (DB 함수 data_competition)
+      const r = await publicData<{ comp: Comp | null; events: Ev[] }>("data_competition", { p_id: id }, { comp: null, events: [] });
       if (cancelled) return;
-      setComp((c.data as Comp | null) ?? null);
-      const list = (e.data ?? []) as unknown as Ev[];
+      setComp(r.comp ?? null);
+      const list = r.events ?? [];
       setEvents(list);
       setEventId((cur) => (cur && list.some((x) => x.id === cur) ? cur : (list.find((x) => x.weapon === "에페" && x.gender === "남") ?? list[0])?.id ?? null));
     })();
@@ -140,22 +134,14 @@ function EventDetail({ ev }: { ev: Ev }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [en, sc, ms] = await Promise.all([
-        fetchAll<Entry>((f, t) =>
-          supabase
-            .from("comp_entries")
-            .select("athlete_id,team_name,poule_no,poule_wins,poule_bouts,poule_ind,poule_ts,poule_rank,final_rank,athlete:athletes(id,name)")
-            .eq("event_id", ev.id).order("athlete_id").range(f, t) as unknown as PromiseLike<{ data: Entry[] | null; error: unknown }>
-        ),
-        fetchAll<{ athlete_id: number; score: number | null }>((f, t) => supabase.from("event_scores").select("athlete_id,score").eq("event_id", ev.id).order("athlete_id").range(f, t)),
-        fetchAll<MatchRow>((f, t) =>
-          supabase.from("comp_matches").select("id,event_id,stage,poule_no,round_size,match_sym,a_athlete,b_athlete,a_score,b_score,winner,third_place").eq("event_id", ev.id).order("id").range(f, t)
-        ),
-      ]);
+      // 종목 하나의 참가자·대회 점수·경기를 한 번에 (DB 함수 data_event)
+      const r = await publicData<{ entries: Entry[]; scores: { athlete_id: number; score: number | null }[]; matches: MatchRow[] }>(
+        "data_event", { p_event: ev.id }, { entries: [], scores: [], matches: [] },
+      );
       if (cancelled) return;
-      setEntries(en);
-      setScores(new Map(sc.map((s) => [s.athlete_id, s.score])));
-      setMatches(ms);
+      setEntries(r.entries);
+      setScores(new Map(r.scores.map((s) => [s.athlete_id, s.score])));
+      setMatches(r.matches);
     })();
     return () => { cancelled = true; };
   }, [ev.id]);

@@ -69,7 +69,8 @@ export function PlayerPicker({
 
   return (
     <div className="relative">
-      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} />
+      {/* 비회원 이름은 30자까지 (DB 제약 game_records_text_len 과 같은 값) */}
+      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} maxLength={30} />
       {q.trim() && (
         <div className="absolute z-10 mt-1 w-full rounded-md border border-line bg-panel p-1 shadow-lg">
           {hits.map((h) => (

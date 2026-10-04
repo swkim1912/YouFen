@@ -15,7 +15,7 @@ import { TierPill } from "@/components/TierBadge";
 import { supabase } from "@/lib/supabase";
 import { isMergeable } from "@/lib/members";
 import {
-  AGES, GENDER_VALUES, MODES, TABS, WEAPON_VALUES, agesFor, ageLabel, fmtDay, genderLabel, rankColor, tierColor, weaponLabel,
+  AGES, GENDER_VALUES, MODES, TABS, WEAPON_VALUES, agesFor, ageLabel, fmtDay, genderLabel, publicData, rankColor, tierColor, weaponLabel,
   type Age, type GenderValue, type Mode, type PoolScore, type Season, type Tab, type WeaponValue,
 } from "@/lib/fencing";
 
@@ -77,13 +77,9 @@ function Ranking() {
     if (mode === "오픈") return setRows([]);
     let cancelled = false;
     (async () => {
-      let qy = supabase
-        .from("pool_scores")
-        .select("athlete_id,season,tab,age,weapon,gender,n_events,n_eff,tour_score,placed,pool_rank,pool_size,tier,best_score,current_team,first_date,last_date,athlete:athletes(id,name,club_id,linked_profile_id)")
-        .eq("season", season).eq("tab", tab).eq("age", curAge).eq("gender", gender).eq("weapon", weapon);
-      if (!withUnplaced) qy = qy.eq("placed", true);
-      const { data } = await qy.order("placed", { ascending: false }).order("pool_rank", { ascending: true, nullsFirst: false }).order("tour_score", { ascending: false }).limit(1000);
-      if (!cancelled) setRows((data ?? []) as unknown as Row[]);
+      // 풀 하나의 순위표(배치 완료 → 순위 → 점수 순, 최대 1000명)를 DB 함수 data_ranking 으로 받는다
+      const data = await publicData<Row[]>("data_ranking", { p_season: season, p_tab: tab, p_age: curAge, p_gender: gender, p_weapon: weapon, p_unplaced: withUnplaced }, []);
+      if (!cancelled) setRows(data);
     })();
     return () => { cancelled = true; };
   }, [season, mode, tab, curAge, gender, weapon, withUnplaced]);

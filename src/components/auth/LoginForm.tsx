@@ -8,19 +8,23 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { useTurnstile } from "@/components/Turnstile";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const cap = useTurnstile(); // 자동 로그인 시도(비밀번호 대입) 방지
 
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!cap.ready) return toast.error("자동가입 방지 확인을 마친 뒤 다시 눌러 주세요");
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pw, options: { captchaToken: cap.token } });
     setBusy(false);
-    if (error) toast.error("이메일 또는 비밀번호를 확인해 주세요");
+    cap.reset(); // 토큰은 일회용
+    if (error) toast.error(error.message.toLowerCase().includes("captcha") ? "자동가입 방지 확인에 실패했어요. 다시 시도해 주세요" : "이메일 또는 비밀번호를 확인해 주세요");
   };
 
   const google = () =>
@@ -43,7 +47,8 @@ export function LoginForm() {
           </button>
         </div>
       </div>
-      <Button className="w-full" disabled={busy}><LogIn size={16} className="mr-1.5" />로그인</Button>
+      {cap.widget}
+      <Button className="w-full" disabled={busy || !cap.ready}><LogIn size={16} className="mr-1.5" />로그인</Button>
       <p className="text-right text-xs"><Link href="/reset-password" className="text-white/60 underline hover:text-white">비밀번호를 잊으셨나요?</Link></p>
       <Button type="button" variant="outline" className="w-full" onClick={google}>Google로 계속하기</Button>
     </form>

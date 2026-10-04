@@ -15,6 +15,7 @@ import { ExtraFields, emptyExtra, validateExtra } from "@/components/ProfileFiel
 import { ConsentChecks, emptyConsent, isConsentComplete } from "./ConsentChecks";
 import { CONSENT_VERSION, MIN_PASSWORD } from "@/lib/legal";
 import { ageOf, validatePassword } from "@/lib/password";
+import { useTurnstile } from "@/components/Turnstile";
 
 const RESEND_WAIT = 60; // 인증 메일 재발송 대기(초)
 
@@ -30,6 +31,8 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
   const [nickOk, setNickOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0); // 재발송 남은 대기 시간
+  const cap = useTurnstile(); // 자동가입 방지: 가입·인증 메일 재발송·인증 확인(로그인) 요청마다 새 토큰을 쓴다
+  const needCap = () => (cap.ready ? false : (toast.error("자동가입 방지 확인을 마친 뒤 다시 눌러 주세요"), true));
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -64,6 +67,7 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
     const err = validateExtra(extra);
     if (err) return toast.error(err);
     if (!nickOk) return toast.error("사용할 수 없는 닉네임입니다");
+    if (needCap()) return;
     setBusy(true);
     // 추가 정보·동의 기록은 user_metadata 로 보내고, DB 트리거(handle_new_user)가 profiles 행을 만들어 준다.
     const { data, error } = await supabase.auth.signUp({
@@ -72,17 +76,26 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
       options: {
         emailRedirectTo: window.location.origin, // 메일의 인증 링크를 누르면 사이트로 돌아와 로그인된다
         data: { gender, birth_date: birth, ...extra, consent_version: CONSENT_VERSION, age14: "true" },
+        captchaToken: cap.token,
       },
     });
     setBusy(false);
-    if (error) return toast.error(error.message.includes("Database error") ? "가입할 수 없습니다. 입력한 정보(생년월일 등)를 확인해 주세요" : error.message);
+    cap.reset();
+    if (error)
+      return toast.error(
+        error.message.includes("Database error") ? "가입할 수 없습니다. 입력한 정보(생년월일 등)를 확인해 주세요"
+        : error.message.toLowerCase().includes("captcha") ? "자동가입 방지 확인에 실패했어요. 다시 시도해 주세요"
+        : error.message,
+      );
     if (data.session) return void toast.success("가입을 환영합니다!"); // 이메일 인증 설정이 꺼진 경우 즉시 로그인
     setWait(RESEND_WAIT);
     setStep(4);
   };
 
   const resend = async () => {
-    const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: window.location.origin } });
+    if (needCap()) return;
+    const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: window.location.origin, captchaToken: cap.token } });
+    cap.reset();
     if (error) return toast.error("잠시 후 다시 시도해 주세요");
     toast.success("인증 메일을 다시 보냈어요");
     setWait(RESEND_WAIT);
@@ -90,9 +103,11 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
 
   // 인증을 마쳤다고 눌렀을 때: 가입 때 입력한 비밀번호로 로그인해 보고, 아직이면 안내한다
   const checkVerified = async () => {
+    if (needCap()) return;
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pw, options: { captchaToken: cap.token } });
     setBusy(false);
+    cap.reset();
     if (error) toast.error(error.message.toLowerCase().includes("confirm") ? "아직 이메일 인증이 확인되지 않았어요. 메일의 인증 링크를 눌러 주세요" : "로그인하지 못했어요. 로그인 탭에서 다시 시도해 주세요");
   };
 
@@ -134,6 +149,7 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
         {step === 3 && (
           <>
             <ExtraFields value={extra} onChange={setExtra} onNickStatus={setNickOk} />
+            {cap.widget}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => setStep(2)}>이전</Button>
               <Button className="flex-1" disabled={busy}>{busy ? "가입 중…" : "가입하고 인증 메일 받기"}</Button>
@@ -148,6 +164,7 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
               <p className="mt-1 break-all text-sm text-muted">{email}</p>
               <p className="mt-2 text-sm text-muted">메일의 인증 링크를 누르면 가입이 완료되고 바로 로그인돼요. 메일이 안 보이면 스팸함도 확인해 주세요.</p>
             </div>
+            {cap.widget}
             <Button type="button" className="w-full" onClick={checkVerified} disabled={busy}>인증을 마쳤어요</Button>
             <Button type="button" variant="outline" className="w-full" onClick={resend} disabled={wait > 0}>{wait > 0 ? `인증 메일 다시 받기 (${wait}초)` : "인증 메일 다시 받기"}</Button>
             <button type="button" onClick={() => onDone?.()} className="text-sm text-muted underline hover:text-foreground">로그인 화면으로</button>

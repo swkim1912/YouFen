@@ -9,7 +9,7 @@ import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Input, Label, Textarea } from "./ui/input";
 import { PlayerPicker, type PickedPlayer } from "./PlayerPicker";
-import { cn } from "@/lib/utils";
+import { NOTE_MAX, cn } from "@/lib/utils";
 
 /** 점수 검증 (모든 기록 입력에서 공통 사용). 오류 메시지 또는 null */
 export function validateScore(target: number, a: number, b: number): string | null {
@@ -66,7 +66,8 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
     }
     // 피드백 노트가 있으면 함께 저장 (본인만 열람 가능)
     if (note.trim()) {
-      await supabase.from("feedback_notes").insert({ user_id: user.id, game_id: data.id, content: note.trim() });
+      const { error: noteErr } = await supabase.from("feedback_notes").insert({ user_id: user.id, game_id: data.id, content: note.trim() });
+      if (noteErr) toast.error(`기록은 저장했지만 노트는 저장하지 못했어요: ${noteErr.message}`); // 예: 하루 노트 50개 초과
     }
     setBusy(false);
     toast.success(finalKind === "OPEN" ? "오픈 기록 등록! 상대방의 수락을 기다립니다" : "기록이 저장되었습니다");
@@ -115,8 +116,8 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
         <span className="w-20 truncate text-sm">{opp?.name ?? "상대"}</span>
       </div>
       <div className="mb-4">
-        <Label>피드백 노트 (선택, 나만 볼 수 있어요)</Label>
-        <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 식스 빠라드 후 반격이 늦었다" />
+        <Label>피드백 노트 (선택, 나만 볼 수 있어요, {note.length}/{NOTE_MAX}자)</Label>
+        <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 식스 빠라드 후 반격이 늦었다" maxLength={NOTE_MAX} />
       </div>
       <Button className="w-full" onClick={submit} disabled={busy}>
         완료

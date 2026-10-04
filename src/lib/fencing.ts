@@ -1,5 +1,7 @@
 // 랭킹·대회·선수 화면이 함께 쓰는 상수/타입/헬퍼.
 // 점수제도 설계는 docs/SCORING.md 참고. 점수는 DB 함수 private.refresh_scores() 가 계산해 pool_scores / event_scores 에 저장해 둔다.
+import { toast } from "sonner";
+import { supabase } from "./supabase";
 
 /** 랭킹 탭: 동호인 대회(엘리트부 제외) / 동호인 대회의 엘리트부 / 협회·연맹 대회 */
 export const TABS = ["동호인", "엘리트", "전문선수"] as const;
@@ -143,14 +145,17 @@ export function fmtRange(start: string | null, end: string | null) {
   return end && end !== start ? `${fmtDay(start)} – ${fmtDay(end)}` : fmtDay(start);
 }
 
-/** 한 번에 1000행을 넘는 조회를 이어 붙여 가져온다 (Supabase API 기본 상한 1000행) */
-export async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>, max = 20000): Promise<T[]> {
-  const out: T[] = [];
-  for (let from = 0; from < max; from += 1000) {
-    const { data } = await build(from, from + 999);
-    if (!data?.length) break;
-    out.push(...data);
-    if (data.length < 1000) break;
+/**
+ * 수집 데이터(대회·선수·랭킹) 조회. 표(테이블)를 직접 읽지 않고 화면별 DB 함수(data_*)만 부른다.
+ * - 이유: 누군가 API 로 대회 데이터를 통째로 긁어 가지 못하게 표 직접 조회는 막혀 있고,
+ *   DB 함수는 정해진 범위(선수 1명, 종목 1개, 풀 1개 등)만 돌려주며 접속 IP 별 요청 횟수를 센다(분당 120회·시간당 2,000회).
+ * - 한도를 넘으면 안내 문구를 띄우고 fallback(빈 값)을 돌려준다.
+ */
+export async function publicData<T>(fn: string, args: Record<string, unknown>, fallback: T): Promise<T> {
+  const { data, error } = await supabase.rpc(fn, args);
+  if (error) {
+    if (error.code === "RATE") toast.error(error.message, { id: "rate-limit" });
+    return fallback;
   }
-  return out;
+  return (data ?? fallback) as T;
 }

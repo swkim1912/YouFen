@@ -10,7 +10,7 @@ import { Input, Label, Textarea } from "./ui/input";
 import { Dot } from "./ui/dot";
 import { validateScore } from "./NewRecordModal";
 import type { RecordView } from "@/lib/records";
-import { fmtDate } from "@/lib/utils";
+import { NOTE_MAX, fmtDate } from "@/lib/utils";
 
 const KIND_LABEL = { PRIVATE: "프라이빗", OPEN: "오픈", TOURNAMENT: "대회" } as const;
 
@@ -132,8 +132,8 @@ export function GameDetailModal({
       )}
       {rec.status === "ACCEPTED" && <p className="mb-3 text-xs text-muted">확정된 오픈/대회 기록은 수정·삭제할 수 없습니다</p>}
 
-      <Label>내 피드백 노트 (나만 볼 수 있어요)</Label>
-      <Textarea value={note} onChange={(e) => setNote(e.target.value)} />
+      <Label>내 피드백 노트 (나만 볼 수 있어요, {note.length}/{NOTE_MAX}자)</Label>
+      <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={NOTE_MAX} />
       <Button className="mt-2 w-full" onClick={saveNote}>노트 저장</Button>
 
       <Confirm open={confirmDel} message="이 프라이빗 기록을 삭제할까요?" onOk={del} onCancel={() => setConfirmDel(false)} okText="삭제" />

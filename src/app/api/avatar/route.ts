@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   const { data: me } = await admin.from("profiles").select("avatar_locked").eq("id", uid).maybeSingle();
   if (me?.avatar_locked) return fail(403, "프로필 사진 등록이 제한된 계정입니다. 문의해 주세요");
 
-  // 한도 확인 (Vision 호출 기록 기준): 사용자별 24시간 + 전체 이번 달(UTC 월초부터)
+  // 한도 미리 확인 (Vision 호출 기록 기준, 사진 처리 전에 빨리 거절하기 위함): 사용자별 24시간 + 전체 이번 달(UTC 월초부터)
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { count: mine } = await admin.from("avatar_vision_calls").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", since);
   if ((mine ?? 0) >= DAILY_LIMIT) return fail(429, `사진 변경은 하루 ${DAILY_LIMIT}회까지 가능해요. 내일 다시 시도해 주세요`);
@@ -97,8 +97,12 @@ export async function POST(req: Request) {
     return fail(400, "이미지를 읽을 수 없어요. 다른 사진으로 시도해 주세요");
   }
 
-  // 여기부터 Vision 을 실제로 호출한다 → 호출 기록을 먼저 남긴다(거절·실패한 시도도 한도에 센다)
-  await admin.from("avatar_vision_calls").insert({ user_id: uid });
+  // 여기부터 Vision 을 실제로 호출한다 → 한도 확인과 호출 기록을 DB 함수 하나로 한 번에 처리한다(거절·실패한 시도도 한도에 센다).
+  // 위의 확인은 빠른 안내용이고, 동시에 여러 요청을 보내 한도를 넘는 것은 이 함수(잠금 후 확인·기록)가 막는다.
+  const { data: slot, error: slotErr } = await admin.rpc("reserve_vision_call", { p_uid: uid, p_daily: DAILY_LIMIT, p_monthly: MONTHLY_LIMIT });
+  if (slotErr) return fail(503, "사진 검사를 할 수 없어 지금은 등록할 수 없어요. 잠시 후 다시 시도해 주세요");
+  if (slot === "daily") return fail(429, `사진 변경은 하루 ${DAILY_LIMIT}회까지 가능해요. 내일 다시 시도해 주세요`);
+  if (slot !== "ok") return fail(503, "이번 달 사진 등록 가능 횟수를 모두 사용했어요. 기본 프로필은 계속 쓸 수 있고, 사진 등록은 다음 달에 다시 열려요");
   try {
     const reason = await moderate(jpeg);
     if (reason) return fail(422, reason);

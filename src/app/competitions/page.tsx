@@ -6,9 +6,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { FilterRow } from "@/components/FilterRow";
-import { supabase } from "@/lib/supabase";
 import {
-  AGES, GENDER_VALUES, TABS, WEAPON_VALUES, agesFor, ageLabel, fmtRange, genderLabel, weaponLabel,
+  AGES, GENDER_VALUES, TABS, WEAPON_VALUES, agesFor, ageLabel, fmtRange, genderLabel, publicData, weaponLabel,
   type Age, type GenderValue, type Tab, type WeaponValue,
 } from "@/lib/fencing";
 
@@ -54,14 +53,9 @@ function Inner() {
     setYear("전체");
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("comp_events")
-        .select("id,division,entrants,start_date,competition:competitions(id,name,start_date,end_date),winner:athletes!winner_athlete_id(id,name)")
-        .eq("tab", tab).eq("age", curAge).eq("gender", gender).eq("weapon", weapon)
-        .gt("entrants", 0)
-        .order("start_date", { ascending: false })
-        .limit(1000);
-      if (!cancelled) setRows((data ?? []) as unknown as Row[]);
+      // 그 종목이 열린 대회 목록(최신순)을 DB 함수 data_comp_events 로 받는다
+      const data = await publicData<Row[]>("data_comp_events", { p_tab: tab, p_age: curAge, p_gender: gender, p_weapon: weapon }, []);
+      if (!cancelled) setRows(data);
     })();
     return () => { cancelled = true; };
   }, [tab, curAge, gender, weapon]);

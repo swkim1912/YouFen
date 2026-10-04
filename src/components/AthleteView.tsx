@@ -21,7 +21,7 @@ import { fetchUserRecords, type RecordView } from "@/lib/records";
 import type { FeedbackNote, Profile } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import {
-  fetchAll, fmtDay, genderLabel, poolLabel, rankColor, roundLabel, tierColor, weaponLabel, ageLabel,
+  fmtDay, genderLabel, publicData, poolLabel, rankColor, roundLabel, tierColor, weaponLabel, ageLabel,
   type AthleteRow, type EventMeta, type MatchRow, type PoolKey, type PoolScore,
 } from "@/lib/fencing";
 import { cn, fmtDate } from "@/lib/utils";
@@ -115,39 +115,20 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
     let cancelled = false;
     (async () => {
       setAthlete(undefined);
-      const { data: a } = await supabase.from("athletes").select("id,name,gender,is_registered,club_id,linked_profile_id,club:clubs(name)").eq("id", athleteId).maybeSingle();
+      // 선수 + 풀 점수 + 출전 기록 + 대회 점수 + 경기 + 상대 선수 정보를 한 번에 (DB 함수 data_athlete)
+      const r = await publicData<{
+        athlete: AthleteRow | null; pools?: PoolScore[]; entries?: EntryRow[]; scores?: EventScore[]; matches?: MatchRow[];
+        opps?: { id: number; name: string; is_registered: boolean; club: { name: string } | null }[];
+      } | null>("data_athlete", { p_id: athleteId }, null);
       if (cancelled) return;
-      if (!a) return setAthlete(null);
-      const [ps, es, sc, ms] = await Promise.all([
-        supabase.from("pool_scores").select("*").eq("athlete_id", athleteId),
-        supabase
-          .from("comp_entries")
-          .select("event_id,team_name,poule_rank,final_rank,poule_no,event:comp_events(id,name,division,tab,age,weapon,gender,entrants,has_ed,start_date,competition:competitions(id,name,start_date,end_date))")
-          .eq("athlete_id", athleteId),
-        supabase.from("event_scores").select("event_id,score,steps,total_steps").eq("athlete_id", athleteId),
-        fetchAll<MatchRow>((f, t) =>
-          supabase
-            .from("comp_matches")
-            .select("id,event_id,stage,poule_no,round_size,match_sym,a_athlete,b_athlete,a_score,b_score,winner,third_place")
-            .or(`a_athlete.eq.${athleteId},b_athlete.eq.${athleteId}`)
-            .order("id")
-            .range(f, t)
-        ),
-      ]);
-      if (cancelled) return;
-      const oppIds = [...new Set(ms.map((m) => (m.a_athlete === athleteId ? m.b_athlete : m.a_athlete)))];
+      if (!r?.athlete) return setAthlete(null);
       const oppMap = new Map<number, { name: string; club: string | null; reg: boolean }>();
-      for (let i = 0; i < oppIds.length; i += 150) {
-        const { data } = await supabase.from("athletes").select("id,name,is_registered,club:clubs(name)").in("id", oppIds.slice(i, i + 150));
-        for (const o of (data ?? []) as unknown as { id: number; name: string; is_registered: boolean; club: { name: string } | null }[])
-          oppMap.set(o.id, { name: o.name, club: o.club?.name ?? null, reg: o.is_registered });
-      }
-      if (cancelled) return;
-      setAthlete(a as unknown as AthleteRow);
-      setPools((ps.data ?? []) as PoolScore[]);
-      setEntries((es.data ?? []) as unknown as EntryRow[]);
-      setScores(new Map(((sc.data ?? []) as EventScore[]).map((s) => [s.event_id, s])));
-      setMatches(ms);
+      for (const o of r.opps ?? []) oppMap.set(o.id, { name: o.name, club: o.club?.name ?? null, reg: o.is_registered });
+      setAthlete(r.athlete);
+      setPools(r.pools ?? []);
+      setEntries(r.entries ?? []);
+      setScores(new Map((r.scores ?? []).map((s) => [s.event_id, s])));
+      setMatches(r.matches ?? []);
       setOpp(oppMap);
     })();
     return () => { cancelled = true; };

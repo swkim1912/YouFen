@@ -1,5 +1,5 @@
 // 클럽(소속팀) 이미지 서버 API. 이미지는 clubs.image_url 로 쓰이며, 프로필 사진의 기본값(소속팀 이미지)이 된다.
-//  POST   multipart(file, club_id)  관리자: 바로 등록 / 해당 클럽 소속 '지도자'(profiles.role='지도자', club_id 일치): 승인 대기 신청(관리자가 눈으로 확인 후 승인)
+//  POST   multipart(file, club_id)  관리자: 바로 등록 / 해당 클럽 소속 '승인된 지도자'(profiles.role='지도자', leader_status='approved', club_id 일치): 승인 대기 신청(관리자가 눈으로 확인 후 승인)
 //  PATCH  {id, action: "approve" | "reject"}  관리자: 신청 승인(이미지 반영) / 반려(파일 삭제)
 //  DELETE ?club_id=<id>             관리자: 클럽 이미지 제거(기본 글자 표시로 돌아감)
 // 보안: 버킷 club-images 는 읽기만 공개이고 쓰기 정책이 없어 이 API(서비스 키)로만 쓸 수 있다.
@@ -38,9 +38,10 @@ export async function POST(req: Request) {
   if (!club) return fail(404, "클럽을 찾을 수 없어요");
 
   if (!a.isAdmin) {
-    // 지도자 신청 자격: 신분이 지도자이고 소속 클럽이 같아야 한다
-    const { data: me } = await a.admin.from("profiles").select("role,club_id").eq("id", a.uid).maybeSingle();
+    // 지도자 신청 자격: 관리자 승인을 받은 지도자(leader_status='approved')이고 소속 클럽이 같아야 한다
+    const { data: me } = await a.admin.from("profiles").select("role,club_id,leader_status").eq("id", a.uid).maybeSingle();
     if (me?.role !== "지도자" || me.club_id !== clubId) return fail(403, "소속 클럽의 지도자만 신청할 수 있어요");
+    if (me.leader_status !== "approved") return fail(403, "관리자의 지도자 승인을 받은 뒤 신청할 수 있어요");
     const { count: pendingClub } = await a.admin.from("club_image_requests").select("id", { count: "exact", head: true }).eq("club_id", clubId).eq("status", "pending");
     if ((pendingClub ?? 0) > 0) return fail(409, "이미 검토 중인 신청이 있어요. 결과가 나온 뒤 다시 신청해 주세요");
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();

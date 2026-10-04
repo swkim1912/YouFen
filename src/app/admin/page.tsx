@@ -1,5 +1,5 @@
 "use client";
-// 관리자 페이지(/admin): 탭 — 현황 / 공지 / 데이터 갱신 / 고객지원 / 사진 신고 / 선수 연결 / 클럽 / 회원.
+// 관리자 페이지(/admin): 탭 — 현황 / 공지 / 데이터 갱신 / 고객지원 / 사진 신고 / 선수 연결 / 지도자 승인 / 클럽 / 회원.
 // - 관리자 권한(profiles.is_admin)은 Supabase 대시보드 SQL 로만 부여한다(웹에서는 부여·변경 불가).
 //   예) update public.profiles set is_admin = true where email = '가입한 이메일';
 // - 화면 보호는 보조 수단이고, 실제 권한 검사는 DB(RLS 정책·RPC 의 is_admin_user())와 서버 API(authed().isAdmin)가 한다.
@@ -14,18 +14,19 @@ import { ReportsAdmin } from "@/components/admin/ReportsAdmin";
 import { ClaimsAdmin } from "@/components/admin/ClaimsAdmin";
 import { ClubsAdmin } from "@/components/admin/ClubsAdmin";
 import { MembersAdmin } from "@/components/admin/MembersAdmin";
+import { LeadersAdmin } from "@/components/admin/LeadersAdmin";
 import { supabase } from "@/lib/supabase";
 import { fmtDateTime } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
 
 interface Overview {
-  users: number; linked_athletes: number; claims: number; support_new: number; avatar_reports: number; club_requests: number; clubs_review: number;
+  users: number; linked_athletes: number; claims: number; support_new: number; avatar_reports: number; club_requests: number; leaders_pending: number; clubs_review: number;
   teams: number; clubs: number; players: number; competitions: number; last_competition: string | null; events: number;
   last_done: Record<string, string>;
 }
 interface AuditRow { id: number; action: string; target: string | null; detail: Record<string, unknown> | null; created_at: string; admin_nickname: string | null }
 
-type Tab = "home" | "notice" | "refresh" | "support" | "reports" | "claims" | "clubs" | "members";
+type Tab = "home" | "notice" | "refresh" | "support" | "reports" | "claims" | "leaders" | "clubs" | "members";
 
 const ACTION: Record<string, string> = {
   avatar_lock: "사진 변경 제한", avatar_unlock: "사진 제한 해제", avatar_remove: "사진 삭제", avatar_remove_lock: "사진 삭제+제한",
@@ -33,7 +34,7 @@ const ACTION: Record<string, string> = {
   claim_resolved: "연결 문의 처리", claim_rejected: "연결 문의 반려", claim_open: "연결 문의 되돌림", athlete_unlink: "선수 연결 해제",
   club_confidence: "클럽 확인 표시", club_rename: "클럽 이름 변경", club_merge: "클럽 병합",
   club_image_set: "클럽 이미지 등록", club_image_approve: "클럽 이미지 승인", club_image_reject: "클럽 이미지 반려", club_image_remove: "클럽 이미지 제거",
-  suspend: "이용 정지", unsuspend: "정지 해제",
+  suspend: "이용 정지", unsuspend: "정지 해제", leader_approve: "지도자 승인", leader_reject: "지도자 반려",
 };
 
 export default function AdminPage() {
@@ -64,11 +65,11 @@ function Admin() {
   const TABS: [Tab, string, number | undefined][] = [
     ["home", "현황", undefined], ["notice", "공지", undefined], ["refresh", "데이터 갱신", undefined],
     ["support", "고객지원", ov?.support_new], ["reports", "사진 신고", ov?.avatar_reports], ["claims", "선수 연결", ov?.claims],
-    ["clubs", "클럽", (ov?.club_requests ?? 0) || undefined], ["members", "회원", undefined],
+    ["leaders", "지도자 승인", ov?.leaders_pending], ["clubs", "클럽", (ov?.club_requests ?? 0) || undefined], ["members", "회원", undefined],
   ];
   const cards: [string, string | number | undefined][] = [
     ["회원", ov?.users], ["연결된 선수", ov?.linked_athletes], ["새 고객지원 접수", ov?.support_new], ["미처리 사진 신고", ov?.avatar_reports],
-    ["미처리 선수 연결 문의", ov?.claims], ["클럽 이미지 신청 대기", ov?.club_requests], ["확인 필요 클럽", ov?.clubs_review],
+    ["미처리 선수 연결 문의", ov?.claims], ["지도자 승인 대기", ov?.leaders_pending], ["클럽 이미지 신청 대기", ov?.club_requests], ["확인 필요 클럽", ov?.clubs_review],
     ["협회 팀 / 클럽", ov ? `${ov.teams} / ${ov.clubs}` : undefined], ["협회 선수", ov?.players],
     ["대회 / 종목", ov ? `${ov.competitions} / ${ov.events}` : undefined], ["가장 최근 대회", ov?.last_competition ?? undefined],
   ];
@@ -115,6 +116,7 @@ function Admin() {
       {tab === "support" && <SupportAdmin onChanged={loadOv} />}
       {tab === "reports" && <ReportsAdmin onChanged={loadOv} />}
       {tab === "claims" && <ClaimsAdmin onChanged={loadOv} />}
+      {tab === "leaders" && <LeadersAdmin onChanged={loadOv} />}
       {tab === "clubs" && <ClubsAdmin onChanged={loadOv} />}
       {tab === "members" && <MembersAdmin />}
     </div>

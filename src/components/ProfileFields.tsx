@@ -123,6 +123,10 @@ export function ExtraFields({
           </Select>
         </div>
       </div>
+      {/* 지도자는 관리자 승인제: 고르면 승인 대기 상태로 저장되고, 승인 전에는 '지도자(승인 대기)'로 보인다 (DB 트리거 profiles_guard) */}
+      {value.role === "지도자" && (
+        <p className="-mt-1 text-xs text-muted">지도자는 관리자 확인 후 승인돼요. 승인 전에는 프로필에 &apos;지도자(승인 대기)&apos;로 표시되고, 소속 클럽을 바꾸면 다시 확인을 받아요.</p>
+      )}
       <NicknameField
         value={value.nickname}
         onChange={(nickname) => onChange({ ...value, nickname })}

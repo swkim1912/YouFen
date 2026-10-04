@@ -9,7 +9,8 @@ import { AppShell } from "@/components/AppShell";
 import { ProfileView } from "@/components/ProfileView";
 import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
-import { PUBLIC_COLS } from "@/lib/utils";
+import { PUBLIC_COLS, roleLabel } from "@/lib/utils";
+import { publicData } from "@/lib/fencing";
 import { Dot } from "@/components/ui/dot";
 import { Avatar } from "@/components/Avatar";
 import { athletesOfMembers, isMergeable, membersOfAthletes, type MemberBrief } from "@/lib/members";
@@ -51,11 +52,12 @@ function Inner() {
     (async () => {
       const [u, a] = await Promise.all([
         supabase.from("profiles").select(PUBLIC_COLS).ilike("nickname", `%${q}%`).not("nickname", "is", null).limit(20),
-        supabase.from("athletes").select("id,name,is_registered,linked_profile_id,club:clubs(name)").ilike("name", `%${q}%`).order("is_registered", { ascending: false }).order("name").limit(30),
+        // 선수 이름 검색: 협회 원장 등록 선수 먼저, 최대 30명 (DB 함수 data_search_athletes)
+        publicData<AthleteHit[]>("data_search_athletes", { p_q: q, p_limit: 30 }, []),
       ]);
       if (cancelled) return;
       const r = (u.data ?? []) as Profile[];
-      let ath = (a.data ?? []) as unknown as AthleteHit[];
+      let ath = a;
       // 닉네임으로 찾은 회원 중 선수와 연결된 회원(학부모 제외)은 회원 카드 대신 '선수 페이지'로 합친다
       const linked = await athletesOfMembers(r.map((p) => p.id));
       const merged = r.filter((p) => isMergeable(p) && (linked.get(p.id)?.length ?? 0) > 0);
@@ -93,7 +95,7 @@ function Inner() {
               <Avatar avatarUrl={p.avatar_url} clubId={p.club_id} affiliation={p.affiliation} nickname={p.nickname} size={40} />
               <span>
                 <span className="flex items-center gap-1.5 font-bold"><Dot member />{p.nickname}</span>
-                <span className="text-xs text-muted">{p.weapon} / {p.role} · {p.affiliation}</span>
+                <span className="text-xs text-muted">{p.weapon} / {roleLabel(p)} · {p.affiliation}</span>
               </span>
             </button>
           ))}

@@ -13,6 +13,7 @@ import { Logo } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MIN_PASSWORD } from "@/lib/legal";
 import { validatePassword } from "@/lib/password";
+import { useTurnstile } from "@/components/Turnstile";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function ResetPasswordPage() {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
+  const cap = useTurnstile(); // 재설정 메일 대량 발송 방지
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((e) => {
@@ -33,10 +35,14 @@ export default function ResetPasswordPage() {
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email)) return toast.error("올바른 이메일을 입력해 주세요");
+    if (!cap.ready) return toast.error("자동가입 방지 확인을 마친 뒤 다시 눌러 주세요");
     setBusy(true);
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password`, captchaToken: cap.token });
     setBusy(false);
-    setSent(true); // 가입 여부와 상관없이 같은 안내
+    cap.reset();
+    // 가입 여부와 상관없이 같은 안내 (자동가입 방지 확인 실패만 따로 알린다)
+    if (error?.message.toLowerCase().includes("captcha")) return toast.error("자동가입 방지 확인에 실패했어요. 다시 시도해 주세요");
+    setSent(true);
   };
 
   const save = async (e: React.FormEvent) => {
@@ -75,7 +81,8 @@ export default function ResetPasswordPage() {
               <h1 className="text-xl font-extrabold">비밀번호 재설정</h1>
               <p className="text-sm text-muted">가입한 이메일을 입력하면 재설정 링크를 보내드려요.</p>
               <div><Label>이메일</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required /></div>
-              <Button className="w-full" disabled={busy}>재설정 메일 보내기</Button>
+              {cap.widget}
+              <Button className="w-full" disabled={busy || !cap.ready}>재설정 메일 보내기</Button>
               <Link href="/login" className="block text-center text-sm text-muted underline hover:text-foreground">로그인 화면으로</Link>
             </form>
           )}
