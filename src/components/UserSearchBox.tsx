@@ -70,7 +70,7 @@ export function UserSearchBox() {
 
   return (
     <form
-      className="relative ml-auto flex items-center gap-1"
+      className="relative ml-auto flex min-w-0 items-center gap-1"
       onSubmit={(e) => {
         e.preventDefault();
         if (q.trim()) go(q.trim());
@@ -81,12 +81,12 @@ export function UserSearchBox() {
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)} // 클릭 처리 후 닫기
-        placeholder="유저·선수 이름 검색"
-        className="h-9 w-44 rounded-md border border-line bg-panel2 px-3 text-sm outline-none focus:border-brand sm:w-56"
+        placeholder="유저·선수 검색"
+        className="h-9 w-36 min-w-0 rounded-md border border-line bg-panel2 px-3 text-sm outline-none focus:border-brand sm:w-56"
       />
       <Button size="sm" type="submit" aria-label="검색"><Search size={16} /></Button>
       {open && q.trim() && hits && (
-        <div className="absolute right-0 top-11 z-40 w-72 rounded-md border border-line bg-panel p-1 shadow-lg">
+        <div className="absolute right-0 top-11 z-40 w-[calc(100vw-1.5rem)] max-w-72 rounded-md border border-line bg-panel p-1 shadow-lg">
           {hits.length === 0 && aHits.length === 0 && <div className="px-3 py-2 text-sm text-muted">검색 결과가 없습니다</div>}
           {hits.map((h) => (
             <button

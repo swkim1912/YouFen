@@ -7,12 +7,15 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { ExtraFields, emptyExtra, validateExtra } from "@/components/ProfileFields";
+import { ConsentChecks, emptyConsent, isConsentComplete } from "@/components/auth/ConsentChecks";
+import { CONSENT_VERSION } from "@/lib/legal";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, profile, loading, refreshProfile } = useAuth();
   const [extra, setExtra] = useState(emptyExtra);
   const [nickOk, setNickOk] = useState(false);
+  const [consent, setConsent] = useState(emptyConsent);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -26,7 +29,14 @@ export default function OnboardingPage() {
     const err = validateExtra(extra);
     if (err) return toast.error(err);
     if (!nickOk) return toast.error("사용할 수 없는 닉네임입니다");
+    if (!isConsentComplete(consent)) return toast.error("필수 약관에 모두 동의해 주세요");
     setBusy(true);
+    // 동의 기록(만 14세 이상 확인 포함)은 전용 RPC 로만 저장된다
+    const { data: c } = await supabase.rpc("record_consent", { p_version: CONSENT_VERSION });
+    if (!(c as { ok: boolean } | null)?.ok) {
+      setBusy(false);
+      return toast.error((c as { message?: string } | null)?.message ?? "동의를 저장하지 못했어요");
+    }
     const { error } = await supabase.from("profiles").update({ ...extra, onboarded: true }).eq("id", user!.id);
     setBusy(false);
     if (error) return toast.error(error.message.includes("duplicate") ? "이미 사용 중인 닉네임입니다" : error.message);
@@ -40,6 +50,7 @@ export default function OnboardingPage() {
         <h1 className="text-center text-xl font-bold">추가 정보 입력</h1>
         <p className="text-center text-sm text-muted">서비스 이용을 위해 몇 가지만 더 알려주세요</p>
         <ExtraFields value={extra} onChange={setExtra} onNickStatus={setNickOk} />
+        <ConsentChecks value={consent} onChange={setConsent} />
         <Button className="w-full" disabled={busy}>시작하기</Button>
       </form>
     </div>

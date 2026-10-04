@@ -69,7 +69,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
   const { user } = useAuth();
   // 연결된 유펜 회원(학부모 제외): 선수 페이지에 닉네임·회원 전적을 합쳐 보여준다
   const [member, setMember] = useState<{ id: string; nickname: string; role: string | null; avatar_url: string | null; club_id: number | null; affiliation: string | null; hide_records: boolean } | null>(null);
-  const [tierMode, setTierMode] = useState<"대회" | "종합" | "오픈">("대회");
+  const [tierMode, setTierMode] = useState<"대회" | "종합" | "오픈">("종합") // 기본은 종합 점수;
   const [memberRecs, setMemberRecs] = useState<RecordView[] | null>(null); // 연결 회원의 전적 (null = 불러오는 중)
   const [notes, setNotes] = useState<(FeedbackNote & { game?: RecordView })[]>([]);
   const [detail, setDetail] = useState<RecordView | null>(null);
@@ -80,7 +80,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
   const linkedId = athlete?.linked_profile_id ?? null;
   useEffect(() => {
     setMember(null);
-    setTierMode("대회");
+    setTierMode("종합");
     if (!linkedId) return;
     let live = true;
     supabase.from("profiles").select("id,nickname,role,avatar_url,club_id,affiliation,hide_records").eq("id", linkedId).maybeSingle().then(({ data }) => {
@@ -346,8 +346,8 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
       {/* 티어: 유펜 회원과 연동되면 종합/오픈 탭이 열린다 */}
       <section className="rounded-lg border border-line bg-panel p-4">
         <div className="mb-3 flex flex-wrap items-center gap-1">
-          {(["대회", "종합", "오픈"] as const).map((l) => {
-            const enabled = l === "대회" || !!member; // 종합/오픈은 유펜 회원과 연결된 선수만
+          {(["종합", "오픈", "대회"] as const).map((l) => {
+            const enabled = l !== "오픈" || !!member; // 오픈은 유펜 회원과 연결된 선수만 (종합은 오픈 집계 전까지 대회 점수와 같음)
             return (
               <button key={l} disabled={!enabled} onClick={() => setTierMode(l)} title={enabled ? undefined : "유펜 회원과 연결된 선수만 볼 수 있습니다"}
                 className={cn("rounded px-3 py-1 text-sm", tierMode === l ? "bg-brand text-white" : enabled ? "text-muted hover:bg-white/5" : "cursor-not-allowed text-muted/50")}>{l}</button>
@@ -396,7 +396,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
         )}
       </section>
 
-      {member && tierMode === "종합" && <p className="-mt-2 text-xs text-muted">종합 점수는 오픈게임 기록이 집계되기 전까지 대회 점수와 같습니다.</p>}
+      {tierMode === "종합" && <p className="-mt-2 text-xs text-muted">종합 점수는 오픈게임 기록이 집계되기 전까지 대회 점수와 같습니다.</p>}
 
       {/* 최근 추이 */}
       <section className="rounded-lg border border-line bg-panel p-4">
@@ -495,23 +495,26 @@ export function AthleteView({ athleteId, initialPool, initialSeason, own }: { at
             const w = evViews.filter((v) => v.win).length;
             return (
               <div key={e.event_id} className="rounded-md bg-panel2">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
-                  <span className="w-20 shrink-0 text-xs text-muted">{fmtDay(e.event.start_date)}</span>
-                  <span className="min-w-0 flex-1">
-                    <Link href={`/competitions/${e.event.competition.id}?event=${e.event_id}`} className="font-medium hover:text-brand">{e.event.competition.name}</Link>
-                    <span className="ml-2 text-xs text-muted">{e.event.division ?? "오픈"} · {e.event.entrants}명</span>
+                {/* 넓은 화면: 한 줄(날짜·대회명·순위·점수·경기) / 좁은 화면: 대회명 줄 + 순위·점수 줄 */}
+                <div className="flex flex-col gap-1 px-3 py-2 text-sm sm:flex-row sm:items-center sm:gap-3">
+                  <span className="hidden w-20 shrink-0 text-xs text-muted sm:block">{fmtDay(e.event.start_date)}</span>
+                  <span className="min-w-0 sm:flex-1">
+                    <Link href={`/competitions/${e.event.competition.id}?event=${e.event_id}`} className="break-keep font-medium hover:text-brand">{e.event.competition.name}</Link>
+                    <span className="ml-2 text-xs text-muted">{e.event.division ?? "오픈"} · {e.event.entrants}명<span className="sm:hidden"> · {fmtDay(e.event.start_date)}</span></span>
                     <span className="block truncate text-xs text-muted">{e.team_name}</span>
                   </span>
-                  <span className="w-14 text-right text-xs text-muted">뿔 {e.poule_rank ? `${e.poule_rank}위` : "-"}</span>
-                  <span className="w-14 text-right font-bold" style={{ color: rankColor(e.final_rank) }}>{e.final_rank ? `${e.final_rank}위` : "-"}</span>
-                  <span className="w-12 text-right font-semibold">{sc?.score != null ? Math.round(sc.score) : "-"}</span>
-                  <button
-                    disabled={evViews.length === 0}
-                    onClick={() => setOpen((s) => { const n = new Set(s); if (n.has(e.event_id)) n.delete(e.event_id); else n.add(e.event_id); return n; })}
-                    className="flex items-center gap-0.5 text-xs text-brand disabled:text-muted/40"
-                  >
-                    경기 {evViews.length}<ChevronDown size={12} className={cn("transition-transform", isOpen && "rotate-180")} />
-                  </button>
+                  <span className="flex items-center gap-3 sm:contents">
+                    <span className="text-xs text-muted sm:w-14 sm:text-right">뿔 {e.poule_rank ? `${e.poule_rank}위` : "-"}</span>
+                    <span className="font-bold sm:w-14 sm:text-right" style={{ color: rankColor(e.final_rank) }}>{e.final_rank ? `${e.final_rank}위` : "-"}</span>
+                    <span className="font-semibold sm:w-12 sm:text-right">{sc?.score != null ? Math.round(sc.score) : "-"}<span className="ml-0.5 text-[10px] font-normal text-muted sm:hidden">점</span></span>
+                    <button
+                      disabled={evViews.length === 0}
+                      onClick={() => setOpen((s) => { const n = new Set(s); if (n.has(e.event_id)) n.delete(e.event_id); else n.add(e.event_id); return n; })}
+                      className="ml-auto flex items-center gap-0.5 text-xs text-brand disabled:text-muted/40 sm:ml-0"
+                    >
+                      경기 {evViews.length}<ChevronDown size={12} className={cn("transition-transform", isOpen && "rotate-180")} />
+                    </button>
+                  </span>
                 </div>
                 {isOpen && (
                   <div className="space-y-1 border-t border-line px-3 py-2">
@@ -592,24 +595,32 @@ function RateBar({ label, t }: { label: string; t: { wins: number; losses: numbe
   );
 }
 
-/** 경기 한 줄: 승/패 · vs 상대(클릭 시 상대 프로필) · 점수 · 단계 [· 대회/날짜] */
+/** 경기 한 줄: 승/패 · vs 상대(클릭 시 상대 프로필) · 점수 · 단계 [· 대회/날짜]
+ *  좁은 화면에서는 한 줄에 다 넣지 않고 둘째 줄(단계 · 대회 · 날짜)로 내려서 상대 이름이 잘리지 않게 한다. */
 function MatchLine({ v, opp, linkQ, withComp = false }: { v: MView; opp?: { name: string; club: string | null; reg: boolean }; linkQ: string; withComp?: boolean }) {
+  const comp = (
+    <Link href={`/competitions/${v.ev.competition.id}?event=${v.ev.id}`} className="hover:text-brand">{v.ev.competition.name}</Link>
+  );
   return (
-    <div className={cn("flex items-center gap-3 rounded-md border-l-4 bg-panel2 px-3 py-2 text-sm", v.win ? "border-win" : "border-loss")}>
-      <span className={cn("w-6 font-bold", v.win ? "text-win" : "text-loss")}>{v.win ? "승" : "패"}</span>
-      <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
-        vs <Dot member={false} />
-        <Link href={`/athletes/${v.oppId}?${linkQ}`} className="font-medium hover:text-brand">{opp?.name ?? "-"}</Link>
-        {opp?.club && <span className="hidden truncate text-xs text-muted sm:inline">{opp.club}</span>}
-      </span>
-      <span className="w-16 text-right font-semibold">{v.mine ?? "—"} : {v.theirs ?? "—"}</span>
-      <span className="w-20 text-right text-xs text-muted">{v.label}</span>
-      {withComp && (
-        <span className="hidden max-w-[10rem] truncate text-xs text-muted md:inline">
-          <Link href={`/competitions/${v.ev.competition.id}?event=${v.ev.id}`} className="hover:text-brand">{v.ev.competition.name}</Link>
+    <div className={cn("rounded-md border-l-4 bg-panel2 px-3 py-2 text-sm", v.win ? "border-win" : "border-loss")}>
+      <div className="flex items-center gap-3">
+        <span className={cn("w-6 shrink-0 font-bold", v.win ? "text-win" : "text-loss")}>{v.win ? "승" : "패"}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5">
+          <span className="shrink-0">vs</span><Dot member={false} />
+          <Link href={`/athletes/${v.oppId}?${linkQ}`} className="truncate font-medium hover:text-brand">{opp?.name ?? "-"}</Link>
+          {opp?.club && <span className="hidden truncate text-xs text-muted sm:inline">{opp.club}</span>}
         </span>
-      )}
-      {withComp && <span className="w-20 text-right text-xs text-muted">{fmtDay(v.date)}</span>}
+        <span className="shrink-0 text-right font-semibold">{v.mine ?? "—"} : {v.theirs ?? "—"}</span>
+        <span className="hidden w-20 shrink-0 text-right text-xs text-muted sm:block">{v.label}</span>
+        {withComp && <span className="hidden max-w-[10rem] truncate text-xs text-muted md:inline">{comp}</span>}
+        {withComp && <span className="hidden w-20 shrink-0 text-right text-xs text-muted sm:block">{fmtDay(v.date)}</span>}
+      </div>
+      {/* 좁은 화면 둘째 줄 */}
+      <div className="mt-0.5 flex items-center gap-1.5 pl-9 text-xs text-muted sm:hidden">
+        <span className="shrink-0">{v.label}</span>
+        {withComp && <span className="min-w-0 truncate">· {comp}</span>}
+        {withComp && <span className="ml-auto shrink-0">{fmtDay(v.date)}</span>}
+      </div>
     </div>
   );
 }

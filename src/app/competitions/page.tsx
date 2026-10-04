@@ -97,22 +97,26 @@ function Inner() {
         <p className="py-16 text-center text-muted">해당 종목의 대회 기록이 없습니다</p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-line bg-panel">
-          <div className="grid grid-cols-[6.5rem_1fr_5rem_3.5rem] items-center gap-3 border-b border-line bg-panel2 px-3 py-2 text-xs text-muted sm:grid-cols-[9rem_1fr_7rem_4rem]">
+          {/* 표 머리글은 넓은 화면에서만 (좁은 화면은 카드형 두 줄) */}
+          <div className="hidden grid-cols-[9rem_1fr_7rem_4rem] items-center gap-3 border-b border-line bg-panel2 px-3 py-2 text-xs text-muted sm:grid">
             <span>날짜</span><span>대회명</span><span>우승</span><span className="text-right">참가</span>
           </div>
           {shown.map((r) => (
             <Link
               key={r.id}
               href={`/competitions/${r.competition.id}?event=${r.id}`}
-              className="grid grid-cols-[6.5rem_1fr_5rem_3.5rem] items-center gap-3 border-b border-line px-3 py-3 text-sm last:border-0 hover:bg-white/5 sm:grid-cols-[9rem_1fr_7rem_4rem]"
+              className="block border-b border-line px-3 py-3 text-sm last:border-0 hover:bg-white/5 sm:grid sm:grid-cols-[9rem_1fr_7rem_4rem] sm:items-center sm:gap-3"
             >
-              <span className="text-xs text-muted">{fmtRange(r.competition.start_date, r.competition.end_date)}</span>
-              <span className="min-w-0">
-                <span className="block truncate font-medium">{r.competition.name}</span>
-                <span className="text-xs text-muted">{r.division ?? "오픈"}</span>
+              <span className="hidden text-xs text-muted sm:block">{fmtRange(r.competition.start_date, r.competition.end_date)}</span>
+              <span className="block min-w-0">
+                <span className="block break-keep font-medium sm:truncate">{r.competition.name}</span>
+                <span className="text-xs text-muted">{r.division ?? "오픈"}<span className="sm:hidden"> · {fmtRange(r.competition.start_date, r.competition.end_date)}</span></span>
               </span>
-              <span className="truncate font-semibold">{r.winner?.name ?? "-"}</span>
-              <span className="text-right text-muted">{r.entrants}명</span>
+              {/* 좁은 화면: 우승·참가를 둘째 줄에 한꺼번에 */}
+              <span className="mt-1 flex items-center gap-2 text-xs sm:contents">
+                <span className="truncate font-semibold sm:text-sm"><span className="font-normal text-muted sm:hidden">우승 </span>{r.winner?.name ?? "-"}</span>
+                <span className="ml-auto shrink-0 text-muted sm:ml-0 sm:text-right sm:text-sm">{r.entrants}명</span>
+              </span>
             </Link>
           ))}
         </div>

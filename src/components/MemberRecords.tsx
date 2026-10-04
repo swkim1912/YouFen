@@ -55,13 +55,17 @@ export function MemberRecords({
                 key={r.key}
                 disabled={!clickable}
                 onClick={() => onSelect?.(r)}
-                className={cn("flex w-full items-center gap-3 rounded-md border-l-4 bg-panel2 px-3 py-2 text-left text-sm", r.pending ? "border-yellow-400" : r.win ? "border-win" : "border-loss", clickable && "hover:bg-white/5")}
+                className={cn("w-full rounded-md border-l-4 bg-panel2 px-3 py-2 text-left text-sm", r.pending ? "border-yellow-400" : r.win ? "border-win" : "border-loss", clickable && "hover:bg-white/5")}
               >
-                <span className={cn("w-8 font-bold", r.win ? "text-win" : "text-loss")}>{r.pending ? "대기" : r.win ? "승" : "패"}</span>
-                <span className="flex flex-1 items-center gap-1.5 truncate">vs <Dot member={r.oppIsMember} />{r.oppName}</span>
-                <span className="font-semibold">{r.mine ?? "-"} : {r.theirs ?? "-"}</span>
-                <span className="hidden text-xs text-muted sm:inline">{r.kindLabel}</span>
-                <span className="text-xs text-muted">{r.dateText}</span>
+                <span className="flex items-center gap-3">
+                  <span className={cn("w-8 shrink-0 font-bold", r.win ? "text-win" : "text-loss")}>{r.pending ? "대기" : r.win ? "승" : "패"}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="shrink-0">vs</span><Dot member={r.oppIsMember} /><span className="truncate">{r.oppName}</span></span>
+                  <span className="shrink-0 font-semibold">{r.mine ?? "-"} : {r.theirs ?? "-"}</span>
+                  <span className="hidden shrink-0 text-xs text-muted sm:inline">{r.kindLabel}</span>
+                  <span className="hidden shrink-0 text-xs text-muted sm:inline">{r.dateText}</span>
+                </span>
+                {/* 좁은 화면 둘째 줄: 기록 종류 · 날짜 */}
+                <span className="mt-0.5 flex gap-2 pl-11 text-xs text-muted sm:hidden"><span>{r.kindLabel}</span><span className="ml-auto">{r.dateText}</span></span>
               </button>
             );
           })}

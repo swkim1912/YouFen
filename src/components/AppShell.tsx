@@ -1,5 +1,6 @@
 "use client";
 // 모든 페이지의 공통 틀: 상단 바 + 우측 메뉴바('+' 버튼이 최상단).
+// - 좁은 화면(md 미만): 우측 메뉴바는 숨기고, 상단 바 아래에 보조 메뉴 줄 + 화면 아래 탭바(+ 버튼은 오른쪽 아래에 떠 있음)로 바꿔 보여준다.
 // - 비로그인 사용자도 사이트(랭킹·검색·기록지)를 볼 수 있다.
 // - requireAuth 가 true 인 페이지(마이페이지·피드백 노트)만 로그인으로 보낸다.
 import Link from "next/link";
@@ -8,6 +9,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, ChevronDown, ClipboardList, Home, LogIn, Medal, NotebookPen, Plus, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
+import { Logo } from "./Logo";
+import { SiteFooter } from "./SiteFooter";
+import { ConsentGate } from "./auth/ConsentGate";
 import { NewRecordModal } from "./NewRecordModal";
 import { UserSearchBox } from "./UserSearchBox";
 import { Modal } from "./ui/modal";
@@ -68,13 +72,18 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
   const itemCls = (active: boolean) =>
     cn("flex w-full flex-col items-center gap-0.5 py-2 text-[11px]", active ? "text-brand" : "text-muted hover:text-foreground");
 
+  // 좁은 화면용 스타일: 보조 메뉴 줄 항목 / 아래 탭바 항목
+  const mobLink = "shrink-0 whitespace-nowrap px-2.5 py-2 text-muted hover:text-foreground";
+  const tabCls = (active: boolean) =>
+    cn("flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]", active ? "text-brand" : "text-muted hover:text-foreground");
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* 상단 바 */}
       <header className="sticky top-0 z-30 border-b border-line bg-panel">
-        <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 pr-24">
-          <Link href={loggedIn ? "/" : "/ranking"} className="text-lg font-extrabold text-brand">
-            유펜<span className="ml-1 text-xs font-normal text-muted">YouFen</span>
+        <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-3 sm:gap-4 sm:px-4 md:pr-24">
+          <Link href={loggedIn ? "/" : "/ranking"} aria-label="유펜 YouFen 홈" className="shrink-0">
+            <Logo />
           </Link>
           <nav className="hidden items-center gap-4 text-sm md:flex">
             <button onClick={soon} className="text-muted hover:text-foreground">오픈피스트</button>
@@ -84,10 +93,22 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
           </nav>
           <UserSearchBox />
         </div>
+        {/* 좁은 화면 전용 보조 메뉴 줄(가로 스크롤) — 넓은 화면에서는 위 nav 가 대신한다 */}
+        <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 text-sm md:hidden">
+          <button onClick={soon} className={mobLink}>오픈피스트</button>
+          <button onClick={soon} className={mobLink}>커뮤니티</button>
+          <button onClick={soon} className={mobLink}>아카데미</button>
+          <Link href="/methodology" className={cn(mobLink, path === "/methodology" && "text-foreground")}>점수 안내</Link>
+          {loggedIn ? (
+            <button onClick={signOut} className={cn(mobLink, "ml-auto")}>로그아웃</button>
+          ) : (
+            <Link href="/login" className={cn(mobLink, "ml-auto text-brand")}>로그인</Link>
+          )}
+        </nav>
       </header>
 
       {/* 우측 메뉴바: 로그인 시 최상단 '+' = 게임 기록 추가 */}
-      <aside className="fixed right-0 top-14 z-20 flex h-[calc(100vh-3.5rem)] w-20 flex-col items-center gap-1 overflow-y-auto border-l border-line bg-panel py-3">
+      <aside className="fixed right-0 top-14 z-20 hidden md:flex h-[calc(100vh-3.5rem)] w-20 flex-col items-center gap-1 overflow-y-auto border-l border-line bg-panel py-3">
         {loggedIn && (
           <>
             <button
@@ -132,7 +153,42 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
         </div>
       </aside>
 
-      <main key={refreshKey} className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 pr-24">{children}</main>
+      <main key={refreshKey} className="mx-auto w-full max-w-5xl min-w-0 flex-1 overflow-x-clip px-3 py-4 sm:px-4 md:py-5 md:pr-24">{children}</main>
+
+      {/* 좁은 화면: 게임 기록 추가(+) 떠 있는 버튼과 아래 탭바 */}
+      {loggedIn && (
+        <button
+          onClick={() => setShowNew(true)}
+          aria-label="게임 기록 추가"
+          className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-lg md:hidden"
+        >
+          <Plus size={26} />
+        </button>
+      )}
+      {sheetOpen && (
+        <div className="fixed inset-x-0 bottom-14 z-30 flex justify-center gap-2 border-t border-line bg-panel2 py-2 text-sm md:hidden">
+          <Link href="/sheet/pool" className={cn("rounded px-4 py-1.5", path === "/sheet/pool" ? "text-brand" : "text-muted")}>개인전 기록지</Link>
+          <Link href="/sheet/team" className={cn("rounded px-4 py-1.5", path === "/sheet/team" ? "text-brand" : "text-muted")}>단체전 기록지</Link>
+        </div>
+      )}
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-stretch border-t border-line bg-panel md:hidden">
+        {loggedIn && <Link href="/" className={tabCls(path === "/")}><Home size={20} />마이 펜싱</Link>}
+        <Link href="/ranking" className={tabCls(path === "/ranking" || path.startsWith("/athletes"))}><Trophy size={20} />랭킹</Link>
+        <Link href="/competitions" className={tabCls(path.startsWith("/competitions"))}><Medal size={20} />대회</Link>
+        <button onClick={() => setSheetOpen((o) => !o)} className={tabCls(path.startsWith("/sheet"))}><ClipboardList size={20} />기록지</button>
+        {loggedIn && (
+          <>
+            <button onClick={() => setShowNoti(true)} className={cn(tabCls(false), "relative")}>
+              <Bell size={20} />알림
+              {pending.length > 0 && <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] text-white">{pending.length}</span>}
+            </button>
+            <Link href="/notes" className={tabCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>
+          </>
+        )}
+      </nav>
+
+      <SiteFooter className="pb-20 md:pb-5" />
+      {loggedIn && <ConsentGate />}
 
       {loggedIn && <NewRecordModal open={showNew} onClose={() => setShowNew(false)} onSaved={() => setRefreshKey((k) => k + 1)} />}
 

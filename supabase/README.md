@@ -22,6 +22,7 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 16. `avatars_moderation_reports_club_image` — 버킷 `avatars`(쓰기 정책 없음), `guard_avatar_url` 트리거, `avatar_reports`/`avatar_uploads`, `profiles.avatar_locked`, `clubs.image_url`, RPC `admin_remove_avatar`.
 18. `profiles_public_columns_grant_and_no_example` — `profiles.club_id/avatar_locked` 공개 컬럼 SELECT 권한, 연결 RPC 메시지에서 번호 예시 제거.
 19. `athletes_linked_profile_id` — `athletes.linked_profile_id`(연결 회원 id, 트리거 유지).
+20. `consent_and_support_tickets` — `profiles.consent_version/consent_at/age14_confirmed`(+`profiles_guard`·`handle_new_user` 갱신, 14세 미만 차단), RPC `record_consent`, `support_tickets`(RLS 본인·관리자) + RPC `submit_support`(속도 제한).
 17. `avatar_vision_calls` — Vision 호출 기록(월·일 한도 계산용, 서버만 접근).
 
 ## 대회 결과 데이터

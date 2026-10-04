@@ -19,6 +19,9 @@ export interface Profile {
   is_admin: boolean;
   onboarded: boolean;
   nickname_changed_at: string | null;
+  consent_version: string | null; // 동의한 약관 버전(없으면 아직 동의 전 → ConsentGate)
+  consent_at: string | null;
+  age14_confirmed: boolean;
 }
 
 export type RecordKind = "PRIVATE" | "OPEN" | "TOURNAMENT";
