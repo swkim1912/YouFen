@@ -13,14 +13,18 @@ import { FilterRow } from "@/components/FilterRow";
 import { Podium, type PodiumEntry } from "@/components/Podium";
 import { TierPill } from "@/components/TierBadge";
 import { supabase } from "@/lib/supabase";
+import { isMergeable } from "@/lib/members";
 import {
   AGES, GENDER_VALUES, MODES, TABS, WEAPON_VALUES, agesFor, ageLabel, fmtDay, genderLabel, rankColor, tierColor, weaponLabel,
   type Age, type GenderValue, type Mode, type PoolScore, type Season, type Tab, type WeaponValue,
 } from "@/lib/fencing";
 
 interface Row extends PoolScore {
-  athlete: { id: number; name: string } | null;
+  athlete: { id: number; name: string; club_id: number | null; linked_profile_id: string | null } | null;
 }
+
+/** 포디움 사진용 연결 회원 정보 (선수 페이지 헤더와 같은 규칙으로 사진을 고르기 위해 필요한 것만) */
+interface PodiumMember { id: string; role: string | null; avatar_url: string | null; club_id: number | null; affiliation: string | null }
 
 export default function RankingPage() {
   return (
@@ -75,7 +79,7 @@ function Ranking() {
     (async () => {
       let qy = supabase
         .from("pool_scores")
-        .select("athlete_id,season,tab,age,weapon,gender,n_events,n_eff,tour_score,placed,pool_rank,pool_size,tier,best_score,current_team,first_date,last_date,athlete:athletes(id,name)")
+        .select("athlete_id,season,tab,age,weapon,gender,n_events,n_eff,tour_score,placed,pool_rank,pool_size,tier,best_score,current_team,first_date,last_date,athlete:athletes(id,name,club_id,linked_profile_id)")
         .eq("season", season).eq("tab", tab).eq("age", curAge).eq("gender", gender).eq("weapon", weapon);
       if (!withUnplaced) qy = qy.eq("placed", true);
       const { data } = await qy.order("placed", { ascending: false }).order("pool_rank", { ascending: true, nullsFirst: false }).order("tour_score", { ascending: false }).limit(1000);
@@ -88,11 +92,31 @@ function Ranking() {
   const hrefOf = (id: number) => `/athletes/${id}?${poolQuery}`;
 
   const placed = useMemo(() => (rows ?? []).filter((r) => r.placed), [rows]);
+  // 1~3위 중 유펜 회원과 연결된 선수는 그 회원의 사진 설정을 읽어 온다(학부모 계정은 합치지 않으므로 제외 — 선수 페이지와 같은 규칙)
+  const topLinked = placed.slice(0, 3).map((r) => r.athlete?.linked_profile_id).filter((x): x is string => !!x).join(",");
+  const [podMembers, setPodMembers] = useState<Record<string, PodiumMember>>({});
+  useEffect(() => {
+    if (!topLinked) return setPodMembers({});
+    let live = true;
+    supabase.from("profiles").select("id,role,avatar_url,club_id,affiliation").in("id", topLinked.split(",")).then(({ data }) => {
+      if (!live) return;
+      const m: Record<string, PodiumMember> = {};
+      for (const p of (data ?? []) as PodiumMember[]) if (isMergeable(p)) m[p.id] = p;
+      setPodMembers(m);
+    });
+    return () => { live = false; };
+  }, [topLinked]);
+
+  // 포디움 사진 = 선수 페이지(AthleteView) 헤더 사진과 같은 규칙:
+  //   연결 회원 사진 설정 → (없으면) 소속 클럽 이미지(회원 클럽, 없으면 선수 클럽) → 소속팀 이름 첫 글자 → 선수 이름 첫 글자
   const podium: (PodiumEntry | undefined)[] = [0, 1, 2].map((i) => {
     const r = placed[i];
-    return r?.athlete
-      ? { athleteId: r.athlete_id, name: r.athlete.name, team: r.current_team, score: r.tour_score, tier: r.tier, href: hrefOf(r.athlete_id) }
-      : undefined;
+    if (!r?.athlete) return undefined;
+    const mem = r.athlete.linked_profile_id ? podMembers[r.athlete.linked_profile_id] : undefined;
+    return {
+      athleteId: r.athlete_id, name: r.athlete.name, team: r.current_team, score: r.tour_score, tier: r.tier, href: hrefOf(r.athlete_id),
+      avatar: { avatarUrl: mem?.avatar_url ?? null, clubId: mem?.club_id ?? r.athlete.club_id ?? null, affiliation: mem?.affiliation ?? r.current_team },
+    };
   });
 
   const shown = useMemo(() => {

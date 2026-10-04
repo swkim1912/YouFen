@@ -40,3 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.example
+
+# 디자인 스킬(impeccable·taste-skill) 로컬 설치 폴더
+.claude/
+
+# 스킬 설치 도구가 만드는 기록 파일
+skills-lock.json

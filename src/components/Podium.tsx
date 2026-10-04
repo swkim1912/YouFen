@@ -2,6 +2,7 @@
 // 랭킹 상단의 포디움: 2위 - 1위 - 3위 순서로 계단을 세우고 이름/소속/점수를 보여준다. 누르면 선수 프로필로 이동.
 import Link from "next/link";
 import { tierColor } from "@/lib/fencing";
+import { Avatar } from "@/components/Avatar";
 import { cn } from "@/lib/utils";
 
 export interface PodiumEntry {
@@ -11,6 +12,8 @@ export interface PodiumEntry {
   score: number;
   tier: string | null;
   href: string;
+  /** 프로필 사진 재료(선수 페이지 헤더와 같은 값): 회원 사진 설정, 소속 클럽, 소속 이름 */
+  avatar: { avatarUrl: string | null; clubId: number | null; affiliation: string | null };
 }
 
 const MEDAL = ["#e5c14b", "#c0c6d4", "#cd8b4a"]; // 금 / 은 / 동
@@ -26,11 +29,9 @@ export function Podium({ top }: { top: (PodiumEntry | undefined)[] }) {
         if (!e) return <div key={col} className="min-w-0 flex-1 sm:w-28 sm:flex-none" />;
         return (
           <Link key={e.athleteId} href={e.href} className="group flex min-w-0 flex-1 flex-col items-center sm:w-28 sm:flex-none">
-            <div
-              className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-panel2 text-lg font-bold group-hover:brightness-125"
-              style={{ boxShadow: `0 0 0 2px ${tierColor(e.tier)}`, color: tierColor(e.tier) }}
-            >
-              {e.name[0]}
+            {/* 프로필 사진: 선수 페이지와 같은 Avatar(회원 사진 → 클럽 이미지 → 소속 첫 글자), 테두리는 티어 색 */}
+            <div className="mb-1 rounded-full group-hover:brightness-125" style={{ boxShadow: `0 0 0 2px ${tierColor(e.tier)}` }}>
+              <Avatar avatarUrl={e.avatar.avatarUrl} clubId={e.avatar.clubId} affiliation={e.avatar.affiliation} nickname={e.name} size={48} />
             </div>
             <span className="max-w-full truncate text-sm font-bold group-hover:text-brand">{e.name}</span>
             <span className="max-w-full truncate text-[11px] text-muted">{e.team ?? "소속 없음"}</span>
