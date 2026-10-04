@@ -25,9 +25,9 @@ export function Modal({
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#03080e]/75 p-4 backdrop-blur-[2px]" onMouseDown={onClose}>
       <div
-        className={`max-h-[90vh] w-full overflow-y-auto rounded-lg border border-line bg-panel p-5 shadow-xl ${wide ? "max-w-2xl" : "max-w-md"}`}
+        className={`max-h-[90vh] w-full overflow-y-auto rounded-lg border border-line bg-panel p-5 shadow-2xl shadow-black/50 ${wide ? "max-w-2xl" : "max-w-md"}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

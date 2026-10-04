@@ -32,7 +32,7 @@ export function ConsentGate() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#03080e]/80 p-4 backdrop-blur-[2px]">
       <div className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-lg border border-line bg-panel p-5 shadow-xl" role="dialog" aria-modal="true" aria-label="약관 동의">
         <div>
           <h2 className="text-lg font-bold">이용약관 동의가 필요해요</h2>

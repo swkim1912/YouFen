@@ -35,7 +35,7 @@ export function MemberRecords({
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="mr-2 font-bold">최근 전적 <span className="text-xs font-normal text-muted">유펜 회원 · {nickname}</span></h3>
         {(["ALL", "OPEN", "TOURNAMENT", ...(isMe ? (["PRIVATE"] as const) : [])] as Filter[]).map((f) => (
-          <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand text-white" : "text-muted hover:bg-white/5")}>
+          <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
             {LABEL[f]}
           </button>
         ))}
@@ -55,7 +55,7 @@ export function MemberRecords({
                 key={r.key}
                 disabled={!clickable}
                 onClick={() => onSelect?.(r)}
-                className={cn("w-full rounded-md border-l-4 bg-panel2 px-3 py-2 text-left text-sm", r.pending ? "border-yellow-400" : r.win ? "border-win" : "border-loss", clickable && "hover:bg-white/5")}
+                className={cn("w-full rounded-md py-2 pl-4 pr-3 text-left text-sm", r.pending ? "bg-pending/[0.08]" : r.win ? "bg-win/[0.08]" : "bg-loss/[0.07]", clickable && "hover:brightness-125")}
               >
                 <span className="flex items-center gap-3">
                   <span className={cn("w-8 shrink-0 font-bold", r.win ? "text-win" : "text-loss")}>{r.pending ? "대기" : r.win ? "승" : "패"}</span>

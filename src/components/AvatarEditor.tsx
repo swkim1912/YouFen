@@ -134,7 +134,7 @@ export function AvatarEditor({
                 <canvas ref={canvasRef} style={{ width: PREVIEW, height: PREVIEW, cursor: "grab" }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />
                 {/* 작은 프로필(원)에 보이는 범위 */}
                 {showCircle && <svg className="pointer-events-none absolute inset-0" width={PREVIEW} height={PREVIEW} aria-hidden>
-                  <circle cx={PREVIEW / 2} cy={PREVIEW / 2} r={PREVIEW / 2 - 2} fill="none" stroke="#c6f432" strokeWidth="2" strokeDasharray="6 5" />
+                  <circle cx={PREVIEW / 2} cy={PREVIEW / 2} r={PREVIEW / 2 - 2} fill="none" stroke="#5cc8f2" strokeWidth="2" strokeDasharray="6 5" />
                 </svg>}
                 {!bmp && <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">불러오는 중…</div>}
               </div>
@@ -163,7 +163,7 @@ export function AvatarEditor({
             </div>
             <p className="text-xs text-muted">
               권장 {OUT}×{OUT}px 이상 · 원본 12MB 이하 · {OUT}×{OUT}px로 저장 · JPG·PNG·WebP 권장. {transparent ? "로고가 점선 원 안에 모두 들어오게 맞춰주세요." : "얼굴이 점선 원 안에 오도록 맞춰주세요."}
-              {small && <span className="mt-1 block text-yellow-400">이 사진은 {OUT}px보다 작아서 흐릿하게 보일 수 있어요.</span>}
+              {small && <span className="mt-1 block text-pending">이 사진은 {OUT}px보다 작아서 흐릿하게 보일 수 있어요.</span>}
             </p>
           </>
         )}

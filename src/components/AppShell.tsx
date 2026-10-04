@@ -81,7 +81,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
   return (
     <div className="flex min-h-screen flex-col">
       {/* 상단 바 */}
-      <header className="sticky top-0 z-30 border-b border-line bg-panel">
+      <header className="sticky top-0 z-30 border-b border-line bg-panel/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-3 sm:gap-4 sm:px-4 md:pr-24">
           <Link href={loggedIn ? "/" : "/ranking"} aria-label="유펜 YouFen 홈" className="shrink-0">
             <Logo />
@@ -116,7 +116,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             <button
               onClick={() => setShowNew(true)}
               aria-label="게임 기록 추가"
-              className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white hover:bg-brand/90"
+              className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand font-semibold text-brand-ink hover:bg-brand/90"
             >
               <Plus size={26} />
             </button>
@@ -163,7 +163,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
         <button
           onClick={() => setShowNew(true)}
           aria-label="게임 기록 추가"
-          className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-lg md:hidden"
+          className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand font-semibold text-brand-ink shadow-lg md:hidden"
         >
           <Plus size={26} />
         </button>

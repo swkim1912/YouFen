@@ -27,17 +27,18 @@ export function Podium({ top }: { top: (PodiumEntry | undefined)[] }) {
         return (
           <Link key={e.athleteId} href={e.href} className="group flex min-w-0 flex-1 flex-col items-center sm:w-28 sm:flex-none">
             <div
-              className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-panel2 text-lg font-bold ring-2 group-hover:brightness-125"
-              style={{ boxShadow: `0 0 0 2px ${tierColor(e.tier)}` }}
+              className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-panel2 text-lg font-bold group-hover:brightness-125"
+              style={{ boxShadow: `0 0 0 2px ${tierColor(e.tier)}`, color: tierColor(e.tier) }}
             >
               {e.name[0]}
             </div>
-            <span className="max-w-full truncate text-sm font-bold">{e.name}</span>
+            <span className="max-w-full truncate text-sm font-bold group-hover:text-brand">{e.name}</span>
             <span className="max-w-full truncate text-[11px] text-muted">{e.team ?? "소속 없음"}</span>
             <span className="mb-1 text-xs font-semibold" style={{ color: tierColor(e.tier) }}>{e.score}점</span>
+            {/* 단: 원색 덩어리 대신 메달색 윗선 + 위에서 아래로 옅어지는 메달색 채움, 숫자는 메달색 */}
             <div
-              className={cn("flex w-full items-start justify-center rounded-t-md pt-1.5 text-xl font-extrabold text-black/80", heights[col])}
-              style={{ backgroundColor: MEDAL[idx] }}
+              className={cn("flex w-full items-start justify-center rounded-t-md border-t-2 pt-1.5 text-xl font-extrabold transition-[filter] group-hover:brightness-125", heights[col])}
+              style={{ borderColor: MEDAL[idx], color: MEDAL[idx], backgroundImage: `linear-gradient(${MEDAL[idx]}40, ${MEDAL[idx]}0d)` }}
             >
               {idx + 1}
             </div>

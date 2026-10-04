@@ -21,7 +21,7 @@ export default function MethodologyPage() {
     <AppShell>
       <div className="mx-auto max-w-3xl space-y-5">
         <header>
-          <div className="text-[10px] font-bold tracking-wide text-loss">SCORING SYSTEM</div>
+          <div className="text-[11px] font-bold tracking-[0.08em] text-brand">SCORING SYSTEM</div>
           <h1 className="text-3xl font-extrabold">점수는 어떻게 계산될까요?</h1>
           <p className="mt-1 text-sm text-muted">대한펜싱협회 대회 결과로 한 대회의 성적을 점수로 바꾸고, 최근 기록을 더 크게 반영해 현재 실력 점수를 만듭니다.</p>
         </header>

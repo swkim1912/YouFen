@@ -87,7 +87,7 @@ function Inner() {
   if (comp === null) return <p className="py-16 text-center text-muted">대회를 찾을 수 없습니다</p>;
 
   const chip = (active: boolean, disabled = false) =>
-    cn("rounded px-3 py-1.5 text-sm", active ? "bg-brand text-white" : "bg-panel text-muted hover:text-foreground", disabled && "pointer-events-none opacity-30");
+    cn("rounded px-3 py-1.5 text-sm", active ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground", disabled && "pointer-events-none opacity-30");
 
   return (
     <div className="space-y-4">
@@ -225,7 +225,7 @@ function MatchesSection({ entries, matches, byId, nameLink, poolQ }: { entries: 
     <section className="rounded-lg border border-line bg-panel p-4">
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <div className="text-[10px] font-bold tracking-wide text-loss">MATCHES</div>
+          <div className="text-[11px] font-bold tracking-[0.08em] text-brand">MATCHES</div>
           <h2 className="text-lg font-bold">경기 기록</h2>
         </div>
         <span className="text-sm text-muted">{matches.length}경기</span>

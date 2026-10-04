@@ -133,7 +133,7 @@ function ActiveJob({ job, onCancel }: { job: Job; onCancel: () => void }) {
       </div>
       <ol className="flex flex-wrap gap-1 text-[11px]">
         {phases.map(([k, label], i) => (
-          <li key={k} className={cn("rounded px-2 py-0.5", i < cur ? "bg-win/20 text-win" : i === cur ? "bg-brand text-white" : "bg-white/10 text-muted")}>{label}</li>
+          <li key={k} className={cn("rounded px-2 py-0.5", i < cur ? "bg-win/20 text-win" : i === cur ? "bg-brand font-semibold text-brand-ink" : "bg-white/10 text-muted")}>{label}</li>
         ))}
       </ol>
       <p className="text-xs text-muted">{job.message}</p>

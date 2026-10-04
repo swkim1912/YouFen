@@ -3,13 +3,13 @@
 import type { RecordView } from "./records";
 
 export const TIERS = [
-  { name: "브론즈", min: 0, color: "#b4753d" },
-  { name: "실버", min: 150, color: "#a8b3c4" },
-  { name: "골드", min: 350, color: "#f1c24b" },
-  { name: "플래티넘", min: 600, color: "#3fc8b5" },
-  { name: "다이아몬드", min: 900, color: "#5b8cff" },
-  { name: "마스터", min: 1300, color: "#b46bff" },
-  { name: "챌린저", min: 1800, color: "#ff6b81" },
+  { name: "브론즈", min: 0, color: "#cf8a5c" },
+  { name: "실버", min: 150, color: "#b3c0cd" },
+  { name: "골드", min: 350, color: "#d9a63a" },
+  { name: "플래티넘", min: 600, color: "#4cc9be" },
+  { name: "다이아몬드", min: 900, color: "#8196ff" },
+  { name: "마스터", min: 1300, color: "#bf83f2" },
+  { name: "챌린저", min: 1800, color: "#ffd76a" },
 ] as const;
 
 const OPEN_WIN = 20, OPEN_LOSS = -8, TOUR_WIN = 40, TOUR_LOSS = -10;

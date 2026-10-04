@@ -20,7 +20,7 @@ const ITEMS: { key: keyof ConsentState; label: string; href?: string }[] = [
 export function ConsentChecks({ value, onChange }: { value: ConsentState; onChange: (v: ConsentState) => void }) {
   const all = isConsentComplete(value);
   const box = (on: boolean) => (
-    <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded border", on ? "border-brand bg-brand text-white" : "border-line bg-panel2")}>{on && <Check size={14} />}</span>
+    <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded border", on ? "border-brand bg-brand font-semibold text-brand-ink" : "border-line bg-panel2")}>{on && <Check size={14} />}</span>
   );
   return (
     <div className="space-y-2">

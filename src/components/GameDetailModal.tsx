@@ -109,7 +109,7 @@ export function GameDetailModal({
           {view.mine} : {view.theirs}
         </div>
         <div className="flex items-center justify-center gap-1.5 text-sm">vs <Dot member={!!view.oppId} />{view.oppName} · {view.win ? "승" : "패"}</div>
-        {rec.status === "PENDING" && <div className="mt-1 text-xs text-yellow-400">수락 대기 중 (전적 미반영)</div>}
+        {rec.status === "PENDING" && <div className="mt-1 text-xs text-pending">수락 대기 중 (전적 미반영)</div>}
       </div>
 
       {rec.status === "PENDING" && view.isCreator && (

@@ -122,7 +122,7 @@ function Team() {
   const save = async () => {
     if (!sheetRef.current) return;
     try {
-      const url = await toPng(sheetRef.current, { backgroundColor: "#1c1c1f", pixelRatio: 2 });
+      const url = await toPng(sheetRef.current, { backgroundColor: "#0b1520", pixelRatio: 2 });
       const a = document.createElement("a");
       a.href = url;
       a.download = `${info.title || "team-match-sheet"}.png`;

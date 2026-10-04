@@ -142,7 +142,7 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
         )}
         {step === 4 && (
           <div className="space-y-4 text-center">
-            <MailCheck size={44} className="mx-auto text-[#0CA4E1]" />
+            <MailCheck size={44} className="mx-auto text-brand" />
             <div>
               <p className="font-bold">인증 메일을 보냈어요</p>
               <p className="mt-1 break-all text-sm text-muted">{email}</p>
