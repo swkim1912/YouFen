@@ -1,7 +1,7 @@
 // 링크 미리보기(카카오톡·문자·SNS) 대표 이미지 1200×630. 빌드할 때 한 번 만들어 정적 파일로 내보낸다(요청마다 그리지 않음).
 // 하위 페이지도 따로 정하지 않으면 이 이미지를 같이 쓴다. Next 가 og:image / twitter:image 태그를 자동으로 넣는다.
-// 디자인: 로그인 화면(AuthLanding)과 같은 브랜드 네이비 바탕 + 피스트 사선 무늬 + Sky 빛 번짐, 가운데 로고와 문구, 아래 티어 엠블럼 사다리.
-// 글꼴: npm pretendard 의 OTF(빌드 때만 읽음, 외부 다운로드 없음). 로고·엠블럼은 public/ 의 SVG 를 그대로 넣는다.
+// 디자인: 로그인 화면(AuthLanding)과 같은 브랜드 네이비 바탕 + 피스트 사선 무늬 + Sky 빛 번짐, 가운데 로고와 문구.
+// 글꼴: npm pretendard 의 OTF(빌드 때만 읽음, 외부 다운로드 없음). 로고는 public/ 의 SVG 를 그대로 넣는다.
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -13,7 +13,6 @@ export const contentType = "image/png";
 const W = 1200;
 const H = 630;
 const SKY = "#0CA4E1";
-const TIERS = ["bronze", "silver", "gold", "platinum", "diamond", "master", "challenger"] as const;
 
 const dataUri = (svg: Buffer | string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 
@@ -38,11 +37,10 @@ function backgroundSvg() {
 
 export default async function Image() {
   const root = process.cwd();
-  const [font, fontBold, logo, ...emblems] = await Promise.all([
+  const [font, fontBold, logo] = await Promise.all([
     readFile(join(root, "node_modules/pretendard/dist/public/static/Pretendard-SemiBold.otf")),
     readFile(join(root, "node_modules/pretendard/dist/public/static/Pretendard-ExtraBold.otf")),
     readFile(join(root, "public/brand/yf-logo-horizontal-dark.svg")),
-    ...TIERS.map((t) => readFile(join(root, `public/tier/emblems/${t}-sm.svg`))),
   ]);
 
   return new ImageResponse(
@@ -51,7 +49,7 @@ export default async function Image() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={dataUri(backgroundSvg())} width={W} height={H} alt="" style={{ position: "absolute", left: 0, top: 0 }} />
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", paddingTop: 106 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", height: "100%", justifyContent: "center", paddingBottom: 10 }}>
           {/* 작은 문구: — All You need to Fence */}
           <div style={{ display: "flex", alignItems: "center", fontSize: 26, fontWeight: 600, color: "rgba(255,255,255,0.82)", letterSpacing: 1 }}>
             <div style={{ width: 44, height: 2, background: SKY, marginRight: 16 }} />
@@ -63,20 +61,12 @@ export default async function Image() {
 
           {/* 로고 (1111×279 비율) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={dataUri(logo)} width={598} height={150} alt="" style={{ marginTop: 34 }} />
+          <img src={dataUri(logo)} width={677} height={170} alt="" style={{ marginTop: 38 }} />
 
           {/* 한 줄 소개 */}
-          <div style={{ display: "flex", marginTop: 30, fontSize: 40, fontWeight: 800, letterSpacing: -0.5 }}>
+          <div style={{ display: "flex", marginTop: 34, fontSize: 44, fontWeight: 800, letterSpacing: -0.5 }}>
             <span>내 전적부터 시즌 티어까지,&nbsp;</span>
             <span style={{ color: SKY }}>한 곳에서.</span>
-          </div>
-
-          {/* 티어 엠블럼 사다리 (낮음 → 높음) */}
-          <div style={{ display: "flex", alignItems: "flex-end", marginTop: 46, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
-            {emblems.map((svg, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={TIERS[i]} src={dataUri(svg)} width={64} height={64} alt="" style={{ margin: "0 14px", transform: `translateY(${(TIERS.length - 1 - i) * -3}px)` }} />
-            ))}
           </div>
         </div>
       </div>

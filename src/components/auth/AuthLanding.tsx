@@ -88,8 +88,9 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
           <div className="mt-6 max-w-xl sm:mt-8">
             <p className="mb-2 text-xs text-white/40">시즌 티어</p>
             <div className="flex items-end justify-between gap-1 border-t border-white/10 pt-3">
-              {LADDER.map(([key, label], i) => (
-                <div key={key} className="flex flex-col items-center gap-1" style={{ transform: `translateY(${(LADDER.length - 1 - i) * -2}px)` }}>
+              {LADDER.map(([key, label]) => (
+                // 모든 엠블럼을 같은 높이에 나란히 둔다(예전 계단식 이동은 챌린저 쪽이 내려가 보여서 없앰)
+                <div key={key} className="flex flex-col items-center gap-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`/tier/emblems/${key}-sm.svg`} alt="" width={34} height={34} className="h-[34px] w-[34px] sm:h-10 sm:w-10" />
                   <span className="text-[11px] text-white/60">{label}</span>

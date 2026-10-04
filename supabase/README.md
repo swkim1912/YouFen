@@ -33,6 +33,7 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 27. `public_data_rpcs_throttle` / `fix_throttle_ip_ambiguity` — 수집 데이터 조회 함수 `data_ranking`/`data_comp_events`/`data_competition`/`data_event`/`data_athlete`/`data_search_athletes`/`data_athletes_of_members`/`my_linked_athletes` 와 접속 IP 별 요청 제한 `private.throttle()`(분당 120·시간당 2,000회 초과 시 429, 기록 `private.api_hits` 는 10분마다 2시간 지난 것 삭제 — pg_cron `api-hits-cleanup`).
 28. `security_hardening_2` (2026-10-05 배포 후 적용 완료) — `supabase/security_hardening_2.sql`. 대회·선수·랭킹 표의 직접 조회 권한 회수(위 조회 함수로만 읽게) + `profiles.is_admin/avatar_locked` 비공개. **새 화면 코드가 배포된 뒤에 실행해야 한다**(먼저 실행하면 옛 화면의 조회가 실패).
 29. `search_athletes_exact_first` (2026-10-05) — `data_search_athletes` 정렬을 이름 정확히 일치 → 앞부분 일치 → 포함 순으로(흔한 이름이 결과 한도에 잘리던 문제). 회원 탈퇴는 DB 변경 없이 서버 API `/api/account` 가 처리(연쇄 삭제 규칙 사용).
+30. `security_hardening_3_created_at` (2026-10-05 재점검) — 하루 생성 한도 우회 차단: 일반 사용자 요청에서 `game_records`·`feedback_notes`·`athlete_claim_requests`·`avatar_reports` 의 `created_at` 을 만들 때는 지금 시각, 수정할 때는 원래 값으로 고정(트리거 `records_guard`/`notes_guard`(수정에도 실행)/`claims_guard`/`reports_guard`). `email_available`·`nickname_available` 에 접속 IP 별 요청 제한(`private.throttle`, VOLATILE plpgsql 로 변경).
 
 ## 대회 결과 데이터
 - 수집/갱신 절차: `supabase/refresh_competitions.sql` (대회 목록 → 종목 등록 → 종목별 원문 수집 → `build_comp` 정규화). 현재 2022-01 ~ 2026-09 개인전 96개 대회(95개 결과): 종목 1,607개(결과 있음), 선수 7,993명, 참가 75,066건, 예선 198,884경기, 예선ED 6,840경기, 본선ED 49,629경기. 단체전은 미수집.
