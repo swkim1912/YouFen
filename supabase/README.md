@@ -11,6 +11,15 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 6. `remove_university_division` — 종별에서 대학부 제거
 7. `create_clubs_and_club_teams` — 협회 팀 연동용 `clubs`(동일 클럽 묶음) / `club_teams`(협회 등록 팀) 테이블, 읽기 공개 RLS
 8. `enable_http_extension` / `create_private_players` / `private_functions_search_path` — 협회 선수 원장(`private.players`) 및 수집·파싱 함수
+9. `create_competition_tables` / `create_comp_scrape_functions` / `create_build_comp_function` — 대회 결과 테이블(`competitions`, `comp_events`, `athletes`, `comp_entries`, `comp_matches`, 읽기 공개 RLS)과 내부 테이블(`private.athlete_keys`, `private.comp_raw`), 수집·변환 함수 (`build_comp` 는 이후 패치 2회 — 최종 정의는 DB 기준)
+
+10. `comp_scrape_list_and_types` / `comp_scrape_list_rowwise` / `create_club_core_lookup` / `comp_ed_groups_and_bronze` — 대회 목록 수집, 개인전 종목 등록, 클럽 이름 조회표(`private.club_core`), ED 그룹(`EDQ`) 및 3·4위전(`third_place`) 컬럼
+11. `create_score_tables` / `create_refresh_scores` — 점수 결과 테이블(`score_config`, `event_scores`, `pool_scores`, `comp_events.tab/age/start_date/winner_athlete_id`, `athletes.is_registered`)과 계산 함수 `private.refresh_scores()` (절차: `supabase/refresh_scores.sql`). 읽기 전용 공개 RLS.
+12. `season_rankings` / `refresh_scores_seasons` — 시즌(2년 창) 테이블 `seasons`, `pool_scores.season`(기본키 포함, `ev24` 제거), `refresh_scores` 시즌별 재작성.
+
+## 대회 결과 데이터
+- 수집/갱신 절차: `supabase/refresh_competitions.sql` (대회 목록 → 종목 등록 → 종목별 원문 수집 → `build_comp` 정규화). 현재 2022-01 ~ 2026-09 개인전 96개 대회(95개 결과): 종목 1,607개(결과 있음), 선수 7,993명, 참가 75,066건, 예선 198,884경기, 예선ED 6,840경기, 본선ED 49,629경기. 단체전은 미수집.
+- 선수 동일성은 협회 선수번호 기준이며, 번호는 `private.athlete_keys` 에만 있다(public 테이블에는 없음).
 
 ## 협회 선수 데이터 (private.players) — 내부 전용
 - `private` 스키마는 API(PostgREST)에 노출되지 않고, 테이블은 RLS 활성화 + 정책 없음 + 권한 회수 상태. 협회 선수번호(`kff_no`)·생년월일·모자이크 이름은 **어떤 화면/API 로도 사용자에게 내보내지 않는다.**

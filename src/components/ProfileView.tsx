@@ -11,7 +11,8 @@ import { Input } from "./ui/input";
 import { Dot } from "./ui/dot";
 import { GameDetailModal } from "./GameDetailModal";
 import { SettingsModal } from "./SettingsModal";
-import { fetchUserRecords, opponentStats, winRate, type RecordView } from "@/lib/records";
+import { StatDonut } from "./StatDonut";
+import { fetchUserRecords, opponentStats, type RecordView } from "@/lib/records";
 import { calcTier, type TierMode } from "@/lib/tier";
 import type { FeedbackNote, Profile } from "@/lib/types";
 import { cn, fmtDate } from "@/lib/utils";
@@ -19,31 +20,16 @@ import { cn, fmtDate } from "@/lib/utils";
 const KIND = { PRIVATE: "프라이빗", OPEN: "오픈", TOURNAMENT: "대회" } as const;
 type Filter = "ALL" | "PRIVATE" | "OPEN" | "TOURNAMENT";
 
-/** 최근 게임 승률 원 그래프 + 득점/실점(KDA 느낌) + 득실비 */
+/** 최근 게임 승률 원 그래프 (공용 StatDonut 에 전적 합계를 넘긴다) */
 function WinDonut({ views }: { views: RecordView[] }) {
-  const rate = winRate(views);
   const wins = views.filter((v) => v.win).length;
-  const gf = views.reduce((a, v) => a + v.mine, 0); // 득점 합
-  const ga = views.reduce((a, v) => a + v.theirs, 0); // 실점 합
-  const ratio = ga === 0 ? "∞" : (gf / ga).toFixed(2); // 득실비: 득점 ÷ 실점
-  const R = 36, C = 2 * Math.PI * R;
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative h-24 w-24 shrink-0">
-        <svg viewBox="0 0 100 100" className="-rotate-90">
-          <circle cx="50" cy="50" r={R} fill="none" strokeWidth="14" className="stroke-loss" />
-          <circle cx="50" cy="50" r={R} fill="none" strokeWidth="14" className="stroke-win" strokeDasharray={`${(C * rate) / 100} ${C}`} />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-lg font-bold">{rate}%</div>
-      </div>
-      <div>
-        <div className="text-xs text-muted">{wins}승 {views.length - wins}패</div>
-        <div className="text-lg font-bold">
-          {gf} / <span className="text-loss">{ga}</span>
-        </div>
-        <div className="text-base font-extrabold text-white">{ratio}:1</div>
-      </div>
-    </div>
+    <StatDonut
+      wins={wins}
+      losses={views.length - wins}
+      gf={views.reduce((a, v) => a + v.mine, 0)} // 득점 합
+      ga={views.reduce((a, v) => a + v.theirs, 0)} // 실점 합
+    />
   );
 }
 

@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Bell, ChevronDown, ClipboardList, Home, LogIn, NotebookPen, Plus, Trophy } from "lucide-react";
+import { Bell, ChevronDown, ClipboardList, Home, LogIn, Medal, NotebookPen, Plus, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
 import { NewRecordModal } from "./NewRecordModal";
@@ -77,6 +77,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             유펜<span className="ml-1 text-xs font-normal text-muted">YouFen</span>
           </Link>
           <nav className="hidden items-center gap-4 text-sm md:flex">
+            <Link href="/methodology" className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
             <button onClick={soon} className="text-muted hover:text-foreground">오픈피스트</button>
             <button onClick={soon} className="text-muted hover:text-foreground">커뮤니티</button>
             <button onClick={soon} className="text-muted hover:text-foreground">아카데미</button>
@@ -108,7 +109,8 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             <Link href="/" className={itemCls(path === "/")}><Home size={20} />마이 펜싱</Link>
           </>
         )}
-        <Link href="/ranking" className={itemCls(path === "/ranking")}><Trophy size={20} />랭킹</Link>
+        <Link href="/ranking" className={itemCls(path === "/ranking" || path.startsWith("/athletes"))}><Trophy size={20} />랭킹</Link>
+        <Link href="/competitions" className={itemCls(path.startsWith("/competitions"))}><Medal size={20} />대회</Link>
         {/* 기록지: 누르면 펼쳐지며 개인전/단체전 선택 */}
         <button onClick={() => setSheetOpen((o) => !o)} className={itemCls(path.startsWith("/sheet"))}>
           <ClipboardList size={20} />
