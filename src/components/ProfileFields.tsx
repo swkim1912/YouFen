@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Input, Label, Select } from "./ui/input";
+import { ClubPicker } from "./ClubPicker";
 import { DIVISIONS, REGIONS, ROLES, WEAPONS, validateNickname } from "@/lib/utils";
 
 export interface ExtraInfo {
@@ -11,10 +12,11 @@ export interface ExtraInfo {
   role: string;
   division: string;
   nickname: string;
-  affiliation: string;
+  affiliation: string; // 클럽 이름 또는 "무소속" (ClubPicker 가 채운다)
+  club_id: number | null; // 우리 DB 클럽 id, 무소속이면 null
 }
 
-export const emptyExtra: ExtraInfo = { weapon: "", region: "", role: "", division: "", nickname: "", affiliation: "" };
+export const emptyExtra: ExtraInfo = { weapon: "", region: "", role: "", division: "", nickname: "", affiliation: "", club_id: null };
 
 /** 필수값/닉네임 형식 검사. 오류 메시지 또는 null */
 export function validateExtra(v: ExtraInfo): string | null {
@@ -22,7 +24,7 @@ export function validateExtra(v: ExtraInfo): string | null {
   if (!v.region) return "지역을 선택해 주세요";
   if (!v.role) return "신분을 선택해 주세요";
   if (!v.division) return "종별을 선택해 주세요";
-  if (!v.affiliation.trim()) return "현재 소속을 입력해 주세요";
+  if (!v.affiliation.trim()) return "현재 소속을 선택해 주세요 (없으면 '선택안함')";
   return validateNickname(v.nickname);
 }
 
@@ -127,10 +129,11 @@ export function ExtraFields({
         current={currentNickname}
         onStatus={onNickStatus}
       />
-      <div>
-        <Label>현재 소속</Label>
-        <Input value={value.affiliation} onChange={set("affiliation")} placeholder="예: 서울시청 펜싱팀 / 무소속" />
-      </div>
+      <ClubPicker
+        clubId={value.club_id}
+        affiliation={value.affiliation}
+        onChange={(c) => onChange({ ...value, ...c })}
+      />
     </div>
   );
 }

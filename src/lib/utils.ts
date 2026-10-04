@@ -21,7 +21,7 @@ export function validateNickname(n: string): string | null {
 
 /** 다른 사람이 읽을 수 있는 profiles 공개 컬럼 (이메일·생년월일 제외 → select("*") 대신 사용) */
 export const PUBLIC_COLS =
-  "id,nickname,gender,weapon,region,role,division,affiliation,avatar_url,use_frame,use_badge,hide_records,is_admin,onboarded,nickname_changed_at";
+  "id,nickname,gender,weapon,region,role,division,affiliation,club_id,avatar_url,avatar_locked,use_frame,use_badge,hide_records,is_admin,onboarded,nickname_changed_at";
 
 export const WEAPONS = ["플뢰레", "에페", "사브르"] as const;
 export const ROLES = ["동호인", "엘리트", "전문선수", "학부모", "지도자"] as const;

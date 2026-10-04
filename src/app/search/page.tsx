@@ -3,7 +3,7 @@
 // 회원이 한 명뿐이고 선수 결과가 없으면 바로 프로필을 연다. 선수를 누르면 선수 프로필(/athletes/[id])로 이동.
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SearchX } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProfileView } from "@/components/ProfileView";
@@ -11,12 +11,15 @@ import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
 import { PUBLIC_COLS } from "@/lib/utils";
 import { Dot } from "@/components/ui/dot";
+import { Avatar } from "@/components/Avatar";
+import { athletesOfMembers, isMergeable, membersOfAthletes, type MemberBrief } from "@/lib/members";
 import { useAuth } from "@/components/AuthProvider";
 
 interface AthleteHit {
   id: number;
   name: string;
   is_registered: boolean;
+  linked_profile_id: string | null;
   club: { name: string } | null;
 }
 
@@ -32,7 +35,9 @@ export default function SearchPage() {
 
 function Inner() {
   const q = useSearchParams().get("q")?.trim() ?? "";
+  const router = useRouter();
   const { user } = useAuth();
+  const [nicks, setNicks] = useState<Map<number, MemberBrief>>(new Map()); // 선수 id → 연결된 회원(닉네임 표시용)
   const [results, setResults] = useState<Profile[] | null>(null);
   const [athletes, setAthletes] = useState<AthleteHit[]>([]);
   const [picked, setPicked] = useState<Profile | null>(null);
@@ -46,17 +51,28 @@ function Inner() {
     (async () => {
       const [u, a] = await Promise.all([
         supabase.from("profiles").select(PUBLIC_COLS).ilike("nickname", `%${q}%`).not("nickname", "is", null).limit(20),
-        supabase.from("athletes").select("id,name,is_registered,club:clubs(name)").ilike("name", `%${q}%`).order("is_registered", { ascending: false }).order("name").limit(30),
+        supabase.from("athletes").select("id,name,is_registered,linked_profile_id,club:clubs(name)").ilike("name", `%${q}%`).order("is_registered", { ascending: false }).order("name").limit(30),
       ]);
       if (cancelled) return;
       const r = (u.data ?? []) as Profile[];
-      const ath = (a.data ?? []) as unknown as AthleteHit[];
-      setResults(r);
+      let ath = (a.data ?? []) as unknown as AthleteHit[];
+      // 닉네임으로 찾은 회원 중 선수와 연결된 회원(학부모 제외)은 회원 카드 대신 '선수 페이지'로 합친다
+      const linked = await athletesOfMembers(r.map((p) => p.id));
+      const merged = r.filter((p) => isMergeable(p) && (linked.get(p.id)?.length ?? 0) > 0);
+      for (const p of merged) for (const x of linked.get(p.id) ?? []) if (!ath.some((y) => y.id === x.id)) ath = [x as AthleteHit, ...ath];
+      const mergedIds = new Set(merged.map((p) => p.id));
+      const rest = r.filter((p) => !mergedIds.has(p.id));
+      const nk = await membersOfAthletes(ath);
+      if (cancelled) return;
+      setNicks(nk);
+      setResults(rest);
       setAthletes(ath);
-      if (r.length === 1 && ath.length === 0) setPicked(r[0]);
+      // 결과가 합쳐진 선수 한 명뿐이면 바로 그 페이지로
+      if (rest.length === 0 && ath.length === 1 && nk.has(ath[0].id)) return router.replace(`/athletes/${ath[0].id}`);
+      if (rest.length === 1 && ath.length === 0) setPicked(rest[0]);
     })();
     return () => { cancelled = true; };
-  }, [q]);
+  }, [q, router]);
 
   if (results === null) return <p className="text-center text-muted">검색 중…</p>;
   if (results.length === 0 && athletes.length === 0)
@@ -74,7 +90,7 @@ function Inner() {
           <h2 className="text-sm font-bold text-muted">유펜 회원</h2>
           {results.map((p) => (
             <button key={p.id} onClick={() => setPicked(p)} className="flex w-full items-center gap-3 rounded-lg border border-line bg-panel p-3 text-left hover:bg-white/5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-panel2 font-bold">{p.nickname?.[0]}</span>
+              <Avatar avatarUrl={p.avatar_url} clubId={p.club_id} affiliation={p.affiliation} nickname={p.nickname} size={40} />
               <span>
                 <span className="flex items-center gap-1.5 font-bold"><Dot member />{p.nickname}</span>
                 <span className="text-xs text-muted">{p.weapon} / {p.role} · {p.affiliation}</span>
@@ -90,7 +106,7 @@ function Inner() {
             <Link key={a.id} href={`/athletes/${a.id}`} className="flex w-full items-center gap-3 rounded-lg border border-line bg-panel p-3 text-left hover:bg-white/5">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-panel2 font-bold">{a.name[0]}</span>
               <span>
-                <span className="flex items-center gap-1.5 font-bold"><Dot member={false} />{a.name}</span>
+                <span className="flex items-center gap-1.5 font-bold"><Dot member={nicks.has(a.id)} />{a.name}{nicks.has(a.id) && <span className="font-semibold text-muted">({nicks.get(a.id)!.nickname})</span>}</span>
                 <span className="text-xs text-muted">{a.club?.name ?? "소속 정보 없음"}{!a.is_registered && " · 협회 원장 미등록"}</span>
               </span>
             </Link>

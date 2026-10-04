@@ -10,7 +10,9 @@ export interface Profile {
   role: string | null;
   division: string | null;
   affiliation: string | null;
+  club_id: number | null;
   avatar_url: string | null;
+  avatar_locked: boolean;
   use_frame: boolean;
   use_badge: boolean;
   hide_records: boolean;

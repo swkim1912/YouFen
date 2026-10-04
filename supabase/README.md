@@ -16,6 +16,13 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 10. `comp_scrape_list_and_types` / `comp_scrape_list_rowwise` / `create_club_core_lookup` / `comp_ed_groups_and_bronze` — 대회 목록 수집, 개인전 종목 등록, 클럽 이름 조회표(`private.club_core`), ED 그룹(`EDQ`) 및 3·4위전(`third_place`) 컬럼
 11. `create_score_tables` / `create_refresh_scores` — 점수 결과 테이블(`score_config`, `event_scores`, `pool_scores`, `comp_events.tab/age/start_date/winner_athlete_id`, `athletes.is_registered`)과 계산 함수 `private.refresh_scores()` (절차: `supabase/refresh_scores.sql`). 읽기 전용 공개 RLS.
 12. `season_rankings` / `refresh_scores_seasons` — 시즌(2년 창) 테이블 `seasons`, `pool_scores.season`(기본키 포함, `ev24` 제거), `refresh_scores` 시즌별 재작성.
+13. `player_registrations_by_year` / `scrape_player_year_rowwise` / `athlete_reg_years_and_season_registration` — 연도별 협회 선수등록(`private.player_regs`, `private.scrape_player_year`), `athletes.reg_years`, `private.sync_athlete_registration()`, 시즌 창 안 등록자만 랭킹에 넣도록 `refresh_scores` 패치.
+14. `profiles_club_id` — `profiles.club_id`, 가입 트리거가 club_id 수신.
+15. `athlete_linking` — `athlete_links`, `private.athlete_sports_no`, `link_attempts`, `athlete_claim_requests`, RPC `link_athlete`/`unlink_athlete`, `athletes.is_linked`.
+16. `avatars_moderation_reports_club_image` — 버킷 `avatars`(쓰기 정책 없음), `guard_avatar_url` 트리거, `avatar_reports`/`avatar_uploads`, `profiles.avatar_locked`, `clubs.image_url`, RPC `admin_remove_avatar`.
+18. `profiles_public_columns_grant_and_no_example` — `profiles.club_id/avatar_locked` 공개 컬럼 SELECT 권한, 연결 RPC 메시지에서 번호 예시 제거.
+19. `athletes_linked_profile_id` — `athletes.linked_profile_id`(연결 회원 id, 트리거 유지).
+17. `avatar_vision_calls` — Vision 호출 기록(월·일 한도 계산용, 서버만 접근).
 
 ## 대회 결과 데이터
 - 수집/갱신 절차: `supabase/refresh_competitions.sql` (대회 목록 → 종목 등록 → 종목별 원문 수집 → `build_comp` 정규화). 현재 2022-01 ~ 2026-09 개인전 96개 대회(95개 결과): 종목 1,607개(결과 있음), 선수 7,993명, 참가 75,066건, 예선 198,884경기, 예선ED 6,840경기, 본선ED 49,629경기. 단체전은 미수집.

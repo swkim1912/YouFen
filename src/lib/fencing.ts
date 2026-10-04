@@ -87,6 +87,8 @@ export interface AthleteRow {
   name: string;
   gender: string | null;
   is_registered: boolean;
+  club_id?: number | null;
+  linked_profile_id?: string | null; // 연결된 유펜 회원(없으면 null)
   club: { name: string } | null;
 }
 

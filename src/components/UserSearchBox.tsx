@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Dot } from "./ui/dot";
+import { athletesOfMembers, isMergeable, membersOfAthletes, type MemberBrief } from "@/lib/members";
 import { Button } from "./ui/button";
 
 interface Hit {
@@ -19,6 +20,7 @@ interface AthleteHit {
   id: number;
   name: string;
   is_registered: boolean;
+  linked_profile_id: string | null;
   club: { name: string } | null;
 }
 
@@ -27,6 +29,7 @@ export function UserSearchBox() {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Hit[] | null>(null); // null = 검색 전/로딩
   const [aHits, setAHits] = useState<AthleteHit[]>([]);
+  const [nicks, setNicks] = useState<Map<number, MemberBrief>>(new Map()); // 연결된 선수 → 회원 닉네임
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -39,10 +42,17 @@ export function UserSearchBox() {
       const [u, a] = await Promise.all([
         supabase.from("profiles").select("id,nickname,affiliation,weapon,role").ilike("nickname", `%${q.trim()}%`).not("nickname", "is", null).limit(4),
         // 협회 원장에 등록된 선수를 먼저 보여준다
-        supabase.from("athletes").select("id,name,is_registered,club:clubs(name)").ilike("name", `%${q.trim()}%`).order("is_registered", { ascending: false }).limit(5),
+        supabase.from("athletes").select("id,name,is_registered,linked_profile_id,club:clubs(name)").ilike("name", `%${q.trim()}%`).order("is_registered", { ascending: false }).limit(5),
       ]);
-      setHits((u.data ?? []) as Hit[]);
-      setAHits((a.data ?? []) as unknown as AthleteHit[]);
+      const members = (u.data ?? []) as Hit[];
+      let ath = (a.data ?? []) as unknown as AthleteHit[];
+      // 선수와 연결된 회원(학부모 제외)은 회원 줄 대신 선수 줄에 닉네임과 함께 보여준다
+      const linked = await athletesOfMembers(members.map((m) => m.id));
+      const merged = new Set(members.filter((m) => isMergeable(m) && (linked.get(m.id)?.length ?? 0) > 0).map((m) => m.id));
+      for (const id of merged) for (const x of linked.get(id) ?? []) if (!ath.some((y) => y.id === x.id)) ath = [x as unknown as AthleteHit, ...ath];
+      setNicks(await membersOfAthletes(ath));
+      setHits(members.filter((m) => !merged.has(m.id)));
+      setAHits(ath);
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
@@ -100,8 +110,9 @@ export function UserSearchBox() {
               onClick={() => goAthlete(a.id)}
               className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-white/5"
             >
-              <Dot member={false} />
+              <Dot member={nicks.has(a.id)} />
               <span className="font-medium">{a.name}</span>
+              {nicks.has(a.id) && <span className="text-xs text-muted">({nicks.get(a.id)!.nickname})</span>}
               <span className="truncate text-xs text-muted">{a.club?.name ?? (a.is_registered ? "" : "원장 미등록")}</span>
             </button>
           ))}

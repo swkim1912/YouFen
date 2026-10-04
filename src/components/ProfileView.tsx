@@ -12,6 +12,10 @@ import { Dot } from "./ui/dot";
 import { GameDetailModal } from "./GameDetailModal";
 import { SettingsModal } from "./SettingsModal";
 import { StatDonut } from "./StatDonut";
+import { Avatar } from "./Avatar";
+import { TierFrame } from "./TierFrame";
+import { TierCircle } from "./TierBadge";
+import { AvatarReport } from "./AvatarReport";
 import { fetchUserRecords, opponentStats, type RecordView } from "@/lib/records";
 import { calcTier, type TierMode } from "@/lib/tier";
 import type { FeedbackNote, Profile } from "@/lib/types";
@@ -87,14 +91,18 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
   return (
     <div className="space-y-4">
       {/* 내 정보 */}
-      <section className="flex items-center gap-4 rounded-lg border border-line bg-panel p-4">
-        <div
-          className={cn(
-            "flex h-20 w-20 items-center justify-center rounded-full bg-panel2 text-3xl font-bold",
-            profile.use_frame && "ring-4 ring-brand/70"
-          )}
-        >
-          {profile.nickname?.[0]}
+      <TierFrame tier={hidden || loading ? null : tier.tier?.name} contentClassName="flex flex-col items-center gap-3 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <div>
+          <Avatar
+            avatarUrl={profile.avatar_url}
+            clubId={profile.club_id}
+            affiliation={profile.affiliation}
+            nickname={profile.nickname}
+            size={80}
+            className={cn(profile.use_frame && "ring-4 ring-brand/70")}
+          />
+          {/* 직접 올린 사진만 신고 대상 (본인 제외) */}
+          {!isMe && profile.avatar_url?.startsWith("http") && <AvatarReport targetId={profile.id} />}
         </div>
         <div className="flex-1">
           <div className="text-xl font-bold">
@@ -111,7 +119,7 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
             <Settings size={16} />
           </Button>
         )}
-      </section>
+      </TierFrame>
 
       {hidden ? (
         <section className="rounded-lg border border-line bg-panel p-10 text-center text-muted">
@@ -131,12 +139,7 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
               ))}
             </div>
             <div className="flex items-center gap-4">
-              <div
-                className="flex h-16 w-16 items-center justify-center rounded-full border-4 text-sm font-bold"
-                style={{ borderColor: tier.tier?.color ?? "#555", color: tier.tier?.color ?? "#999" }}
-              >
-                {tier.tier ? tier.tier.name.slice(0, 2) : "?"}
-              </div>
+              <TierCircle tier={tier.tier?.name ?? null} />
               <div>
                 <div className="text-lg font-bold">{tier.tier?.name ?? "배치 중"}</div>
                 <div className="text-sm text-muted">{tier.points} 점</div>

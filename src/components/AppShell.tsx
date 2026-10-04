@@ -77,10 +77,10 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             유펜<span className="ml-1 text-xs font-normal text-muted">YouFen</span>
           </Link>
           <nav className="hidden items-center gap-4 text-sm md:flex">
-            <Link href="/methodology" className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
             <button onClick={soon} className="text-muted hover:text-foreground">오픈피스트</button>
             <button onClick={soon} className="text-muted hover:text-foreground">커뮤니티</button>
             <button onClick={soon} className="text-muted hover:text-foreground">아카데미</button>
+            <Link href="/methodology" className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
           </nav>
           <UserSearchBox />
         </div>

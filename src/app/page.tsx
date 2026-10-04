@@ -1,10 +1,17 @@
 "use client";
 // 메인 = 마이페이지. 비로그인 사용자는 랭킹 페이지로 안내한다.
-import { useEffect } from "react";
+// 탭: 종합(프로필·티어·전적) / 상세정보(연결된 선수·협회 등록 확인)
+// 선수가 연결된 회원(학부모 제외)의 종합 탭은 선수 프로필 통합 화면(AthleteView own 모드: 티어 카드·점수·추이·전적·노트)을 쓴다.
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ProfileView } from "@/components/ProfileView";
+import { LinkedAthletes } from "@/components/LinkedAthletes";
+import { AthleteView } from "@/components/AthleteView";
+import { isMergeable } from "@/lib/members";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const router = useRouter();
@@ -22,6 +29,49 @@ export default function Home() {
 
 function MyPage() {
   const { profile } = useAuth();
+  const [tab, setTab] = useState<"main" | "detail">("main");
+  // 이 회원에 연결된 선수들 (undefined = 확인 중)
+  const [linked, setLinked] = useState<{ id: number; name: string }[] | undefined>(undefined);
+  const [pick, setPick] = useState<number | null>(null);
+  const pid = profile?.id;
+  useEffect(() => {
+    if (!pid) return;
+    let live = true;
+    supabase.from("athletes").select("id,name").eq("linked_profile_id", pid).order("id").then(({ data }) => {
+      if (live) setLinked((data ?? []) as { id: number; name: string }[]);
+    });
+    return () => { live = false; };
+  }, [pid, tab]);
   if (!profile) return null;
-  return <ProfileView profile={profile} isMe />;
+  const merged = isMergeable(profile) && (linked?.length ?? 0) > 0;
+  const curAthlete = linked?.find((a) => a.id === pick) ?? linked?.[0];
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-1 border-b border-line">
+        {([["main", "종합"], ["detail", "상세정보"]] as const).map(([k, label]) => (
+          <button key={k} onClick={() => setTab(k)} className={cn("-mb-px border-b-2 px-4 py-2 text-sm", tab === k ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "detail" ? (
+        <LinkedAthletes />
+      ) : linked === undefined ? (
+        <p className="py-16 text-center text-muted">불러오는 중…</p>
+      ) : merged && curAthlete ? (
+        <>
+          {linked.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {linked.map((a) => (
+                <button key={a.id} onClick={() => setPick(a.id)} className={cn("rounded px-3 py-1.5 text-sm", a.id === curAthlete.id ? "bg-brand text-white" : "bg-panel text-muted hover:text-foreground")}>{a.name}</button>
+              ))}
+            </div>
+          )}
+          <AthleteView key={curAthlete.id} athleteId={curAthlete.id} own={profile} />
+        </>
+      ) : (
+        <ProfileView profile={profile} isMe />
+      )}
+    </div>
+  );
 }

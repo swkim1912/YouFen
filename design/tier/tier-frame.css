@@ -1,0 +1,175 @@
+/* YouFen tier frame (시안 A · 마스크 크레스트)
+ * Markup: see README.md. Works at any card size; pieces are fixed-size SVGs at 1x.
+ * Layers (back → front): glow · wings · frame(outline → metal → body → mesh → inner line) · content · corners/crest/bottom
+ */
+.yf-card {
+  --yf-ch: 16px;              /* corner chamfer */
+  --yf-body: linear-gradient(180deg, var(--yf-dark) 0, #13161c 42%, #0d0f13 100%);
+  position: relative;
+  isolation: isolate;
+  padding-top: 64px;            /* room for the crest emblem */
+}
+
+/* glow (diamond and above) */
+.yf-card::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  left: -30px; right: -30px; top: -70px; height: 300px;
+  background: radial-gradient(closest-side, var(--yf-glow), transparent);
+  pointer-events: none;
+}
+
+.yf-card__frame,
+.yf-card__frame::before,
+.yf-card__frame::after,
+.yf-card__mesh,
+.yf-card__inner {
+  position: absolute;
+  clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
+  pointer-events: none;
+}
+/* dark outline */
+.yf-card__frame {
+  --c: var(--yf-ch);
+  inset: 0;
+  z-index: 0;
+  background: var(--yf-dark);
+}
+/* metal band */
+.yf-card__frame::before {
+  content: "";
+  --c: calc(var(--yf-ch) - 0.6px);
+  inset: 1.5px;
+  background: linear-gradient(165deg, var(--yf-light) 0%, var(--yf-primary) 45%, var(--yf-dark) 100%);
+}
+/* card body (swap --yf-body to keep your existing card background) */
+.yf-card__frame::after {
+  content: "";
+  --c: calc(var(--yf-ch) - var(--yf-bw) * 0.41);
+  inset: calc(var(--yf-bw) + 1.5px);
+  background: var(--yf-body);
+  box-shadow: inset 0 0 0 1.5px var(--yf-dark);
+}
+/* fencing-mask mesh, fading out downward */
+.yf-card__mesh {
+  --c: calc(var(--yf-ch) - var(--yf-bw) * 0.41);
+  z-index: 1;
+  left: calc(var(--yf-bw) + 1.5px); right: calc(var(--yf-bw) + 1.5px);
+  top: calc(var(--yf-bw) + 1.5px); height: 96px;
+  opacity: var(--yf-mesh-opacity);
+  background:
+    repeating-linear-gradient(45deg, var(--yf-primary) 0 1.1px, transparent 1.1px 6.5px),
+    repeating-linear-gradient(-45deg, var(--yf-primary) 0 1.1px, transparent 1.1px 6.5px),
+    var(--yf-dark);
+  -webkit-mask-image: linear-gradient(#000, transparent);
+          mask-image: linear-gradient(#000, transparent);
+}
+/* inner hairline (platinum and above) */
+.yf-card__inner {
+  --c: calc(var(--yf-ch) - 4px);
+  z-index: 1;
+  inset: calc(var(--yf-bw) + 9px);
+  box-shadow: inset 0 0 0 1.2px var(--yf-inner-line);
+}
+
+/* content sits above the frame */
+.yf-card > :not([class^="yf-card__"]),
+.yf-card__content {
+  position: relative;
+  z-index: 2;
+}
+
+/* fixed-size ornaments */
+.yf-card__wing,
+.yf-card__corner,
+.yf-card__crest,
+.yf-card__bottom {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+.yf-card__wing { z-index: -1; width: 94px; height: 110px; top: -60px; }
+.yf-card__wing--l { left: -50px; }
+.yf-card__wing--r { right: -50px; transform: scaleX(-1); }
+
+.yf-card__corner { z-index: 3; width: 48px; height: 48px; }
+.yf-card__corner--tl { left: -20px; top: -20px; }
+.yf-card__corner--tr { right: -20px; top: -20px; transform: scaleX(-1); }
+.yf-card__corner--bl { left: -20px; bottom: -20px; transform: scaleY(-1); }
+.yf-card__corner--br { right: -20px; bottom: -20px; transform: scale(-1, -1); }
+
+.yf-card__crest { z-index: 3; width: 220px; height: 130px; top: -70px; left: 50%; margin-left: -110px; }
+.yf-card__bottom { z-index: 3; width: 88px; height: 70px; bottom: -32px; left: 50%; margin-left: -44px; }
+
+.yf-card[data-tier="bronze"] {
+  --yf-dark: #43230f;
+  --yf-primary: #9a5c36;
+  --yf-light: #eab084;
+  --yf-gem: #eab084;
+  --yf-bw: 4.9px;
+  --yf-mesh-opacity: 0.38;
+  --yf-inner-line: transparent;
+  --yf-glow: transparent;
+}
+.yf-card[data-tier="silver"] {
+  --yf-dark: #36404a;
+  --yf-primary: #8c99a6;
+  --yf-light: #f2f6f9;
+  --yf-gem: #f2f6f9;
+  --yf-bw: 5.35px;
+  --yf-mesh-opacity: 0.42;
+  --yf-inner-line: transparent;
+  --yf-glow: transparent;
+}
+.yf-card[data-tier="gold"] {
+  --yf-dark: #573a08;
+  --yf-primary: #c69229;
+  --yf-light: #ffe7a3;
+  --yf-gem: #ffe7a3;
+  --yf-bw: 5.8px;
+  --yf-mesh-opacity: 0.46;
+  --yf-inner-line: transparent;
+  --yf-glow: transparent;
+}
+.yf-card[data-tier="platinum"] {
+  --yf-dark: #0d4643;
+  --yf-primary: #2ea59d;
+  --yf-light: #bdf5ec;
+  --yf-gem: #bdf5ec;
+  --yf-bw: 6.25px;
+  --yf-mesh-opacity: 0.5;
+  --yf-inner-line: rgba(189, 245, 236, 0.45);
+  --yf-glow: transparent;
+}
+.yf-card[data-tier="diamond"] {
+  --yf-dark: #18205f;
+  --yf-primary: #4b62d8;
+  --yf-light: #c9d3ff;
+  --yf-gem: #c9d3ff;
+  --yf-bw: 6.7px;
+  --yf-mesh-opacity: 0.54;
+  --yf-inner-line: rgba(201, 211, 255, 0.45);
+  --yf-glow: rgba(75, 98, 216, 0.55);
+}
+.yf-card[data-tier="master"] {
+  --yf-dark: #36104c;
+  --yf-primary: #9441c9;
+  --yf-light: #f1c8ff;
+  --yf-gem: #f1c8ff;
+  --yf-bw: 7.15px;
+  --yf-mesh-opacity: 0.58;
+  --yf-inner-line: rgba(241, 200, 255, 0.45);
+  --yf-glow: rgba(148, 65, 201, 0.55);
+}
+.yf-card[data-tier="challenger"] {
+  --yf-dark: #553709;
+  --yf-primary: #d8a744;
+  --yf-light: #fff2c4;
+  --yf-gem: #62d4ff;
+  --yf-bw: 7.6px;
+  --yf-mesh-opacity: 0.62;
+  --yf-inner-line: rgba(98, 212, 255, 0.45);
+  --yf-glow: rgba(98, 212, 255, 0.55);
+}

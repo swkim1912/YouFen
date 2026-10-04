@@ -2,20 +2,29 @@
 // 선수 프로필: 랭킹에서 선수를 눌렀을 때 / 대회 결과에서 이름을 눌렀을 때 / 검색에서 선수를 골랐을 때 보이는 화면.
 // 유저 전적검색(ProfileView)과 같은 구성(내 정보 → 티어 → 최근 추이 → 전적)으로 맞췄고, 대회 선수라서 '대회 기록'과 '점수 추이'가 더해진다.
 // 유펜 회원과 선수가 연동되면(본인인증, 추후 구현) 종합/오픈 탭과 오픈게임 전적도 이 화면에서 함께 보여줄 예정이다.
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, CircleHelp } from "lucide-react";
+import { ChevronDown, CircleHelp, Settings } from "lucide-react";
 import { StatDonut } from "./StatDonut";
 import { TierCircle } from "./TierBadge";
+import { TierFrame } from "./TierFrame";
+import { Avatar } from "./Avatar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dot } from "./ui/dot";
+import { MemberRecords } from "./MemberRecords";
+import { GameDetailModal } from "./GameDetailModal";
+import { SettingsModal } from "./SettingsModal";
+import { useAuth } from "./AuthProvider";
+import { isMergeable, type FeedRow } from "@/lib/members";
+import { fetchUserRecords, type RecordView } from "@/lib/records";
+import type { FeedbackNote, Profile } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import {
   fetchAll, fmtDay, genderLabel, poolLabel, rankColor, roundLabel, tierColor, weaponLabel, ageLabel,
   type AthleteRow, type EventMeta, type MatchRow, type PoolKey, type PoolScore,
 } from "@/lib/fencing";
-import { cn } from "@/lib/utils";
+import { cn, fmtDate } from "@/lib/utils";
 
 interface EntryRow {
   event_id: string;
@@ -42,7 +51,10 @@ interface MView {
 // 같은 날짜 안에서 뿔 → 예선 ED → 본선 ED(큰 라운드 먼저) 순서
 const stageOrder = (m: MatchRow) => (m.stage === "POULE" ? 0 : m.stage === "EDQ" ? 1 : 2) * 1000 + (m.third_place ? -1 : 0) + (1000 - (m.round_size ?? 0)) / 1000;
 
-export function AthleteView({ athleteId, initialPool, initialSeason }: { athleteId: number; initialPool?: Partial<PoolKey>; initialSeason?: string }) {
+const KIND_LABEL = { PRIVATE: "프라이빗", OPEN: "오픈", TOURNAMENT: "대회" } as const;
+
+/** own: 마이 펜싱 탭에서 본인의 연결 선수로 이 화면을 쓸 때 넘긴다(설정 버튼·전적 수정·피드백 노트가 추가됨) */
+export function AthleteView({ athleteId, initialPool, initialSeason, own }: { athleteId: number; initialPool?: Partial<PoolKey>; initialSeason?: string; own?: Profile }) {
   const [athlete, setAthlete] = useState<AthleteRow | null | undefined>(undefined); // undefined=로딩, null=없음
   const [pools, setPools] = useState<PoolScore[]>([]);
   const [entries, setEntries] = useState<EntryRow[]>([]);
@@ -54,13 +66,56 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
   const [shownEntries, setShownEntries] = useState(10);
   const [filter, setFilter] = useState<"ALL" | "POULE" | "ED">("ALL");
   const [oppQ, setOppQ] = useState("");
+  const { user } = useAuth();
+  // 연결된 유펜 회원(학부모 제외): 선수 페이지에 닉네임·회원 전적을 합쳐 보여준다
+  const [member, setMember] = useState<{ id: string; nickname: string; role: string | null; avatar_url: string | null; club_id: number | null; affiliation: string | null; hide_records: boolean } | null>(null);
+  const [tierMode, setTierMode] = useState<"대회" | "종합" | "오픈">("대회");
+  const [memberRecs, setMemberRecs] = useState<RecordView[] | null>(null); // 연결 회원의 전적 (null = 불러오는 중)
+  const [notes, setNotes] = useState<(FeedbackNote & { game?: RecordView })[]>([]);
+  const [detail, setDetail] = useState<RecordView | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [shown, setShown] = useState(10);
+
+  // 연결된 회원 조회 (합칠 수 있는 회원만 member 로 둔다)
+  const linkedId = athlete?.linked_profile_id ?? null;
+  useEffect(() => {
+    setMember(null);
+    setTierMode("대회");
+    if (!linkedId) return;
+    let live = true;
+    supabase.from("profiles").select("id,nickname,role,avatar_url,club_id,affiliation,hide_records").eq("id", linkedId).maybeSingle().then(({ data }) => {
+      if (live && data && isMergeable(data as { role: string | null })) setMember(data as NonNullable<typeof member>);
+    });
+    return () => { live = false; };
+  }, [linkedId]);
+
+  // 연결 회원의 전적(오픈·대회·프라이빗). 전적 비공개 회원은 본인 외에는 불러오지 않는다.
+  const viewerIsMember = !!member && member.id === user?.id;
+  const memberHidden = !!member && member.hide_records && !viewerIsMember;
+  const loadMemberRecs = useCallback(async () => {
+    if (!member || memberHidden) return setMemberRecs([]);
+    try {
+      const recs = await fetchUserRecords(member.id, viewerIsMember); // 본인은 수락 대기 건도 보임
+      setMemberRecs(recs);
+      if (own && user) {
+        const { data } = await supabase.from("feedback_notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
+        const byId = new Map(recs.map((r) => [r.rec.id, r]));
+        setNotes(((data ?? []) as FeedbackNote[]).map((n) => ({ ...n, game: n.game_id ? byId.get(n.game_id) : undefined })));
+      }
+    } catch {
+      setMemberRecs([]);
+    }
+  }, [member, memberHidden, viewerIsMember, own, user]);
+  useEffect(() => {
+    setMemberRecs(null);
+    loadMemberRecs();
+  }, [loadMemberRecs]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setAthlete(undefined);
-      const { data: a } = await supabase.from("athletes").select("id,name,gender,is_registered,club:clubs(name)").eq("id", athleteId).maybeSingle();
+      const { data: a } = await supabase.from("athletes").select("id,name,gender,is_registered,club_id,linked_profile_id,club:clubs(name)").eq("id", athleteId).maybeSingle();
       if (cancelled) return;
       if (!a) return setAthlete(null);
       const [ps, es, sc, ms] = await Promise.all([
@@ -169,23 +224,52 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
     ga: list.reduce((a, v) => a + (v.theirs ?? 0), 0),
   });
   const all = tally(views), poule = tally(views.filter((v) => v.m.stage === "POULE")), ed = tally(views.filter((v) => v.m.stage !== "POULE"));
-  const recent30 = views.slice(0, 30);
+  // 통합 전적: 협회 대회 경기 + (연결 회원이면) 회원 전적을 날짜순으로 합친다
+  const feed: FeedRow[] = useMemo(() => {
+    if (!member) return [];
+    const rows: FeedRow[] = views.map((v) => ({
+      key: `m${v.m.id}`, win: v.win, oppName: opp.get(v.oppId)?.name ?? "-", oppIsMember: false, mine: v.mine, theirs: v.theirs,
+      kind: "TOURNAMENT", kindLabel: `대회 · ${v.label}`, date: v.date, dateText: fmtDay(v.date), pending: false, official: true,
+    }));
+    for (const r of memberRecs ?? []) {
+      rows.push({
+        key: `g${r.rec.id}`, win: r.win, oppName: r.oppName, oppIsMember: !!r.oppId, mine: r.mine, theirs: r.theirs,
+        kind: r.rec.kind, kindLabel: KIND_LABEL[r.rec.kind], date: r.rec.played_at, dateText: fmtDate(r.rec.played_at),
+        pending: r.rec.status === "PENDING", official: false, rec: r,
+      });
+    }
+    return rows.sort((a, b) => b.date.localeCompare(a.date));
+  }, [member, views, opp, memberRecs]);
+
+  // 최근 추이용 행: 통합(회원)이면 통합 전적의 최근 30경기, 아니면 협회 대회 경기 30경기
+  const recentRows: { win: boolean; mine: number | null; theirs: number | null; key: string; name: string; href?: string }[] = useMemo(() => {
+    if (member) {
+      return feed.filter((r) => !r.pending).slice(0, 30).map((r) => ({ win: r.win, mine: r.mine, theirs: r.theirs, key: `n:${r.oppName}`, name: r.oppName }));
+    }
+    return views.slice(0, 30).map((v) => ({ win: v.win, mine: v.mine, theirs: v.theirs, key: `a${v.oppId}`, name: opp.get(v.oppId)?.name ?? "-", href: `/athletes/${v.oppId}?weapon=${weapon}&gender=${gender}` }));
+  }, [member, feed, views, opp, weapon, gender]);
+  const recentTally = {
+    wins: recentRows.filter((r) => r.win).length,
+    losses: recentRows.filter((r) => !r.win).length,
+    gf: recentRows.reduce((a, r) => a + (r.mine ?? 0), 0),
+    ga: recentRows.reduce((a, r) => a + (r.theirs ?? 0), 0),
+  };
 
   // 최근 30경기 상대별 승률 (2경기 이상)
   const { best, worst } = useMemo(() => {
-    const g = new Map<number, { n: number; w: number }>();
-    for (const v of recent30) {
-      const c = g.get(v.oppId) ?? { n: 0, w: 0 };
-      c.n += 1; if (v.win) c.w += 1;
-      g.set(v.oppId, c);
+    const g = new Map<string, { n: number; w: number; name: string; href?: string }>();
+    for (const r of recentRows) {
+      const c = g.get(r.key) ?? { n: 0, w: 0, name: r.name, href: r.href };
+      c.n += 1; if (r.win) c.w += 1;
+      g.set(r.key, c);
     }
-    const list = [...g.entries()].filter(([, c]) => c.n >= 2).map(([id, c]) => ({ id, name: opp.get(id)?.name ?? "-", n: c.n, rate: Math.round((c.w / c.n) * 100) }));
+    const list = [...g.entries()].filter(([, c]) => c.n >= 2).map(([id, c]) => ({ id, name: c.name, href: c.href, n: c.n, rate: Math.round((c.w / c.n) * 100) }));
     // 상대가 적으면 같은 사람이 양쪽 목록에 나오므로, 낮은 쪽 목록에서는 높은 쪽에 이미 나온 상대를 뺀다
     const best = [...list].sort((a, b) => b.rate - a.rate || b.n - a.n).slice(0, 3);
     const used = new Set(best.map((o) => o.id));
     const worst = [...list].filter((o) => !used.has(o.id)).sort((a, b) => a.rate - b.rate || b.n - a.n).slice(0, 3);
     return { best, worst };
-  }, [recent30, opp]);
+  }, [recentRows]);
 
   // 소속 이력: 연속으로 같은 소속이면 한 줄로 묶는다 (오래된 순)
   const history = useMemo(() => {
@@ -219,15 +303,14 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
   return (
     <div className="space-y-4">
       {/* 내 정보 */}
-      <section className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-panel p-4">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-panel2 text-3xl font-bold ring-4" style={{ ["--tw-ring-color" as string]: tierColor(curPool?.tier) }}>
-          {athlete.name[0]}
-        </div>
+      <TierFrame tier={curPool?.tier} contentClassName="flex flex-col items-center gap-3 text-center sm:flex-row sm:flex-wrap sm:gap-4 sm:text-left">
+        <Avatar avatarUrl={member?.avatar_url ?? null} clubId={member?.club_id ?? athlete.club_id ?? null} affiliation={member?.affiliation ?? teamNow} nickname={athlete.name} size={80} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <Dot member={false} />
+          <div className="flex items-center justify-center gap-2 text-xl font-bold sm:justify-start">
+            <Dot member={!!member} />
             {athlete.name}
-            <span className="rounded bg-brand/20 px-1.5 py-0.5 text-xs font-normal text-brand">선수</span>
+            {member && <span className="text-base font-semibold text-muted">({member.nickname})</span>}
+            <span className="rounded bg-brand/20 px-1.5 py-0.5 text-xs font-normal text-brand">{member ? "선수 · 회원" : "선수"}</span>
           </div>
           <div className="text-sm text-muted">
             {genderLabel(gender)} {weaponLabel(weapon)}
@@ -236,12 +319,17 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
           <div className="text-sm text-muted">{teamNow ?? "소속 정보 없음"}</div>
         </div>
         {curPool?.pool_rank && (
-          <div className="text-right">
+          <div className="sm:text-right">
             <div className="text-xs text-muted">{poolLabel(curPool)} 순위</div>
             <div className="text-3xl font-extrabold" style={{ color: rankColor(curPool.pool_rank) }}>{curPool.pool_rank}<span className="text-sm font-normal text-muted"> / {curPool.pool_size}</span></div>
           </div>
         )}
-      </section>
+        {own && (
+          <Button variant="outline" size="sm" onClick={() => setShowSettings(true)} aria-label="상세 설정">
+            <Settings size={16} />
+          </Button>
+        )}
+      </TierFrame>
 
       {/* 종목 선택 (여러 종목에 출전한 선수) */}
       {events.length > 1 && (
@@ -258,10 +346,13 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
       {/* 티어: 유펜 회원과 연동되면 종합/오픈 탭이 열린다 */}
       <section className="rounded-lg border border-line bg-panel p-4">
         <div className="mb-3 flex flex-wrap items-center gap-1">
-          <button className="rounded bg-brand px-3 py-1 text-sm text-white">대회</button>
-          {["종합", "오픈"].map((l) => (
-            <button key={l} disabled title="유펜 회원과 연동된 선수만 볼 수 있습니다" className="cursor-not-allowed rounded px-3 py-1 text-sm text-muted/50">{l}</button>
-          ))}
+          {(["대회", "종합", "오픈"] as const).map((l) => {
+            const enabled = l === "대회" || !!member; // 종합/오픈은 유펜 회원과 연결된 선수만
+            return (
+              <button key={l} disabled={!enabled} onClick={() => setTierMode(l)} title={enabled ? undefined : "유펜 회원과 연결된 선수만 볼 수 있습니다"}
+                className={cn("rounded px-3 py-1 text-sm", tierMode === l ? "bg-brand text-white" : enabled ? "text-muted hover:bg-white/5" : "cursor-not-allowed text-muted/50")}>{l}</button>
+            );
+          })}
           <Link href="/methodology" title="점수와 티어는 이렇게 계산됩니다" aria-label="점수 산정 방식 안내" className="ml-2 text-muted hover:text-brand"><CircleHelp size={16} /></Link>
           {seasonList.length > 1 && (
             <select value={curSeason} onChange={(e) => setSeasonSel(e.target.value)} className="ml-auto h-8 rounded-md border border-line bg-panel2 px-2 text-xs" aria-label="시즌">
@@ -274,7 +365,9 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
             </select>
           )}
         </div>
-        {!athlete.is_registered ? (
+        {tierMode === "오픈" ? (
+          <p className="py-2 text-sm text-muted">오픈게임 점수는 아직 집계 전이에요. 오픈게임 기록이 쌓이면 이곳에 표시됩니다. (아래 최근 전적에서 오픈게임 기록을 볼 수 있어요)</p>
+        ) : !athlete.is_registered ? (
           <div className="flex items-center gap-4">
             <TierCircle tier={null} />
             <div>
@@ -303,21 +396,23 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
         )}
       </section>
 
+      {member && tierMode === "종합" && <p className="-mt-2 text-xs text-muted">종합 점수는 오픈게임 기록이 집계되기 전까지 대회 점수와 같습니다.</p>}
+
       {/* 최근 추이 */}
       <section className="rounded-lg border border-line bg-panel p-4">
-        <h3 className="mb-2 font-bold">최근 추이 <span className="text-xs font-normal text-muted">(최근 {recent30.length}경기)</span></h3>
-        {recent30.length === 0 ? (
+        <h3 className="mb-2 font-bold">최근 추이 <span className="text-xs font-normal text-muted">(최근 {recentRows.length}경기)</span></h3>
+        {recentRows.length === 0 ? (
           <p className="text-sm text-muted">아직 경기 기록이 없습니다</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatDonut {...tally(recent30)} />
+            <StatDonut {...recentTally} />
             {([["승률 높은 상대", best], ["승률 낮은 상대", worst]] as const).map(([title, arr]) => (
               <div key={title}>
                 <div className="mb-1 text-xs text-muted">{title} (2경기 이상)</div>
                 {arr.length === 0 && <div className="text-sm text-muted">-</div>}
                 {arr.map((o) => (
                   <div key={o.id} className="flex justify-between text-sm">
-                    <Link href={`/athletes/${o.id}?${linkQ}`} className="hover:text-brand">{o.name}</Link>
+                    {o.href ? <Link href={o.href} className="hover:text-brand">{o.name}</Link> : <span>{o.name}</span>}
                     <span>{o.rate}% <span className="text-muted">({o.n})</span></span>
                   </div>
                 ))}
@@ -385,6 +480,9 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
         </section>
       )}
 
+      {/* 연결된 유펜 회원의 최근 전적 (종합/오픈/대회) */}
+      {member && <MemberRecords rows={feed} nickname={member.nickname} isMe={viewerIsMember} hidden={memberHidden} loading={memberRecs === null} onSelect={own ? (r) => r.rec && setDetail(r.rec) : undefined} />}
+
       {/* 대회 기록 */}
       <section className="rounded-lg border border-line bg-panel p-4">
         <h3 className="mb-3 font-bold">대회 기록 <span className="text-xs font-normal text-muted">{myEntries.length}개</span></h3>
@@ -434,7 +532,7 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
       {/* 최근 전적 (유저 전적검색과 같은 모양) */}
       <section className="rounded-lg border border-line bg-panel p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h3 className="mr-2 font-bold">최근 전적</h3>
+          <h3 className="mr-2 font-bold">{member ? "최근 대회 경기" : "최근 전적"}</h3>
           {([["ALL", "전체"], ["POULE", "뿔"], ["ED", "ED"]] as const).map(([f, l]) => (
             <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand text-white" : "text-muted hover:bg-white/5")}>{l}</button>
           ))}
@@ -446,6 +544,25 @@ export function AthleteView({ athleteId, initialPool, initialSeason }: { athlete
         </div>
         {shown < list.length && <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => setShown((s) => s + 10)}>더보기</Button>}
       </section>
+
+      {/* 마이 펜싱(본인) 전용: 피드백 노트, 전적 상세·수정, 설정 */}
+      {own && (
+        <section className="rounded-lg border border-line bg-panel p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-bold">내 피드백 노트</h3>
+            <Link href="/notes" className="text-xs text-brand">더보기</Link>
+          </div>
+          {notes.length === 0 && <p className="text-sm text-muted">작성한 노트가 없습니다</p>}
+          {notes.slice(0, 5).map((n) => (
+            <button key={n.id} onClick={() => n.game && setDetail(n.game)} className="mb-1.5 block w-full rounded-md bg-panel2 px-3 py-2 text-left text-sm hover:bg-white/5">
+              <div className="truncate">{n.title ? `${n.title} · ` : ""}{n.content}</div>
+              <div className="text-xs text-muted">{fmtDate(n.created_at)}{n.game && ` · vs ${n.game.oppName} ${n.game.mine}:${n.game.theirs}`}</div>
+            </button>
+          ))}
+        </section>
+      )}
+      {own && <GameDetailModal view={detail} onClose={() => setDetail(null)} onChanged={loadMemberRecs} />}
+      {own && showSettings && <SettingsModal open onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { Input, Label } from "./ui/input";
 import { BirthSelect, isCompleteBirth } from "./BirthSelect";
 import { ExtraFields, validateExtra, type ExtraInfo } from "./ProfileFields";
+import { AvatarSettings } from "./AvatarSettings";
 
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, profile, refreshProfile } = useAuth();
@@ -19,6 +20,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
     division: profile?.division ?? "",
     nickname: profile?.nickname ?? "",
     affiliation: profile?.affiliation ?? "",
+    club_id: profile?.club_id ?? null,
   });
   const [birth, setBirth] = useState(profile?.birth_date ?? "");
   const [pw, setPw] = useState("");
@@ -56,6 +58,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Modal open={open} onClose={onClose} title="상세 설정" wide>
       <div className="space-y-3">
+        <AvatarSettings />
         <ExtraFields value={extra} onChange={setExtra} onNickStatus={setNickOk} currentNickname={profile.nickname} />
         <p className="text-xs text-muted">※ 닉네임은 30일에 1번만 변경할 수 있어요. 종목·지역은 언제든 바로 변경됩니다.</p>
         <div><Label>생년월일</Label><BirthSelect value={birth} onChange={setBirth} /></div>
