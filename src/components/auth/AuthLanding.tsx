@@ -12,7 +12,7 @@ import { Logo } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LoginForm } from "./LoginForm";
 import { SignupForm } from "./SignupForm";
-import { cn } from "@/lib/utils";
+import { cn, safeNext } from "@/lib/utils";
 
 // 사이트가 실제로 하는 일 (소개 문구와 어긋나지 않게 기능이 바뀌면 같이 고친다)
 const FEATURES = [
@@ -34,7 +34,8 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
   const [tab, setTab] = useState<"login" | "signup">(initial);
 
   useEffect(() => {
-    if (redirectIfAuthed && user) router.replace("/");
+    // 로그인되면 ?next= 주소(공동 편집 기록지 링크 등)로, 없으면 마이 펜싱으로
+    if (redirectIfAuthed && user) router.replace(safeNext(new URLSearchParams(window.location.search).get("next")) ?? "/");
   }, [redirectIfAuthed, user, router]);
 
   return (

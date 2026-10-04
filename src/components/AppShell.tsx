@@ -22,8 +22,6 @@ import { SELECT_RECORDS } from "@/lib/records";
 import type { GameRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const soon = () => toast("준비 중인 기능입니다"); // 미구현 메뉴 공통 토스트
-
 export function AppShell({ children, requireAuth = false }: { children: React.ReactNode; requireAuth?: boolean }) {
   const { user, profile, loading, signOut } = useAuth();
   const router = useRouter();
@@ -87,18 +85,13 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             <Logo />
           </Link>
           <nav className="hidden items-center gap-4 text-sm md:flex">
-            <button onClick={soon} className="text-muted hover:text-foreground">오픈피스트</button>
-            <button onClick={soon} className="text-muted hover:text-foreground">커뮤니티</button>
-            <button onClick={soon} className="text-muted hover:text-foreground">아카데미</button>
+            {/* 오픈피스트·커뮤니티·아카데미 메뉴는 기능이 정해질 때까지 숨김(2026-10-05) */}
             <Link href="/methodology" className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
           </nav>
           <UserSearchBox />
         </div>
         {/* 좁은 화면 전용 보조 메뉴 줄(가로 스크롤) — 넓은 화면에서는 위 nav 가 대신한다 */}
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 text-sm md:hidden">
-          <button onClick={soon} className={mobLink}>오픈피스트</button>
-          <button onClick={soon} className={mobLink}>커뮤니티</button>
-          <button onClick={soon} className={mobLink}>아카데미</button>
           <Link href="/methodology" className={cn(mobLink, path === "/methodology" && "text-foreground")}>점수 안내</Link>
           {profile?.is_admin && <Link href="/admin" className={cn(mobLink, path === "/admin" && "text-foreground")}>관리자</Link>}
           {loggedIn ? (

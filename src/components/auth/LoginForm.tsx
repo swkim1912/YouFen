@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { useTurnstile } from "@/components/Turnstile";
+import { safeNext } from "@/lib/utils";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -28,8 +29,9 @@ export function LoginForm() {
   };
 
   const google = () =>
-    // 구글 로그인 후 돌아오면 AppShell 이 profile.onboarded 를 보고 온보딩 페이지로 보냄
-    supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+    // 구글 로그인 후 돌아오면 AppShell 이 profile.onboarded 를 보고 온보딩 페이지로 보냄. ?next= 가 있으면 그 주소로 돌아온다
+    // (Supabase URL Configuration 의 Redirect URLs 에 https://youfen.vercel.app/** 가 있어야 경로까지 유지됨)
+    supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + (safeNext(new URLSearchParams(window.location.search).get("next")) ?? "") } });
 
   return (
     <form onSubmit={login} className="space-y-4">

@@ -1,6 +1,6 @@
 "use client";
 // 관리자: 지도자 승인. 회원이 가입·설정에서 신분을 '지도자'로 고르면(또는 지도자가 소속 클럽을 바꾸면) 승인 대기(leader_status='pending')가 된다.
-// - 승인하면 프로필에 '지도자'로 보이고, 소속 클럽 이미지 신청(/api/club-image)을 할 수 있다. 반려하면 '지도자(승인 반려)'로 보인다.
+// - 승인하면 프로필에 '지도자'로 보이고, 반려하면 '지도자(승인 반려)'로 보인다. (클럽 마크 신청은 신분과 관계없이 소속 회원 누구나 — ClubMarkRequest)
 // - 판단 근거: 닉네임·이메일·소속 클럽·지역. 필요하면 이메일로 지도자 확인(자격증·클럽 운영 여부 등)을 받은 뒤 처리한다.
 // - 상태 변경은 DB 함수 admin_set_leader 만 할 수 있다(일반 회원은 leader_status 를 직접 못 바꿈 — 트리거 profiles_guard).
 import { useCallback, useEffect, useState } from "react";
@@ -43,7 +43,7 @@ export function LeadersAdmin({ onChanged }: { onChanged?: () => void }) {
           <option value="pending">승인 대기</option><option value="approved">승인됨</option><option value="rejected">반려</option><option value="all">전체</option>
         </Select>
       </div>
-      <p className="text-xs text-muted">신분을 지도자로 고른 회원입니다. 소속 클럽의 실제 지도자인지 확인한 뒤 승인해 주세요. 승인된 지도자만 클럽 이미지를 신청할 수 있어요.</p>
+      <p className="text-xs text-muted">신분을 지도자로 고른 회원입니다. 소속 클럽의 실제 지도자인지 확인한 뒤 승인해 주세요.</p>
       {list === null ? <p className="py-3 text-center text-sm text-muted">불러오는 중…</p> : list.length === 0 ? <p className="py-3 text-center text-sm text-muted">해당하는 회원이 없습니다</p> : (
         <ul className="space-y-2">
           {list.map((l) => (

@@ -1,7 +1,7 @@
 "use client";
 // 메인 = 마이페이지. 비로그인 사용자에게는 랜딩(로그인/회원가입 카드 + '비로그인으로 이용')을 보여주고,
 // 로그인한 사용자는 바로 마이 펜싱이 열린다.
-// 탭: 종합(프로필·티어·전적) / 상세정보(연결된 선수·협회 등록 확인 + 회원 탈퇴)
+// 탭: 종합(프로필·티어·전적) / 상세정보(연결된 선수·협회 등록 확인 + 클럽 마크 신청 + 회원 탈퇴)
 // 선수가 연결된 회원(학부모 제외)의 종합 탭은 선수 프로필 통합 화면(AthleteView own 모드: 티어 카드·점수·추이·전적·노트)을 쓴다.
 import { useEffect, useState } from "react";
 import { AuthLanding } from "@/components/auth/AuthLanding";
@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { ProfileView } from "@/components/ProfileView";
 import { LinkedAthletes } from "@/components/LinkedAthletes";
 import { AccountDelete } from "@/components/AccountDelete";
+import { ClubMarkRequest } from "@/components/ClubMarkRequest";
 import { AthleteView } from "@/components/AthleteView";
 import { isMergeable } from "@/lib/members";
 import { publicData } from "@/lib/fencing";
@@ -58,6 +59,7 @@ function MyPage() {
       {tab === "detail" ? (
         <>
           <LinkedAthletes />
+          <ClubMarkRequest />
           <AccountDelete />
         </>
       ) : linked === undefined ? (

@@ -3,7 +3,9 @@
 // - 팀 A(1·2·3, 교체, 주장) / 팀 B(4·5·6, 교체, 주장) — 팀명은 직접 입력 선수 입력
 // - 9개 라운드: 매 라운드 종료 시점의 누적 점수(TS)를 입력하면 라운드별 득점이 자동 계산됨
 // - 단체전은 오픈 게임 등록 기능이 없음 (저장/초기화만)
-import { useEffect, useRef, useState } from "react";
+// - 내용은 하나의 문서(TeamDoc)로 관리한다. 기본은 혼자 편집, '공동 편집'을 누르면 링크(?share=)로 들어온 회원끼리 실시간으로 함께 편집(lib/sharedSheet.ts).
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { ArrowLeftRight } from "lucide-react";
@@ -12,11 +14,16 @@ import { PlayerPicker, type PickedPlayer } from "@/components/PlayerPicker";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Confirm } from "@/components/ui/modal";
+import { SheetShareBar, SheetShareButton } from "@/components/SheetShareBar";
+import { useSheetDoc } from "@/lib/sharedSheet";
+import { localDay } from "@/lib/utils";
 
 export default function TeamPage() {
   return (
     <AppShell>
-      <Team />
+      <Suspense>
+        <Team />
+      </Suspense>
     </AppShell>
   );
 }
@@ -25,10 +32,22 @@ export default function TeamPage() {
 const ORDER: [number, number][] = [
   [3, 6], [1, 5], [2, 4], [1, 6], [3, 4], [2, 5], [1, 4], [2, 6], [3, 5],
 ];
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDay(); // 기기 시간 기준 오늘
 
 // 선수 슬롯 키: A1..A3, B4..B6 + 교체(SubA/SubB) + 주장(CaptA/CaptB)
 type Slots = Record<string, PickedPlayer | null>;
+
+interface TeamDoc {
+  info: { title: string; weapon: string; date: string };
+  slots: Slots; // 비어 있는 칸은 키 없음
+  teamName: { A: string; B: string };
+  tsA: string[]; tsB: string[]; // 라운드(9)별 누적 총점, 빈 칸 ""
+  subA: (string | null)[]; subB: (string | null)[]; // 라운드별 교체 선수 슬롯 키, 원래 선수면 null
+}
+const newTeam = (): TeamDoc => ({
+  info: { title: "", weapon: "에페", date: today() }, slots: {}, teamName: { A: "", B: "" },
+  tsA: Array(9).fill(""), tsB: Array(9).fill(""), subA: Array(9).fill(null), subB: Array(9).fill(null),
+});
 
 /**
  * 총점 입력칸. 타이핑 중에는 검사하지 않고(예: 10을 치려고 '1'을 입력하는 순간),
@@ -53,20 +72,19 @@ function TsCell({ value, onCommit }: { value: string; onCommit: (v: string) => b
 }
 
 function Team() {
-  const [info, setInfo] = useState({ title: "", weapon: "에페", date: today() });
-  const [slots, setSlots] = useState<Slots>({});
-  const [teamName, setTeamName] = useState({ A: "", B: "" }); // 팀명 (비어 있으면 "팀 A"/"팀 B")
-  const tn = (t: "A" | "B") => teamName[t].trim() || `팀 ${t}`;
-  const [tsA, setTsA] = useState<string[]>(Array(9).fill(""));
-  const [tsB, setTsB] = useState<string[]>(Array(9).fill(""));
-  // 라운드별 교체: 해당 라운드에 대신 뛴 선수의 슬롯 키(예: "P2", "SubA"). null 이면 원래 배정 선수
-  const [subA, setSubA] = useState<(string | null)[]>(Array(9).fill(null));
-  const [subB, setSubB] = useState<(string | null)[]>(Array(9).fill(null));
-  const [swapOpen, setSwapOpen] = useState<string | null>(null); // 교체 드롭다운이 열린 칸 ("A3" = A팀 3라운드)
+  const shareId = useSearchParams().get("share");
+  const sheet = useSheetDoc<TeamDoc>("team", newTeam, shareId);
+  const { doc, patch } = sheet;
+  const { info, slots, teamName, tsA, tsB, subA, subB } = doc;
+  const tn = (t: "A" | "B") => teamName[t].trim() || `팀 ${t}`; // 팀명 (비어 있으면 "팀 A"/"팀 B")
+  // 라운드별 교체(subA/subB): 해당 라운드에 대신 뛴 선수의 슬롯 키(예: "P2", "SubA"). null 이면 원래 배정 선수
+  const [swapOpen, setSwapOpen] = useState<string | null>(null); // 교체 드롭다운이 열린 칸 ("A3" = A팀 3라운드) — 각자 화면에만
   const [confirmReset, setConfirmReset] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  const setSlot = (k: string) => (p: PickedPlayer | null) => setSlots((s) => ({ ...s, [k]: p }));
+  const setInfo = (k: "title" | "weapon" | "date", v: string) => patch([{ p: ["info", k], v }], { debounceKey: `info.${k}` });
+  const setTeamName = (t: "A" | "B", v: string) => patch([{ p: ["teamName", t], v }], { debounceKey: `team.${t}` });
+  const setSlot = (k: string) => (p: PickedPlayer | null) => patch([p ? { p: ["slots", k], v: p } : { p: ["slots", k], d: 1 }]);
   const nameOf = (num: number, swap: string | null) =>
     (swap ? slots[swap]?.name : slots[`P${num}`]?.name) ?? (swap ? "교체" : `선수 ${num}`);
 
@@ -93,8 +111,7 @@ function Team() {
         return false;
       }
     }
-    arr[round] = v;
-    (team === "A" ? setTsA : setTsB)(arr);
+    patch([{ p: [team === "A" ? "tsA" : "tsB", String(round)], v }]);
     return true;
   };
 
@@ -115,7 +132,7 @@ function Team() {
     setSwapOpen(key);
   };
   const chooseSwap = (team: "A" | "B", i: number, v: string) => {
-    (team === "A" ? setSubA : setSubB)((arr) => arr.map((x, k) => (k === i ? v || null : x)));
+    patch([{ p: [team === "A" ? "subA" : "subB", String(i)], v: v || null }]);
     setSwapOpen(null);
   };
 
@@ -133,36 +150,34 @@ function Team() {
   };
 
   const reset = () => {
-    setInfo({ title: "", weapon: "에페", date: today() });
-    setSlots({});
-    setTeamName({ A: "", B: "" });
-    setTsA(Array(9).fill(""));
-    setTsB(Array(9).fill(""));
-    setSubA(Array(9).fill(null));
-    setSubB(Array(9).fill(null));
+    patch([{ p: [], v: newTeam() }]); // 공동 편집 중이면 모두의 기록지가 초기화된다
     setSwapOpen(null);
     setConfirmReset(false);
   };
 
   const picker = (k: string, ph: string) => <PlayerPicker allowSelf value={slots[k] ?? null} onChange={setSlot(k)} placeholder={ph} />;
 
+  const editable = sheet.mode === "local" || sheet.mode === "live";
   return (
     <div className="space-y-3">
+      <SheetShareBar mode={sheet.mode} members={sheet.members} onCopy={sheet.copyLink} onLeave={sheet.leaveShare} />
+      {editable && <>
       <div className="flex justify-end gap-2">
+        {sheet.mode === "local" && <SheetShareButton onShare={sheet.startShare} />}
         <Button size="sm" variant="outline" onClick={save}>저장</Button>
         <Button size="sm" variant="outline" onClick={() => setConfirmReset(true)}>초기화</Button>
       </div>
 
       <div ref={sheetRef} className="space-y-4 rounded-lg border border-line bg-background p-4">
         <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2"><Label>경기 이름</Label><Input placeholder="예: 10월 1일 연습경기" value={info.title} onChange={(e) => setInfo({ ...info, title: e.target.value })} /></div>
+          <div className="col-span-2"><Label>경기 이름</Label><Input placeholder="예: 10월 1일 연습경기" value={info.title} onChange={(e) => setInfo("title", e.target.value)} /></div>
           <div>
             <Label>무기</Label>
-            <Select value={info.weapon} onChange={(e) => setInfo({ ...info, weapon: e.target.value })}>
+            <Select value={info.weapon} onChange={(e) => setInfo("weapon", e.target.value)}>
               <option>플뢰레</option><option>에페</option><option>사브르</option>
             </Select>
           </div>
-          <div><Label>날짜</Label><Input type="date" value={info.date} onChange={(e) => setInfo({ ...info, date: e.target.value })} /></div>
+          <div><Label>날짜</Label><Input type="date" value={info.date} onChange={(e) => setInfo("date", e.target.value)} /></div>
         </div>
 
         {/* 팀 선수 입력: 1~6번을 입력하면 아래 라운드 표의 이름에 자동 연동 */}
@@ -171,7 +186,7 @@ function Team() {
             const nums = team === "A" ? [1, 2, 3] : [4, 5, 6];
             return (
               <div key={team} className="space-y-1.5 rounded-md border border-line p-3">
-                <Input className="font-bold" placeholder={`팀 ${team} 이름`} value={teamName[team]} onChange={(e) => setTeamName({ ...teamName, [team]: e.target.value })} />
+                <Input className="font-bold" placeholder={`팀 ${team} 이름`} value={teamName[team]} onChange={(e) => setTeamName(team, e.target.value)} />
                 {nums.map((n) => (
                   <div key={n} className="flex items-center gap-2">
                     <span className="w-5 text-sm font-bold">{n}</span>
@@ -237,8 +252,9 @@ function Team() {
             : `최종 ${finalA} : ${finalB} · ${finalA === finalB ? "동점" : finalA > finalB ? `${tn("A")} 승` : `${tn("B")} 승`}`}
         </div>
       </div>
+      </>}
 
-      <Confirm open={confirmReset} message="입력한 모든 정보를 초기화할까요?" onOk={reset} onCancel={() => setConfirmReset(false)} okText="초기화" />
+      <Confirm open={confirmReset} message={sheet.mode === "live" ? "함께 편집 중인 모든 사람의 기록지가 초기화돼요. 초기화할까요?" : "입력한 모든 정보를 초기화할까요?"} onOk={reset} onCancel={() => setConfirmReset(false)} okText="초기화" />
     </div>
   );
 }
