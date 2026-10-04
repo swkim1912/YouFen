@@ -1,6 +1,6 @@
 "use client";
-// 관리자: 클럽 관리 — ① 클럽 이미지 등록·제거 ② 지도자의 이미지 신청 승인/반려 ③ 협회 팀을 묶은 결과 중 '확인 필요(medium)' 클럽 검토(확인 완료 / 이름 변경 / 다른 클럽에 병합).
-// - 이미지는 서버 API(/api/club-image)가 형식 검사·512px webp 변환 후 저장한다. 관리자가 올리면 바로 적용, 지도자 신청은 승인해야 적용된다.
+// 관리자: 클럽 관리 — ① 클럽 이미지(마크) 등록·제거 ② 회원의 클럽 마크 신청(사유·동의 포함) 승인/반려 ③ 협회 팀을 묶은 결과 중 '확인 필요(medium)' 클럽 검토(확인 완료 / 이름 변경 / 다른 클럽에 병합).
+// - 이미지는 서버 API(/api/club-image)가 형식 검사·512px webp 변환 후 저장한다. 관리자가 올리면 바로 적용, 회원 신청은 승인해야 적용된다.
 // - 병합은 팀·회원 소속·선수·대회 기록의 소속을 모두 대상 클럽으로 옮기고 원래 클럽을 지운다(되돌릴 수 없음).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 // phones: 협회 팀 연락처(개인 휴대폰 포함) — 관리자 RPC 로만 받는다(일반 사용자는 API 로도 못 읽음)
 interface Club { id: number; name: string; sido: string | null; confidence: "high" | "medium"; image_url: string | null; phones: string[] | null; teams: number; members: number; team_names: string[] | null; member_profiles: number }
-interface Req { id: string; club_id: number; club_name: string; current_image: string | null; path: string; status: string; created_at: string; requester_nickname: string | null; requester_role: string | null; requester_club_id: number | null }
+interface Req { id: string; club_id: number; club_name: string; current_image: string | null; path: string; status: string; created_at: string; requester_nickname: string | null; requester_role: string | null; requester_club_id: number | null; reason: string | null; consented_at: string | null }
 
 const CLUB_IMG_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/club-images/`;
 
@@ -45,7 +45,7 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
   const decide = async (r: Req, action: "approve" | "reject") => {
     const res = await callApi("/api/club-image", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: r.id, action }) });
     if (!res.ok) return toast.error(res.message ?? "처리하지 못했어요");
-    toast.success(action === "approve" ? "승인해서 클럽 이미지에 반영했어요" : "반려했어요");
+    toast.success(action === "approve" ? "승인해서 클럽 마크에 반영했어요" : "반려했어요");
     loadReqs(); loadClubs();
   };
   // 파일을 고르면 편집기(크기·위치 조정)를 열고, 저장하면 512×512 로 올린다
@@ -62,7 +62,7 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
     const res = await callApi("/api/club-image", { method: "POST", body: fd });
     setUploading(false);
     if (!res.ok) return toast.error(res.message ?? "올리지 못했어요");
-    toast.success("클럽 이미지를 등록했어요");
+    toast.success("클럽 마크를 등록했어요");
     setPicked(null);
     loadClubs();
   };
@@ -92,10 +92,10 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
     <section className="space-y-4 rounded-lg border border-line bg-panel p-4">
       <h2 className="text-base font-bold">클럽 관리</h2>
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
-      <AvatarEditor file={picked} busy={uploading} title="클럽 이미지 크기·위치 조정" transparent onCancel={() => setPicked(null)} onSave={upload} />
+      <AvatarEditor file={picked} busy={uploading} title="클럽 마크 크기·위치 조정" transparent onCancel={() => setPicked(null)} onSave={upload} />
 
       <div>
-        <h3 className="mb-1.5 text-sm font-bold">지도자 이미지 신청 <span className="font-normal text-muted">{reqs.length}건 대기</span></h3>
+        <h3 className="mb-1.5 text-sm font-bold">클럽 마크 신청 <span className="font-normal text-muted">{reqs.length}건 대기</span></h3>
         {reqs.length === 0 ? <p className="text-sm text-muted">대기 중인 신청이 없습니다</p> : (
           <ul className="space-y-2">
             {reqs.map((r) => (
@@ -109,6 +109,9 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
                 <div className="min-w-0 flex-1">
                   <div><b>{r.club_name}</b></div>
                   <div className="text-xs text-muted">{r.requester_nickname ?? "(탈퇴)"} ({r.requester_role}{r.requester_club_id === r.club_id ? " · 소속 일치" : " · 소속 불일치"}) · {fmtDateTime(r.created_at)}</div>
+                  {/* 신청 사유와 마크 사용 권한·공개 동의 (지도자 전용이던 시절의 신청은 사유가 없음) */}
+                  {r.reason && <p className="mt-1 whitespace-pre-wrap break-words rounded bg-white/5 px-2 py-1 text-xs">{r.reason}</p>}
+                  <div className="mt-0.5 text-[11px] text-muted">{r.consented_at ? `사용 권한·공개 동의 ${fmtDateTime(r.consented_at)}` : "동의 기록 없음"}</div>
                 </div>
                 <Button size="sm" onClick={() => decide(r, "approve")}>승인</Button>
                 <Button size="sm" variant="outline" onClick={() => decide(r, "reject")}>반려</Button>

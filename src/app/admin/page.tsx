@@ -33,7 +33,7 @@ const ACTION: Record<string, string> = {
   report_resolved: "신고 처리", report_dismissed: "신고 기각", report_open: "신고 되돌림",
   claim_resolved: "연결 문의 처리", claim_rejected: "연결 문의 반려", claim_open: "연결 문의 되돌림", athlete_unlink: "선수 연결 해제",
   club_confidence: "클럽 확인 표시", club_rename: "클럽 이름 변경", club_merge: "클럽 병합",
-  club_image_set: "클럽 이미지 등록", club_image_approve: "클럽 이미지 승인", club_image_reject: "클럽 이미지 반려", club_image_remove: "클럽 이미지 제거",
+  club_image_set: "클럽 마크 등록", club_image_approve: "클럽 마크 승인", club_image_reject: "클럽 마크 반려", club_image_remove: "클럽 마크 제거",
   suspend: "이용 정지", unsuspend: "정지 해제", leader_approve: "지도자 승인", leader_reject: "지도자 반려",
 };
 
@@ -69,7 +69,7 @@ function Admin() {
   ];
   const cards: [string, string | number | undefined][] = [
     ["회원", ov?.users], ["연결된 선수", ov?.linked_athletes], ["새 고객지원 접수", ov?.support_new], ["미처리 사진 신고", ov?.avatar_reports],
-    ["미처리 선수 연결 문의", ov?.claims], ["지도자 승인 대기", ov?.leaders_pending], ["클럽 이미지 신청 대기", ov?.club_requests], ["확인 필요 클럽", ov?.clubs_review],
+    ["미처리 선수 연결 문의", ov?.claims], ["지도자 승인 대기", ov?.leaders_pending], ["클럽 마크 신청 대기", ov?.club_requests], ["확인 필요 클럽", ov?.clubs_review],
     ["협회 팀 / 클럽", ov ? `${ov.teams} / ${ov.clubs}` : undefined], ["협회 선수", ov?.players],
     ["대회 / 종목", ov ? `${ov.competitions} / ${ov.events}` : undefined], ["가장 최근 대회", ov?.last_competition ?? undefined],
   ];

@@ -17,6 +17,12 @@ export function localDay(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** 로그인 후 돌아갈 주소(?next=) 검사: 이 사이트 안의 경로("/…")만 허용하고 다른 사이트로 보내는 주소("//…", "\…", "http…")는 버린다 */
+export function safeNext(next: string | null | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return null;
+  return next;
+}
+
 /** 회원 탈퇴 확인 문구 — 탈퇴 창(AccountDelete)과 서버(/api/account)가 같은 값을 쓴다 */
 export const DELETE_CONFIRM = "회원 탈퇴";
 

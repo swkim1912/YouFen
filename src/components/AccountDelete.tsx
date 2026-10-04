@@ -53,6 +53,7 @@ export function AccountDelete() {
               <li>계정(이메일·로그인 정보)과 프로필, 프로필 사진</li>
               <li>내가 등록한 경기 기록과 피드백 노트</li>
               <li>선수 연결 (연결된 선수 페이지에서 내 닉네임이 사라져요)</li>
+              <li>검토 중인 클럽 마크 신청</li>
             </ul>
           </div>
           <div>
@@ -60,6 +61,7 @@ export function AccountDelete() {
             <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-muted">
               <li>다른 회원이 나를 상대로 등록한 기록 — 상대 이름이 &lsquo;탈퇴 회원&rsquo;으로 바뀌어 남아요</li>
               <li>협회 대회 결과(선수 페이지)는 협회 공개 자료라 그대로 남아요</li>
+              <li>승인되어 등록된 클럽 마크는 클럽 정보로 그대로 쓰여요</li>
               <li>고객지원 접수 내용과 체육인번호는 개인정보 처리방침에 따라 보관돼요</li>
             </ul>
           </div>

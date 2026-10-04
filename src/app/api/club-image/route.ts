@@ -1,10 +1,11 @@
 // 클럽(소속팀) 이미지 서버 API. 이미지는 clubs.image_url 로 쓰이며, 프로필 사진의 기본값(소속팀 이미지)이 된다.
-//  POST   multipart(file, club_id)  관리자: 바로 등록 / 해당 클럽 소속 '승인된 지도자'(profiles.role='지도자', leader_status='approved', club_id 일치): 승인 대기 신청(관리자가 눈으로 확인 후 승인)
+//  POST   multipart(file, club_id[, reason, consent])  관리자: 바로 등록 / 그 클럽 소속 회원(신분 무관, profiles.club_id 일치): 클럽 마크 승인 대기 신청
+//         (신청 사유 3~500자 + 마크 사용 권한·공개 동의 필수, 관리자가 눈으로 확인 후 승인 — 마이 펜싱 > 상세정보의 ClubMarkRequest)
 //  PATCH  {id, action: "approve" | "reject"}  관리자: 신청 승인(이미지 반영) / 반려(파일 삭제)
 //  DELETE ?club_id=<id>             관리자: 클럽 이미지 제거(기본 글자 표시로 돌아감)
 // 보안: 버킷 club-images 는 읽기만 공개이고 쓰기 정책이 없어 이 API(서비스 키)로만 쓸 수 있다.
 //   파일은 형식(jpeg·png·webp)을 실제 내용으로 확인하고 512×512 이내 webp 로 다시 만들어 저장한다(메타데이터 제거).
-//   지도자 신청은 자동 검열(Vision) 대신 관리자가 승인 전에 직접 본다 — 승인 전까지는 어디에도 표시되지 않는다.
+//   회원 신청은 자동 검열(Vision) 대신 관리자가 승인 전에 직접 본다 — 승인 전까지는 어디에도 표시되지 않는다.
 import sharp from "sharp";
 import { audit, authed, fail } from "@/lib/serverAuth";
 
@@ -37,13 +38,15 @@ export async function POST(req: Request) {
   const { data: club } = await a.admin.from("clubs").select("id,name").eq("id", clubId).maybeSingle();
   if (!club) return fail(404, "클럽을 찾을 수 없어요");
 
+  const reason = String(form?.get("reason") ?? "").trim();
   if (!a.isAdmin) {
-    // 지도자 신청 자격: 관리자 승인을 받은 지도자(leader_status='approved')이고 소속 클럽이 같아야 한다
-    const { data: me } = await a.admin.from("profiles").select("role,club_id,leader_status").eq("id", a.uid).maybeSingle();
-    if (me?.role !== "지도자" || me.club_id !== clubId) return fail(403, "소속 클럽의 지도자만 신청할 수 있어요");
-    if (me.leader_status !== "approved") return fail(403, "관리자의 지도자 승인을 받은 뒤 신청할 수 있어요");
-    const { count: pendingClub } = await a.admin.from("club_image_requests").select("id", { count: "exact", head: true }).eq("club_id", clubId).eq("status", "pending");
-    if ((pendingClub ?? 0) > 0) return fail(409, "이미 검토 중인 신청이 있어요. 결과가 나온 뒤 다시 신청해 주세요");
+    // 신청 자격: 그 클럽이 내 소속(profiles.club_id)이어야 한다. 신분(지도자 등)은 묻지 않는다
+    const { data: me } = await a.admin.from("profiles").select("club_id").eq("id", a.uid).maybeSingle();
+    if (me?.club_id !== clubId) return fail(403, "내 소속 클럽의 마크만 신청할 수 있어요");
+    if (reason.length < 3 || reason.length > 500) return fail(400, "신청 사유를 3~500자로 적어 주세요");
+    if (form?.get("consent") !== "true") return fail(400, "마크 사용 권한·공개 동의가 필요해요");
+    const { count: pendingMine } = await a.admin.from("club_image_requests").select("id", { count: "exact", head: true }).eq("requested_by", a.uid).eq("status", "pending");
+    if ((pendingMine ?? 0) > 0) return fail(409, "검토 중인 신청이 있어요. 결과가 나온 뒤 다시 신청해 주세요");
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     const { count: mine } = await a.admin.from("club_image_requests").select("id", { count: "exact", head: true }).eq("requested_by", a.uid).gte("created_at", since);
     if ((mine ?? 0) >= 3) return fail(429, "하루 3번까지 신청할 수 있어요");
@@ -60,14 +63,17 @@ export async function POST(req: Request) {
     const { data: pub } = a.admin.storage.from(BUCKET).getPublicUrl(path);
     await a.admin.from("clubs").update({ image_url: pub.publicUrl }).eq("id", clubId);
     await audit(a, "club_image_set", String(clubId), { club: club.name });
-    return Response.json({ ok: true, url: pub.publicUrl });
+    return Response.json({ ok: true, url: pub.publicUrl, pending: false });
   }
   const id = crypto.randomUUID();
   const path = `pending/${id}.webp`;
   const up = await a.admin.storage.from(BUCKET).upload(path, webp, { contentType: "image/webp" });
   if (up.error) return fail(500, "이미지를 저장하지 못했어요");
-  const { error } = await a.admin.from("club_image_requests").insert({ id, club_id: clubId, requested_by: a.uid, path });
-  if (error) return fail(500, "신청을 저장하지 못했어요");
+  const { error } = await a.admin.from("club_image_requests").insert({ id, club_id: clubId, requested_by: a.uid, path, reason, consented_at: new Date().toISOString() });
+  if (error) {
+    await a.admin.storage.from(BUCKET).remove([path]); // 신청이 저장되지 않았으면 올린 파일도 지운다
+    return fail(500, "신청을 저장하지 못했어요");
+  }
   return Response.json({ ok: true, pending: true });
 }
 

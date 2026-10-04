@@ -2,7 +2,10 @@
 // 개인전 기록지 (Poole Sheet)
 // - 상단: 경기 정보 입력 / 중앙: 풀 결과 매트릭스 / 하단: 순위 집계표
 // - 순위는 결과를 입력할 때마다 즉시 재계산된다 (lib/pool.ts, 승률 → Ind → TS, 동률 시 공동 순위)
-import { useMemo, useRef, useState } from "react";
+// - 내용은 하나의 문서(PoolDoc)로 관리한다. 기본은 혼자 편집, '공동 편집'을 누르면 링크(?share=)로 들어온 회원끼리 실시간으로 함께 편집(lib/sharedSheet.ts).
+//   문서 구조: players·results 는 칸 번호를 키로 하는 객체(results["2-5"] = 2번이 5번에게 낸 점수) — 서로 다른 칸을 동시에 고쳐도 겹치지 않게.
+import { Suspense, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
@@ -10,18 +13,22 @@ import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
 import { PlayerPicker, type PickedPlayer } from "@/components/PlayerPicker";
 import { validateScore } from "@/components/NewRecordModal";
+import { SheetShareBar, SheetShareButton } from "@/components/SheetShareBar";
 import { Modal, Confirm } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Dot } from "@/components/ui/dot";
 import { Input, Label, Select } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { calcPool, type PoolPlayer, type PoolResults } from "@/lib/pool";
+import { useSheetDoc, type Op } from "@/lib/sharedSheet";
 import { localDay } from "@/lib/utils";
 
 export default function PoolPage() {
   return (
     <AppShell>
-      <Pool />
+      <Suspense>
+        <Pool />
+      </Suspense>
     </AppShell>
   );
 }
@@ -29,17 +36,24 @@ export default function PoolPage() {
 const MAX = 12, MIN = 2;
 const today = () => localDay(); // 기기 시간 기준 오늘 (UTC 로 자르면 오전 9시 전엔 어제가 됨)
 
+type Info = { title: string; horn: string; strip: string; referee: string; date: string; hits: string };
+interface PoolDoc {
+  info: Info;
+  n: number; // 참가자 칸 수
+  players: Record<string, PoolPlayer>; // 칸 번호 → 참가자 (빈 칸은 키 없음)
+  results: Record<string, number>; // "i-j" → i번이 j번과 싸워 낸 점수
+}
+const newPool = (): PoolDoc => ({ info: { title: "", horn: "", strip: "", referee: "", date: today(), hits: "5" }, n: 6, players: {}, results: {} });
+
 function Pool() {
   const { user } = useAuth();
-  // 헤더 정보
-  const [info, setInfo] = useState({ title: "", horn: "", strip: "", referee: "", date: today(), hits: "5" });
-  // 참가자 슬롯 (null = 비어 있음). 
-  const [n, setN] = useState(6);
-  const [players, setPlayers] = useState<(PoolPlayer | null)[]>([]);
-  const [results, setResults] = useState<PoolResults>([]);
+  const shareId = useSearchParams().get("share");
+  const sheet = useSheetDoc<PoolDoc>("pool", newPool, shareId);
+  const { doc, patch } = sheet;
+  const { info, n } = doc;
   const [registered, setRegistered] = useState(false);
 
-  // 팝업 상태
+  // 팝업 상태 (각자 화면에만 있는 상태 — 공동 편집해도 공유하지 않음)
   const [addOpen, setAddOpen] = useState(false);
   const [picked, setPicked] = useState<PickedPlayer | null>(null);
   const [inputOpen, setInputOpen] = useState(false);
@@ -52,32 +66,40 @@ function Pool() {
   const [confirmReset, setConfirmReset] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
 
+  const setInfo = (k: keyof Info, v: string) => patch([{ p: ["info", k], v }], { debounceKey: `info.${k}` });
+
   // 참가자 슬롯: 비어 있으면 null (지도자·관전자도 기록지를 만들 수 있도록 본인을 자동으로 넣지 않는다)
   const slots: (PoolPlayer | null)[] = useMemo(
-    () => Array.from({ length: n }, (_, i) => players[i] ?? null),
-    [n, players]
+    () => Array.from({ length: n }, (_, i) => doc.players[i] ?? null),
+    [n, doc.players]
   );
+  // 결과 객체 → 계산용 2차원 배열
+  const results: PoolResults = useMemo(() => {
+    const arr: PoolResults = Array.from({ length: n }, () => []);
+    for (const [k, v] of Object.entries(doc.results)) {
+      const [i, j] = k.split("-").map(Number);
+      if (i < n && j < n) arr[i][j] = v;
+    }
+    return arr;
+  }, [n, doc.results]);
 
   const rows = useMemo(() => calcPool(n, results), [n, results]);
   const placeOf = (i: number) => rows.find((r) => r.idx === i)!;
 
-  const setSlots = (next: (PoolPlayer | null)[]) => setPlayers(next);
-
   // ---- 참가자 수 조절 ----
-  const hasDataAt = (i: number) =>
-    !!slots[i] || results.some((row, r) => row?.some((v, c) => v !== undefined && (r === i || c === i)));
+  const hasDataAt = (i: number) => !!slots[i] || Object.keys(doc.results).some((k) => k.split("-").includes(String(i)));
   const changeN = (d: 1 | -1) => {
-    if (d === 1) return n < MAX ? setN(n + 1) : toast.error(`참가자는 최대 ${MAX}명입니다`);
+    if (d === 1) return n < MAX ? patch([{ p: ["n"], v: n + 1 }]) : toast.error(`참가자는 최대 ${MAX}명입니다`);
     if (n <= MIN) return toast.error(`참가자는 최소 ${MIN}명입니다`);
     if (hasDataAt(n - 1)) return setConfirmShrink(true); // 경고 팝업
     shrink();
   };
   const shrink = () => {
     const keep = n - 1;
-    setSlots(slots.slice(0, keep));
-    // 마지막 참가자의 경기 결과도 함께 삭제
-    setResults(results.slice(0, keep).map((row) => (row ?? []).slice(0, keep)));
-    setN(keep);
+    // 마지막 참가자와 그 참가자의 경기 결과도 함께 삭제
+    const ops: Op[] = [{ p: ["n"], v: keep }, { p: ["players", String(keep)], d: 1 }];
+    for (const k of Object.keys(doc.results)) if (k.split("-").includes(String(keep))) ops.push({ p: ["results", k], d: 1 });
+    patch(ops);
     setConfirmShrink(false);
   };
 
@@ -87,14 +109,14 @@ function Pool() {
     if (slots.some((s) => s && s.name === picked.name && s.userId === picked.userId))
       return toast.error("이미 추가된 참가자입니다");
     let idx = slots.findIndex((s) => !s);
-    const next = [...slots];
+    const ops: Op[] = [];
     if (idx === -1) {
       if (n >= MAX) return toast.error(`참가자는 최대 ${MAX}명입니다`);
       idx = n;
-      setN(n + 1);
+      ops.push({ p: ["n"], v: n + 1 });
     }
-    next[idx] = { id: crypto.randomUUID(), name: picked.name, userId: picked.userId };
-    setSlots(next);
+    ops.push({ p: ["players", String(idx)], v: { id: crypto.randomUUID(), name: picked.name, userId: picked.userId } });
+    patch(ops);
     setPicked(null);
     setAddOpen(false);
   };
@@ -117,11 +139,7 @@ function Pool() {
     apply(A, B);
   };
   const apply = (A: number, B: number) => {
-    const next = results.map((r) => (r ? [...r] : []));
-    for (const i of [A, B]) next[i] = next[i] ?? [];
-    next[A][B] = Number(sa);
-    next[B][A] = Number(sb);
-    setResults(next);
+    patch([{ p: ["results", `${A}-${B}`], v: Number(sa) }, { p: ["results", `${B}-${A}`], v: Number(sb) }]);
     setRegistered(false);
     setConfirmOverwrite(false);
     setInputOpen(false);
@@ -142,15 +160,12 @@ function Pool() {
   };
 
   const reset = () => {
-    setInfo({ title: "", horn: "", strip: "", referee: "", date: today(), hits: "5" });
-    setPlayers([]);
-    setResults([]);
-    setN(6);
+    patch([{ p: [], v: newPool() }]); // 공동 편집 중이면 모두의 기록지가 초기화된다
     setRegistered(false);
     setConfirmReset(false);
   };
 
-  // ---- 오픈 기록 등록: 내가 참가한 경기를 오픈 기록으로 서버에 등록 ----
+  // ---- 오픈 기록 등록: 내가 참가한 경기를 오픈 기록으로 서버에 등록 (공동 편집 중에도 각자 자기 경기만) ----
   const register = async () => {
     if (!user) return toast.error("오픈 기록 등록은 로그인 후 이용할 수 있습니다");
     const me = slots.findIndex((s) => s?.userId === user.id);
@@ -186,8 +201,11 @@ function Pool() {
   const names = slots.map((s, i) => s?.name ?? `참가자 ${i + 1}`);
   const available = (except: string) => slots.map((s, i) => ({ s, i })).filter(({ s, i }) => s && String(i) !== except);
 
+  const editable = sheet.mode === "local" || sheet.mode === "live";
   return (
     <div className="space-y-3">
+      <SheetShareBar mode={sheet.mode} members={sheet.members} onCopy={sheet.copyLink} onLeave={sheet.leaveShare} />
+      {editable && <>
       {/* 컨트롤 */}
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" onClick={() => changeN(-1)} aria-label="참가자 감소"><Minus size={14} /></Button>
@@ -196,6 +214,7 @@ function Pool() {
         <Button size="sm" onClick={() => setAddOpen(true)}>참가자 추가</Button>
         <Button size="sm" onClick={() => openInput()}>결과 입력</Button>
         <span className="ml-auto flex gap-2">
+          {sheet.mode === "local" && <SheetShareButton onShare={sheet.startShare} />}
           <Button size="sm" variant="outline" onClick={save}>저장</Button>
           <Button size="sm" variant="outline" onClick={() => setConfirmReset(true)}>초기화</Button>
           <Button size="sm" onClick={register} disabled={registered}>{registered ? "등록 완료" : "등록"}</Button>
@@ -205,12 +224,12 @@ function Pool() {
       {/* ===== 캡처 영역 (저장 버튼 시 이미지로 변환) ===== */}
       <div ref={sheetRef} className="space-y-4 rounded-lg border border-line bg-background p-4">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <div className="col-span-2 sm:col-span-3"><Label>경기 이름</Label><Input placeholder="예: 10월 1일 연습경기" value={info.title} onChange={(e) => setInfo({ ...info, title: e.target.value })} /></div>
-          <div><Label>뿔 넘버</Label><Input value={info.horn} onChange={(e) => setInfo({ ...info, horn: e.target.value })} /></div>
-          <div><Label>피스트 넘버</Label><Input value={info.strip} onChange={(e) => setInfo({ ...info, strip: e.target.value })} /></div>
-          <div><Label>심판</Label><Input value={info.referee} onChange={(e) => setInfo({ ...info, referee: e.target.value })} /></div>
-          <div><Label>날짜</Label><Input type="date" value={info.date} onChange={(e) => setInfo({ ...info, date: e.target.value })} /></div>
-          <div><Label>Hits to win</Label><Input type="number" min={1} value={info.hits} onChange={(e) => setInfo({ ...info, hits: e.target.value })} /></div>
+          <div className="col-span-2 sm:col-span-3"><Label>경기 이름</Label><Input placeholder="예: 10월 1일 연습경기" value={info.title} onChange={(e) => setInfo("title", e.target.value)} /></div>
+          <div><Label>뿔 넘버</Label><Input value={info.horn} onChange={(e) => setInfo("horn", e.target.value)} /></div>
+          <div><Label>피스트 넘버</Label><Input value={info.strip} onChange={(e) => setInfo("strip", e.target.value)} /></div>
+          <div><Label>심판</Label><Input value={info.referee} onChange={(e) => setInfo("referee", e.target.value)} /></div>
+          <div><Label>날짜</Label><Input type="date" value={info.date} onChange={(e) => setInfo("date", e.target.value)} /></div>
+          <div><Label>Hits to win</Label><Input type="number" min={1} value={info.hits} onChange={(e) => setInfo("hits", e.target.value)} /></div>
         </div>
 
         {/* 풀 매트릭스 */}
@@ -286,6 +305,7 @@ function Pool() {
           </tbody>
         </table>
       </div>
+      </>}
 
       {/* 참가자 추가 팝업 */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="참가자명 입력">
@@ -320,7 +340,7 @@ function Pool() {
 
       <Confirm open={confirmShrink} message="참가자를 줄이면 해당 참가자의 경기 결과가 삭제됩니다. 계속하시겠습니까?" onOk={shrink} onCancel={() => setConfirmShrink(false)} />
       <Confirm open={confirmOverwrite} message="경기 결과를 덮어쓰시겠습니까?" onOk={() => apply(Number(selA), Number(selB))} onCancel={() => setConfirmOverwrite(false)} />
-      <Confirm open={confirmReset} message="입력한 모든 정보를 초기화할까요?" onOk={reset} onCancel={() => setConfirmReset(false)} okText="초기화" />
+      <Confirm open={confirmReset} message={sheet.mode === "live" ? "함께 편집 중인 모든 사람의 기록지가 초기화돼요. 초기화할까요?" : "입력한 모든 정보를 초기화할까요?"} onOk={reset} onCancel={() => setConfirmReset(false)} okText="초기화" />
     </div>
   );
 }
