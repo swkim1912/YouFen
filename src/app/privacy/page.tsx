@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Clause, LegalPage } from "@/components/LegalPage";
 import { OPERATOR, SERVICE_NAME } from "@/lib/legal";
 
-export const metadata = { title: "개인정보 처리방침 · 유펜 YouFen" };
+export const metadata = { title: "개인정보 처리방침" };
 
 export default function PrivacyPage() {
   return (
@@ -75,7 +75,8 @@ export default function PrivacyPage() {
         <ul>
           <li>본인의 개인정보 열람, 정정, 삭제, 처리 정지를 요구할 수 있습니다. 닉네임·종목·지역·생년월일·소속·프로필 사진 등은 마이 펜싱의 상세 설정에서 직접 수정할 수 있습니다.</li>
           <li>선수 연결은 마이 펜싱 &gt; 상세정보에서 직접 해제할 수 있습니다.</li>
-          <li>탈퇴와 그 밖의 요청은 <Link href="/support" className="text-brand">고객지원</Link>(계정·탈퇴 문의)으로 접수하면 확인 후 지체 없이 처리합니다.</li>
+          <li>탈퇴는 마이 펜싱 &gt; 상세정보 &gt; <b>회원 탈퇴</b>에서 직접 할 수 있으며 즉시 처리됩니다. 다른 회원이 나를 상대로 등록한 경기 기록은 그 회원의 기록이므로 남고, 상대 이름은 &lsquo;탈퇴 회원&rsquo;으로 바뀝니다.</li>
+          <li>그 밖의 요청은 <Link href="/support" className="text-brand">고객지원</Link>(계정·탈퇴 문의)으로 접수하면 확인 후 지체 없이 처리합니다.</li>
           <li>만 14세 미만 아동의 개인정보는 수집하지 않습니다. 만 14세 미만임이 확인되면 계정과 정보를 삭제합니다.</li>
         </ul>
       </Clause>

@@ -113,6 +113,12 @@
   - **지도자 승인제:** 신분을 지도자로 고르거나 지도자가 소속 클럽을 바꾸면 `profiles.leader_status='pending'`(트리거 `profiles_guard`), 관리자 페이지 '지도자 승인' 탭(`LeadersAdmin`, RPC `admin_leaders`/`admin_set_leader`)에서 승인/반려. 화면 표시는 `roleLabel()`(승인 전 '지도자(승인 대기)'), 클럽 이미지 신청은 승인된 지도자만.
   - **Cloudflare Turnstile**(`components/Turnstile.tsx` `useTurnstile()`): 로그인·가입·인증 메일 재발송·비밀번호 재설정·비밀번호 변경의 현재 비밀번호 확인에 `captchaToken` 전달. `NEXT_PUBLIC_TURNSTILE_SITE_KEY` 가 없으면 위젯 없이 동작. 비밀 키는 Supabase 대시보드 CAPTCHA 설정에.
   - 보안 헤더(`next.config.ts`: frame-ancestors/X-Frame-Options·nosniff·Referrer-Policy·Permissions-Policy, X-Powered-By 숨김). 처리방침에 Cloudflare·선수 연결 시 실명 공개·요청 횟수 제한 추가(`CONSENT_VERSION` 2026-10-05), 선수 연결 창에 실명 공개 안내.
+- **출시 전 사용자 경험 정리(2026-10-05, 브랜치 `ux/prelaunch`):**
+  - **페이지 제목·링크 미리보기:** 루트 `layout.tsx` 의 제목 틀 `%s · 유펜 YouFen` + 경로마다 제목만 정하는 `layout.tsx`(랭킹·대회 결과·선수 프로필·검색·기록지 등). 선수 이름·대회 이름·랭킹 필터처럼 화면에서 불러오는 제목은 `usePageTitle()`(`lib/pageTitle.ts`, 브라우저 탭만 — 미리보기에는 안 쓰임). 대표 이미지 `src/app/opengraph-image.tsx`(빌드 때 1200×630 PNG 생성: 로그인 화면 배경 + 로고 + 티어 엠블럼, 글꼴은 npm pretendard OTF). og:title·description 은 각 페이지 제목·설명을 자동으로 쓴다. 배포 주소가 바뀌면 `NEXT_PUBLIC_SITE_URL`(없으면 youfen.vercel.app).
+  - **404·오류 화면:** `app/not-found.tsx`(AppShell 안, 홈·랭킹 버튼), `app/error.tsx`(틀 없는 단독 화면, '다시 시도'=`retry`), `app/global-error.tsx`. 공용 본문 `components/StatusScreen.tsx`.
+  - **회원 탈퇴:** 마이 펜싱 > 상세정보 맨 아래 `AccountDelete`(확인 문구 `DELETE_CONFIRM`='회원 탈퇴') → 서버 `DELETE /api/account`: 다른 회원 기록의 상대 이름을 '탈퇴 회원'으로 바꾸고, 프로필 사진 파일 삭제, `auth.admin.deleteUser` → DB 연쇄 삭제(프로필·내 기록·노트·선수 연결 등). 고객지원 접수(계정 분리)·체육인번호는 처리방침대로 남는다. **관리자 계정은 탈퇴 불가**(먼저 관리자 권한 해제). 처리방침·약관의 탈퇴 방법도 수정.
+  - 랭킹 표 '대회 수' = 시즌 안 실제 참가 수(`n_events`, 이전엔 가중치 반영 `n_eff` 소수). 선수 연결 검색은 이름 정확히 일치가 맨 위(마이그레이션 29), 30명까지, 한도에 차면 안내.
+  - 게임 기록 추가에 **경기 날짜**(기본 오늘 = 저장한 시각, 지난 날짜는 그날 정오로 저장, 미래 불가). 날짜 기본값은 `localDay()`(기기 시간 기준 — 기록지도 이것으로 바꿔 오전 9시 전 '어제'로 나오던 문제 수정).
 
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 - 관리자 페이지 및 디자인 개선 완료
@@ -126,6 +132,5 @@
 ## 미구현 / 나중에 할 일
 - 오픈피스트·커뮤니티·아카데미: 메뉴만 있고 "준비 중인 기능입니다" 토스트
 - 친구 추가(현재 상대 선택은 전체 회원 닉네임 검색), 뱃지 실제 디자인
-- 전적 비공개는 화면에서만 가림(DB 레벨 차단 아님)
 - 앱 이식
 

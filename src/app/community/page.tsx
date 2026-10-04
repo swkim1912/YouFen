@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Clause, LegalPage } from "@/components/LegalPage";
 
-export const metadata = { title: "커뮤니티 운영원칙 · 유펜 YouFen" };
+export const metadata = { title: "커뮤니티 운영원칙" };
 
 export default function CommunityPage() {
   return (

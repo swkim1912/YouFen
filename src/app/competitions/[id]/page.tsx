@@ -14,6 +14,7 @@ import {
   type MatchRow, type Tab, type Age, type GenderValue, type WeaponValue,
 } from "@/lib/fencing";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/pageTitle";
 
 interface Comp { id: string; name: string; start_date: string | null; end_date: string | null }
 interface Ev {
@@ -46,6 +47,7 @@ function Inner() {
   const [comp, setComp] = useState<Comp | null | undefined>(undefined);
   const [events, setEvents] = useState<Ev[]>([]);
   const [eventId, setEventId] = useState<string | null>(sp.get("event"));
+  usePageTitle(comp?.name); // 탭 제목 = 대회 이름
 
   useEffect(() => {
     let cancelled = false;

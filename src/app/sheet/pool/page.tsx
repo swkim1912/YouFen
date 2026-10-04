@@ -16,6 +16,7 @@ import { Dot } from "@/components/ui/dot";
 import { Input, Label, Select } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { calcPool, type PoolPlayer, type PoolResults } from "@/lib/pool";
+import { localDay } from "@/lib/utils";
 
 export default function PoolPage() {
   return (
@@ -26,7 +27,7 @@ export default function PoolPage() {
 }
 
 const MAX = 12, MIN = 2;
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDay(); // 기기 시간 기준 오늘 (UTC 로 자르면 오전 9시 전엔 어제가 됨)
 
 function Pool() {
   const { user } = useAuth();
