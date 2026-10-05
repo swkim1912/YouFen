@@ -1,6 +1,7 @@
 // 게임 기록 조회/가공 헬퍼
 import { supabase } from "./supabase";
 import type { GameRecord } from "./types";
+import { athletesOfMembers, isMergeable } from "./members";
 
 /** 기록은 '등록자 기준'으로 저장됨 → 보는 사람 기준(내 점수/상대)으로 뒤집은 뷰 타입 */
 export interface RecordView {
@@ -44,11 +45,25 @@ export async function fetchUserRecords(userId: string, includePending = false): 
     .order("played_at", { ascending: false })
     .limit(500);
   if (error) throw error;
-  return ((data ?? []) as unknown as GameRecord[])
+  const views = ((data ?? []) as unknown as GameRecord[])
     .filter((r) => includePending || r.status !== "PENDING")
     // 내가 '상대방'인 기록은 확정된 것만 (프라이빗은 원래 RLS로 안 보이지만 이중 방어)
     .filter((r) => r.creator_id === userId || r.status === "ACCEPTED")
     .map((r) => toView(r, userId));
+  return withLinkedNames(views);
+}
+
+/** 선수와 연결된 회원(학부모 제외)이 상대면 "선수명(닉네임)"으로 보이게 상대 이름을 바꾼다 */
+async function withLinkedNames(views: RecordView[]): Promise<RecordView[]> {
+  const ids = [...new Set(views.map((v) => v.oppId).filter((x): x is string => !!x))].slice(0, 50);
+  if (!ids.length) return views;
+  const { data } = await supabase.from("profiles").select("id,role").in("id", ids);
+  const mergeable = ((data ?? []) as { id: string; role: string | null }[]).filter(isMergeable).map((m) => m.id);
+  const linked = await athletesOfMembers(mergeable);
+  return views.map((v) => {
+    const real = v.oppId ? linked.get(v.oppId)?.[0]?.name : null;
+    return real && real !== v.oppName ? { ...v, oppName: `${real}(${v.oppName})` } : v;
+  });
 }
 
 export function winRate(views: RecordView[]) {
