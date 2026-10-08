@@ -1,15 +1,17 @@
 "use client";
 // 관리자: 커뮤니티 신고 처리 (docs/COMMUNITY.md 0-5·0-6)
 // - 목록: admin_community_reports(상태별 최근 100건). 신고 당시 내용 사본(snapshot)·신고 수·대상 회원(유펜 닉네임 + 커뮤니티 닉네임)·현재 정지 상태.
-// - 처리: 처리 완료/기각(같은 대상의 열린 신고를 한꺼번에), 커뮤니티 정지(1·7·30일·영구, 사유 필수), 커뮤니티 닉네임 지우기, 커뮤니티 사진 삭제.
-//   2단계부터 글·댓글·채팅 대상이 생기면 '숨김/삭제' 버튼을 이 화면에 더한다.
-// - 대상 회원이 누구인지(실제 계정)는 관리자에게만 보인다. 처리 내역은 관리 기록(admin_audit)에 남는다.
-//   (익명 글·댓글 작성자를 따로 확인하는 기능과 그 열람 기록은 2단계 게시판에서 추가)
+// - 처리: 처리 완료/기각(같은 대상의 열린 신고를 한꺼번에), 커뮤니티 정지(1·7·30일·영구, 사유 필수), 커뮤니티 닉네임 지우기, 커뮤니티 사진 삭제,
+//   게시글·댓글은 숨김/복구/삭제(AdminContentTools) + 글 열어 보기.
+// - 대상 회원이 누구인지(실제 계정)는 관리자에게만 보인다. 익명 글·댓글은 이름을 숨기고 '작성자 확인'(기록이 남음)으로만 본다.
+//   처리 내역은 관리 기록(admin_audit)에 남는다.
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { callApi, fmtDateTime, rpcOk } from "@/lib/adminApi";
+import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
+import { AdminContentTools } from "@/components/community/AdminContentTools";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { CommunityBanModal } from "./CommunityBanModal";
@@ -21,9 +23,11 @@ interface CReport {
   target_user_id: string | null; target_nickname: string | null; target_community_nickname: string | null; target_community_avatar: string | null;
   reporter_nickname: string | null; same_target_count: number; target_user_count: number;
   ban_until: string | null; ban_permanent: boolean;
+  target_anonymous: boolean; content_status: string | null; // 게시글·댓글: 익명 여부, 지금 상태(active/hidden/deleted, 완전 삭제되면 null)
 }
 const STATUS = { open: "미처리", resolved: "처리됨", dismissed: "기각" } as const;
-const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)" };
+const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글" };
+const CONTENT_STATUS: Record<string, string> = { active: "게시 중", hidden: "가려짐", deleted: "삭제됨" };
 
 export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void }) {
   const [status, setStatus] = useState("open");
@@ -80,9 +84,10 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
                     <span className="text-[11px] text-muted">{STATUS[r.status]}</span>
                     {r.same_target_count > 1 && <span className="text-[11px] text-loss">같은 대상 신고 {r.same_target_count}건</span>}
                   </div>
-                  {r.detail && <p className="whitespace-pre-wrap text-xs">{r.detail}</p>}
+                  {!isProfile && <ContentPreview r={r} />}
+                  {r.detail && <p className="whitespace-pre-wrap text-xs">신고 내용: {r.detail}</p>}
                   <p className="text-xs text-muted">
-                    대상 회원: {r.target_nickname ?? "(탈퇴)"}{r.target_community_nickname ? ` · 커뮤니티 닉네임 ${r.target_community_nickname}` : ""} · 이 회원 신고 누적 {r.target_user_count}건
+                    대상 회원: {r.target_anonymous ? "익명(작성자 확인으로 볼 수 있어요)" : r.target_nickname ?? "(탈퇴)"}{r.target_community_nickname ? ` · 커뮤니티 닉네임 ${r.target_community_nickname}` : ""} · 이 회원 신고 누적 {r.target_user_count}건
                     {banned && <span className="text-loss"> · 정지 중{r.ban_permanent ? "(영구)" : ` ~${fmtDateTime(r.ban_until)}`}</span>}
                   </p>
                   <p className="text-xs text-muted">신고자 {r.reporter_nickname ?? "(탈퇴)"} · {fmtDateTime(r.created_at)}</p>
@@ -95,7 +100,7 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
                     ) : (
                       <Button size="sm" variant="ghost" onClick={() => resolve(r, "open")}>미처리로 되돌리기</Button>
                     )}
-                    {r.target_user_id && !banned && <Button size="sm" variant="danger" onClick={() => setBanFor({ id: r.target_user_id!, name: r.target_nickname ?? "이 회원" })}>커뮤니티 정지</Button>}
+                    {r.target_user_id && !banned && <Button size="sm" variant="danger" onClick={() => setBanFor({ id: r.target_user_id!, name: r.target_anonymous ? "이 익명 작성자" : r.target_nickname ?? "이 회원" })}>커뮤니티 정지</Button>}
                     {r.target_kind === "cprofile" && r.target_community_nickname && <Button size="sm" variant="outline" onClick={() => clearNick(r)}>커뮤니티 닉네임 지우기</Button>}
                     {r.target_kind === "cprofile" && r.target_community_avatar?.startsWith("http") && (
                       <>
@@ -104,6 +109,9 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
                       </>
                     )}
                   </div>
+                  {!isProfile && r.content_status && (r.target_kind === "post" || r.target_kind === "comment") && (
+                    <AdminContentTools kind={r.target_kind} refId={r.target_ref} status={r.content_status} onChanged={load} />
+                  )}
                 </div>
               </li>
             );
@@ -112,5 +120,22 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
       )}
       <CommunityBanModal target={banFor} onClose={() => setBanFor(null)} onDone={() => done("커뮤니티 이용을 정지했어요(회원에게 알림)")} />
     </section>
+  );
+}
+
+/** 신고된 게시글·댓글의 신고 당시 내용(사본)과 지금 상태, 글 열어 보기 링크 */
+function ContentPreview({ r }: { r: CReport }) {
+  const snap = r.snapshot ?? {};
+  if (snap.purged) return <p className="text-xs text-muted">월말 정리로 완전히 삭제된 내용이에요</p>;
+  const postId = snap.post_id as number | undefined;
+  return (
+    <div className="space-y-1 rounded-md border border-line bg-panel px-3 py-2 text-xs">
+      {typeof snap.title === "string" && <p className="font-semibold">{snap.title}</p>}
+      {typeof snap.body === "string" && <p className="line-clamp-4 whitespace-pre-wrap">{snap.body}</p>}
+      <p className="text-muted">
+        표시 이름 {String(snap.nickname ?? "-")} · 지금 상태 {r.content_status ? CONTENT_STATUS[r.content_status] ?? r.content_status : "완전 삭제"}
+        {postId && <> · <Link href={`/community/${postId}${r.target_kind === "comment" ? `#c${r.target_ref}` : ""}`} className="text-brand" target="_blank">글 열기</Link></>}
+      </p>
+    </div>
   );
 }

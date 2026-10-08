@@ -120,7 +120,8 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             <Logo />
           </Link>
           <nav className="hidden items-center gap-4 text-sm md:flex">
-            {/* 오픈피스트·커뮤니티·아카데미 메뉴는 기능이 정해질 때까지 숨김(2026-10-05) */}
+            {/* 오픈피스트·커뮤니티·아카데미 메뉴는 공개 전까지 숨김(2026-10-05). 커뮤니티는 개발 중이라 관리자에게만 보인다(docs/COMMUNITY.md 8장) */}
+            {profile?.is_admin && <Link href="/community" className={path.startsWith("/community") ? "text-foreground" : "text-muted hover:text-foreground"}>커뮤니티</Link>}
             <Link href="/methodology" className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
           </nav>
           <UserSearchBox />
@@ -128,6 +129,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
         {/* 좁은 화면 전용 보조 메뉴 줄(가로 스크롤) — 넓은 화면에서는 위 nav 가 대신한다 */}
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 text-sm md:hidden">
           <Link href="/methodology" className={cn(mobLink, path === "/methodology" && "text-foreground")}>점수 안내</Link>
+          {profile?.is_admin && <Link href="/community" className={cn(mobLink, path.startsWith("/community") && "text-foreground")}>커뮤니티</Link>}
           {profile?.is_admin && <Link href="/admin" className={cn(mobLink, path === "/admin" && "text-foreground")}>관리자</Link>}
           {loggedIn ? (
             <button onClick={signOut} className={cn(mobLink, "ml-auto")}>로그아웃</button>

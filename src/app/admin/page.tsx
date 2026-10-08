@@ -14,6 +14,7 @@ import { RefreshPanel } from "@/components/admin/RefreshPanel";
 import { SupportAdmin } from "@/components/admin/SupportAdmin";
 import { ReportsAdmin } from "@/components/admin/ReportsAdmin";
 import { CommunityReportsAdmin } from "@/components/admin/CommunityReportsAdmin";
+import { CommunityBackupAdmin } from "@/components/admin/CommunityBackupAdmin";
 import { ClaimsAdmin } from "@/components/admin/ClaimsAdmin";
 import { ClubsAdmin } from "@/components/admin/ClubsAdmin";
 import { MembersAdmin } from "@/components/admin/MembersAdmin";
@@ -42,6 +43,7 @@ const ACTION: Record<string, string> = {
   community_ban: "커뮤니티 정지", community_unban: "커뮤니티 정지 해제", community_nick_clear: "커뮤니티 닉네임 삭제",
   creport_resolved: "커뮤니티 신고 처리", creport_dismissed: "커뮤니티 신고 기각", creport_open: "커뮤니티 신고 되돌림",
   cavatar_remove: "커뮤니티 사진 삭제", cavatar_remove_lock: "커뮤니티 사진 삭제+제한",
+  content_active: "글·댓글 복구", content_hidden: "글·댓글 숨김", content_deleted: "글·댓글 삭제", reveal_author: "익명 작성자 확인", backup_export: "삭제 콘텐츠 백업",
 };
 
 export default function AdminPage() {
@@ -129,6 +131,7 @@ function Admin() {
         <>
           <CommunityReportsAdmin onChanged={loadOv} />
           <ReportsAdmin onChanged={loadOv} />
+          <CommunityBackupAdmin />
         </>
       )}
       {tab === "claims" && <ClaimsAdmin onChanged={loadOv} />}

@@ -5,10 +5,11 @@ import { supabase } from "./supabase";
 /** 커뮤니티 카드. DB 함수 private.persona_card 가 만든다.
  *  - kind 'y'(유펜 프로필): 회원 id·소속 포함 → 누르면 유펜 프로필로 갈 수 있다
  *  - kind 'c'(커뮤니티 전용 프로필): 공개 id(pid)·닉네임·사진만. 회원 id·소속은 절대 들어 있지 않다
+ *  - kind 'a': 익명(nickname 은 '익명'·'익명1'·'글쓴이' 같은 이름표뿐 — 누구인지 정보 없음)
  *  - kind 'gone': 탈퇴 회원
  *  frame/badge 는 회원이 켜 두었고 티어가 있을 때만 티어 이름이 들어 있다(등수는 없음). */
 export interface CommunityCard {
-  kind: "y" | "c" | "gone";
+  kind: "y" | "c" | "a" | "gone";
   id?: string;
   pid?: string;
   nickname: string | null;
@@ -47,6 +48,21 @@ export const NAME_REASON: Record<string, string> = {
   login: "로그인이 필요해요",
 };
 
+/** 게시판 DB 함수(board_*)의 오류 코드 → 문구 (supabase/community_2_board.sql) */
+const ERROR_TEXT: Record<string, string> = {
+  community_banned: "커뮤니티 이용이 제한되어 있어요. 마이 펜싱 > 커뮤니티 설정에서 사유와 기간을 확인할 수 있어요",
+  rate_post_min: "글은 1분에 1개까지 쓸 수 있어요. 잠시 후 다시 시도해 주세요",
+  rate_post_day: "글은 하루 30개까지 쓸 수 있어요",
+  rate_comment_sec: "댓글은 10초에 1개까지 쓸 수 있어요",
+  rate_comment_day: "댓글은 하루 200개까지 쓸 수 있어요",
+  bad_tags: "말머리를 다시 골라 주세요",
+  notice_admin: "공지는 관리자만, 익명이 아닌 이름으로 쓸 수 있어요",
+  uploads_invalid: "사진 정보가 맞지 않아요. 사진을 다시 올려 주세요",
+  own_like: "내 글에는 좋아요를 누를 수 없어요",
+  not_mine: "내가 쓴 글만 고칠 수 있어요",
+  not_found: "글이 없거나 볼 수 없는 글이에요",
+};
+
 /** DB 함수가 보낸 오류(raise exception)를 화면 문구로 바꾼다. 코드가 아니면 원문(이미 한글 문구) 그대로 */
 export function communityError(message: string | undefined | null): string {
   const m = message ?? "";
@@ -54,6 +70,7 @@ export function communityError(message: string | undefined | null): string {
   if (name) return NAME_REASON[name[1]] ?? "사용할 수 없는 닉네임이에요";
   if (m.includes("community_nick_30days")) return "커뮤니티 닉네임은 30일에 1번만 바꿀 수 있어요";
   if (m.includes("community_need_nick")) return "커뮤니티 전용 프로필을 쓰려면 먼저 닉네임을 정해 주세요";
+  for (const [code, text] of Object.entries(ERROR_TEXT)) if (m.includes(code)) return text;
   if (m.includes("login")) return "로그인이 필요해요";
   return m || "처리하지 못했어요";
 }
@@ -122,4 +139,78 @@ export interface CommunityStatus {
   until?: string | null;
   permanent?: boolean;
   since?: string;
+}
+
+// ───────────────────────── 게시판 (2단계) ─────────────────────────
+
+/** 말머리 (DB 제약 community_posts.tags 와 같은 목록 — 한쪽만 바꾸지 말 것). 기본값은 '자유' */
+export const BOARD_TAGS = ["자유", "대회", "장비", "기술", "에페", "플뢰레", "사브르", "학부모"] as const;
+export const TITLE_MAX = 60;
+export const BODY_MAX = 5000;
+export const COMMENT_MAX = 1000;
+export const IMAGE_MAX = 3;
+
+/** 게시판 사진 공개 주소 (버킷 community — 읽기 공개) */
+export function boardImageUrl(path: string): string {
+  return supabase.storage.from("community").getPublicUrl(path).data.publicUrl;
+}
+
+/** 목록 한 줄 (board_list) */
+export interface BoardItem {
+  id: number;
+  tags: string[];
+  title: string;
+  created_at: string;
+  edited: boolean;
+  like_count: number;
+  comment_count: number;
+  view_count: number;
+  image_count: number;
+  thumb: string | null;
+  is_notice: boolean;
+  status: "active" | "hidden";
+  card: CommunityCard;
+}
+
+export interface BoardImage { id: number; path: string; thumb: string; w: number | null; h: number | null }
+
+/** 댓글 (board_post.comments). status 가 active 가 아니면 body·card 는 비어 있다 */
+export interface BoardComment {
+  id: number;
+  parent_id: number | null;
+  created_at: string;
+  edited: boolean;
+  status: "active" | "hidden" | "deleted" | "blocked";
+  body: string | null;
+  is_mine: boolean;
+  is_op: boolean; // 글쓴이(글과 같은 얼굴로 쓴 작성자 본인)
+  card: CommunityCard | null;
+}
+
+/** 글 상세 (board_post). 차단한 회원의 글이면 { id, blocked: true } 만 온다 */
+export interface BoardPost {
+  id: number;
+  blocked?: boolean;
+  tags: string[];
+  title: string;
+  body: string;
+  images: BoardImage[];
+  created_at: string;
+  edited: boolean;
+  like_count: number;
+  comment_count: number;
+  view_count: number;
+  is_notice: boolean;
+  status: "active" | "hidden";
+  anonymous: boolean;
+  liked: boolean;
+  is_mine: boolean;
+  is_admin: boolean;
+  card: CommunityCard;
+  comments: BoardComment[];
+}
+
+/** 글·댓글 본문에 전화번호처럼 보이는 것이 있는지(연락처 노출 경고용) */
+export function hasPhoneNumber(text: string): boolean {
+  return /01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/.test(text);
 }
