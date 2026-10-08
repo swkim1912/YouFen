@@ -24,7 +24,7 @@
 ## 구조
 - `src/lib/`: `supabase.ts`(클라이언트), `types.ts`(DB 타입), `records.ts`(기록 조회·뷰 변환·승률·상대 통계), `tier.ts`(티어 계산), `pool.ts`(Poole Sheet 순위), `utils.ts`(상수·닉네임 검증·`PUBLIC_COLS`), `fencing.ts`(랭킹·대회·선수 화면 공용: 탭/종별/종목 상수, 티어 색, DB 행 타입, 라운드 이름·날짜 헬퍼, `fetchAll`)
 - `src/components/`: `AuthProvider`(세션·내 프로필), `AppShell`(상단바+우측 메뉴바+가드), `PlayerPicker`(회원 검색/비회원 입력), `NewRecordModal`(`validateScore` 포함), `GameDetailModal`, `SettingsModal`, `ProfileView`(마이 펜싱·유저 검색 공용), `ProfileFields`, `BirthSelect`, `UserSearchBox`(회원+협회 선수 동시 검색), `AthleteView`(선수 프로필, ProfileView 와 같은 구성), `StatDonut`(승률 도넛 공용), `TierBadge`, `Podium`, `FilterRow`(한 줄 = 한 카테고리 필터), `EdBracket`(본선 ED 대진표)
-- `src/app/`: `/`(마이 펜싱, 비로그인은 `/ranking`으로), `/login`, `/signup`, `/onboarding`, `/reset-password`, `/admin`(관리자), `/terms`, `/privacy`, `/guidelines`(커뮤니티 운영원칙), `/community`(커뮤니티 화면 자리 — 지금은 `/guidelines` 로 보냄), `/support`, `/search`(회원+선수), `/ranking`(시즌·종류·풀별 점수 랭킹+포디움), `/methodology`(점수 안내), `/athletes/[id]`(선수 프로필), `/competitions`(대회 목록), `/competitions/[id]`(대회 상세), `/notes`, `/sheet/pool`(개인전), `/sheet/team`(단체전)
+- `src/app/`: `/`(마이 펜싱, 비로그인은 `/ranking`으로), `/login`, `/signup`, `/onboarding`, `/reset-password`, `/admin`(관리자), `/terms`, `/privacy`, `/guidelines`(커뮤니티 운영원칙), `/community`(커뮤니티: 게시판·`/chat` 자유톡방·`/market` 장터·`/messages` 1:1 채팅), `/openpiste`(오픈피스트 모집·참가자 방), `/support`, `/search`(회원+선수), `/ranking`(시즌·종류·풀별 점수 랭킹+포디움), `/methodology`(점수 안내), `/athletes/[id]`(선수 프로필), `/competitions`(대회 목록), `/competitions/[id]`(대회 상세), `/notes`, `/sheet/pool`(개인전), `/sheet/team`(단체전)
 
 ## 핵심 설계 결정 (지키거나, 바꿀 땐 관련 영역 전부 수정)
 - **로그인 ID = 이메일.** 가입 1단계에서 `email_available` RPC로 중복 확인. 닉네임은 `nickname_available` RPC로 실시간 확인.
@@ -158,6 +158,14 @@
   - 도배 방지 1초 1개·1분 20개·하루 1,000개·30초 안 같은 내용 금지, 글 1,000자, 사진(`/api/community-image?kind=chat`, 하루 30장, 로그인 회원 누구나). @멘션 알림은 그 이름을 지금 톡방에서 쓰는 회원에게만(안 읽은 톡방 멘션 알림이 있으면 생략). 메시지 1달 보관(`community_daily`).
   - 신고·차단 kind `chat`(사본 = 그 메시지 + 앞 10개, 익명 닉네임 메시지는 관리자 목록에서 이름 숨김 → 작성자 확인), 자동 가림, 관리자 삭제('관리자에 의해 삭제된 메시지'), `admin_clear_chat_nickname`, 백업 JSON 에 `chat`, 관리자 현황에 24시간 메시지·보낸 회원 수. `ui/input` 의 `Textarea` 는 ref 를 받는다(React 19 `ComponentProps`).
 
+- **커뮤니티 5단계 — 오픈피스트(2026-10-09, 같은 브랜치, SQL `supabase/community_5_openpiste.sql` = 마이그레이션 37):**
+  - 화면(상단 메뉴 '오픈피스트', 로그인 회원): `/openpiste`(탭 전체/에페/플뢰레/사브르 — 기본은 가입 종목, 내 오픈피스트, 이번 주·지역 필터, 주소 `?w=&wk=1&r=&mine=1`), `/openpiste/write`(?edit=id), `/openpiste/[id]`(상세·신청/취소·주최자 도구·신고·관리자 도구), `/openpiste/[id]/room`(참가자 방, 입장 전 안내 + '다시 보지 않기' localStorage `youfen-op-room-notice-off`, 5초 폴링). 공용 `lib/openpiste.ts`(값 목록·타입·`statusText`·`opError`).
+  - **유펜 프로필로 표시**(주최자·참가자 모두, `content_card(uid,'y')`) — 커뮤니티 원칙의 예외라 쓰기 화면·방 입장 전에 안내.
+  - **승인제:** `op_write` → `pending` + 관리자 알림 → 관리자 페이지 '오픈피스트' 탭(`OpenpisteAdmin`, `admin_op_queue`/`admin_op_review`) 승인 시 `open` + 새 모집 알림(`private.op_announce`: `openpiste_alerts` 종목 일치 + 지역 일치/전국). 게시 중 글 수정은 `pending_edit` 에만 저장(승인 전까지 기존 내용), 승인 시 반영 + 참가자 알림. 반려는 사유 알림.
+  - 모집글 쓰기 = 선수 연결 회원(`market_eligible`), 신청 = 로그인 회원(정지 제외), `op_apply` 는 글 행을 `for update` 로 잠가 정원 초과 방지. 오픈채팅 링크는 `https://open.kakao.com/` 만(DB 제약) + 주최자·참가자에게만 내려준다.
+  - 상태: pending/open/rejected/closed(마감)/cancelled/ended/hidden/deleted. 목록 = open 이고 `ends_at > now()`. `community_daily` 가 종료 처리·승인 전 시작 지난 글 반려·30일 뒤 삭제·방 메시지 1달 삭제. 신고 kind `openpiste`(모집글)·`opmsg`(방 메시지).
+  - 새 모집 알림 설정은 마이 펜싱 > 커뮤니티 설정 > 알림의 '오픈피스트' 아래(종목을 하나도 안 고르면 안 옴). 알림 종류 'openpiste' 는 새 모집 + 내 모집의 신청·취소, 승인 결과·취소·내용 변경은 'system'(끌 수 없음).
+
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 -
 
@@ -168,7 +176,7 @@
 - 
 
 ## 미구현 / 나중에 할 일
-- 오픈피스트·커뮤니티·아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는 `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~4단계 완료: 기반·게시판·장터/1:1 채팅·자유톡방, 다음은 5단계 오픈피스트)
+- 아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는(main 에서는 숨김, `feature/community` 에서는 로그인 회원에게 메뉴 공개) `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~5단계 완료: 기반·게시판·장터/1:1 채팅·자유톡방·오픈피스트, 다음은 6단계 법률 문서 개정·재동의 후 main 합치기)
 - 친구 추가(현재 상대 선택은 전체 회원 닉네임 검색), 뱃지 실제 디자인
 - 앱 이식
 

@@ -28,8 +28,8 @@ interface CReport {
   target_has_chat_nickname?: boolean; // 대상 회원에게 자유톡방 익명 닉네임이 있는지
 }
 const STATUS = { open: "미처리", resolved: "처리됨", dismissed: "기각" } as const;
-const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글", listing: "장터 글", dmthread: "1:1 채팅", chat: "자유톡방 메시지" };
-const CONTENT_KINDS = ["post", "comment", "listing", "chat"] as const;
+const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글", listing: "장터 글", dmthread: "1:1 채팅", chat: "자유톡방 메시지", openpiste: "오픈피스트 모집", opmsg: "오픈피스트 참가자 방" };
+const CONTENT_KINDS = ["post", "comment", "listing", "chat", "openpiste", "opmsg"] as const;
 type ContentKind = (typeof CONTENT_KINDS)[number];
 const isContentKind = (k: string): k is ContentKind => (CONTENT_KINDS as readonly string[]).includes(k);
 const CONTENT_STATUS: Record<string, string> = { active: "게시 중", hidden: "가려짐", deleted: "삭제됨" };
@@ -144,11 +144,13 @@ function ContentPreview({ r }: { r: CReport }) {
   const postId = snap.post_id as number | undefined;
   const listingId = snap.listing_id as number | undefined;
   const msgs = Array.isArray(snap.messages) ? (snap.messages as { from: string; body: string; image: string | null; at: string; target?: boolean }[]) : null;
-  const isChat = r.target_kind === "chat";
+  const isChat = r.target_kind === "chat" || r.target_kind === "opmsg"; // 대화 흐름(신고된 메시지 + 앞 10개)으로 보여 주는 종류
+  const opId = snap.op_id as number | undefined;
   return (
     <div className="space-y-1 rounded-md border border-line bg-panel px-3 py-2 text-xs">
       {typeof snap.title === "string" && <p className="font-semibold">{snap.title}</p>}
       {/* 자유톡방은 아래 대화 흐름에 신고된 메시지가 표시되므로 본문을 따로 쓰지 않는다 */}
+      {typeof snap.detail === "string" && <p className="text-muted">{snap.detail}</p>}
       {!isChat && typeof snap.body === "string" && <p className="line-clamp-4 whitespace-pre-wrap">{snap.body}</p>}
       {msgs && (
         // 1:1 채팅 신고: 신고 당시 최근 메시지 30개(누가 보냈는지는 신고자/상대로만)
@@ -165,6 +167,7 @@ function ContentPreview({ r }: { r: CReport }) {
         표시 이름 {String(snap.nickname ?? "-")}{r.target_kind !== "dmthread" && <> · 지금 상태 {r.content_status ? CONTENT_STATUS[r.content_status] ?? r.content_status : "완전 삭제"}</>}
         {postId && <> · <Link href={`/community/${postId}${r.target_kind === "comment" ? `#c${r.target_ref}` : ""}`} className="text-brand" target="_blank">글 열기</Link></>}
         {listingId && <> · <Link href={`/community/market/${listingId}`} className="text-brand" target="_blank">장터 글 열기</Link></>}
+        {opId && <> · <Link href={`/openpiste/${opId}${r.target_kind === "opmsg" ? "/room" : ""}`} className="text-brand" target="_blank">{r.target_kind === "opmsg" ? "참가자 방 열기" : "모집글 열기"}</Link></>}
         {isChat && typeof snap.image === "string" && <> · <a href={boardImageUrl(snap.image)} className="text-brand" target="_blank" rel="noopener noreferrer">사진 보기</a></>}
       </p>
     </div>

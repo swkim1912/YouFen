@@ -1,7 +1,7 @@
 "use client";
 // 마이 펜싱 > 커뮤니티 설정 탭 (docs/COMMUNITY.md 1장)
 //  ① 이용 정지 안내(정지 중일 때만) ② 커뮤니티에서 쓸 프로필(유펜 프로필 / 커뮤니티 전용 프로필) + 미리보기
-//  ③ 티어 테두리·뱃지(상세 설정에서 옮겨 옴) ④ 알림 설정(종류별 켜기/끄기) ⑤ 차단 목록
+//  ③ 티어 테두리·뱃지(상세 설정에서 옮겨 옴) ④ 알림 설정(종류별 켜기/끄기 + 오픈피스트 새 모집 종목·지역 op_set_alerts) ⑤ 차단 목록
 // 저장은 모두 DB 함수(RPC)로 한다: save_community_profile / set_notification_pref / unblock. 오류 코드는 communityError() 가 한글로 바꾼다.
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -15,7 +15,7 @@ import { CommunityAvatarSettings } from "./CommunityAvatarSettings";
 import {
   type CommunityStatus, type MyCommunity, NAME_REASON, NOTIFY_KINDS, communityError, fetchMyCommunity, nextNickChange,
 } from "@/lib/community";
-import { fmtDate, cn } from "@/lib/utils";
+import { REGIONS, WEAPONS, fmtDate, cn } from "@/lib/utils";
 
 /** 섹션 틀 */
 function Section({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
@@ -194,7 +194,7 @@ function NotifySection() {
           {NOTIFY_KINDS.map((k) => {
             const on = !off.includes(k.key);
             return (
-              <li key={k.key} className="flex items-center gap-3 py-2">
+              <li key={k.key} className="flex flex-wrap items-center gap-3 py-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm">{k.label}</p>
                   <p className="text-xs text-muted">{k.desc}</p>
@@ -208,12 +208,41 @@ function NotifySection() {
                 >
                   <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition-[left]", on ? "left-[22px]" : "left-0.5")} />
                 </button>
+                {k.key === "openpiste" && on && <OpenpisteAlerts />}
               </li>
             );
           })}
         </ul>
       )}
     </Section>
+  );
+}
+
+/** 오픈피스트 새 모집 알림: 받을 종목(필수)과 지역(안 고르면 전국). 내 모집의 참가 신청 알림은 종목과 상관없이 온다 */
+function OpenpisteAlerts() {
+  const [pref, setPref] = useState<{ weapons: string[]; regions: string[] } | null>(null);
+  useEffect(() => {
+    supabase.rpc("op_get_alerts").then(({ data }) => setPref((data as { weapons: string[]; regions: string[] } | null) ?? { weapons: [], regions: [] }));
+  }, []);
+  const save = async (next: { weapons: string[]; regions: string[] }) => {
+    setPref(next);
+    const { error } = await supabase.rpc("op_set_alerts", { p_weapons: next.weapons, p_regions: next.regions });
+    if (error) toast.error(communityError(error.message));
+  };
+  if (!pref) return null;
+  const flip = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  const chip = (on: boolean) => cn("rounded-full border px-2 py-0.5 text-[11px]", on ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:text-foreground");
+  return (
+    <div className="mt-2 w-full basis-full space-y-1.5 rounded-md bg-panel2 p-2.5">
+      <p className="text-[11px] text-muted">새 모집 알림을 받을 종목{pref.weapons.length === 0 && <b className="text-pending"> — 하나 이상 골라야 알림이 와요</b>}</p>
+      <div className="flex flex-wrap gap-1">
+        {WEAPONS.map((w) => <button key={w} className={chip(pref.weapons.includes(w))} onClick={() => save({ ...pref, weapons: flip(pref.weapons, w) })}>{w}</button>)}
+      </div>
+      <p className="pt-1 text-[11px] text-muted">지역 (안 고르면 전국)</p>
+      <div className="flex flex-wrap gap-1">
+        {REGIONS.map((r) => <button key={r} className={chip(pref.regions.includes(r))} onClick={() => save({ ...pref, regions: flip(pref.regions, r) })}>{r}</button>)}
+      </div>
+    </div>
   );
 }
 

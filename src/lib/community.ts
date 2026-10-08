@@ -137,7 +137,7 @@ export const NOTIFY_KINDS: { key: string; label: string; desc: string }[] = [
   { key: "mention", label: "@멘션", desc: "자유톡방·댓글에서 나를 @닉네임으로 부르면" },
   { key: "dm", label: "1:1 채팅", desc: "장터 1:1 채팅에 새 메시지가 오면" },
   { key: "market", label: "장터 만료 예정", desc: "내 장터 글이 곧 자동 정리될 때" },
-  { key: "openpiste", label: "오픈피스트 새 모집", desc: "관심 종목·지역의 모집이 올라오면" },
+  { key: "openpiste", label: "오픈피스트", desc: "관심 종목·지역의 새 모집, 내 모집의 참가 신청·취소" },
 ];
 
 /** 알림 한 건 (notifications 표) */
