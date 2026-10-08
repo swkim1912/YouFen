@@ -3,6 +3,8 @@
 // - 좁은 화면(md 미만): 우측 메뉴바는 숨기고, 상단 바 아래에 보조 메뉴 줄 + 화면 아래 탭바(+ 버튼은 오른쪽 아래에 떠 있음)로 바꿔 보여준다.
 // - 비로그인 사용자도 사이트(랭킹·검색·기록지)를 볼 수 있다.
 // - requireAuth 가 true 인 페이지(마이페이지·피드백 노트)만 로그인으로 보낸다.
+// - 알림 버튼: 오픈 기록 수락 요청(game_records PENDING) + 공용 알림(notifications 표: 댓글·답글·좋아요·멘션·장터·운영 등).
+//   공용 알림은 실시간 연결 대신 페이지를 옮길 때와 1분마다(화면이 보일 때만) 새로 읽는다(Realtime 동시 접속 한도 절약).
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -20,6 +22,7 @@ import { Button } from "./ui/button";
 import { supabase } from "@/lib/supabase";
 import { SELECT_RECORDS } from "@/lib/records";
 import type { GameRecord } from "@/lib/types";
+import { timeAgo, type Notification } from "@/lib/community";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children, requireAuth = false }: { children: React.ReactNode; requireAuth?: boolean }) {
@@ -29,6 +32,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
   const [showNew, setShowNew] = useState(false);
   const [showNoti, setShowNoti] = useState(false);
   const [pending, setPending] = useState<GameRecord[]>([]);
+  const [notis, setNotis] = useState<Notification[]>([]); // 최근 공용 알림 30개
   const [refreshKey, setRefreshKey] = useState(0); // 기록 저장 후 페이지 새로고침용
   const [sheetOpen, setSheetOpen] = useState(path.startsWith("/sheet")); // 기록지 메뉴 펼침
 
@@ -54,6 +58,37 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
   useEffect(() => {
     loadPending();
   }, [loadPending, refreshKey, path]);
+
+  // 공용 알림(최근 30개) 불러오기: 페이지 이동 시 + 1분마다(탭이 보일 때만)
+  const loadNotis = useCallback(async () => {
+    if (!user) return setNotis([]);
+    const { data } = await supabase
+      .from("notifications")
+      .select("id,kind,title,body,link,created_at,read_at")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    setNotis((data ?? []) as Notification[]);
+  }, [user]);
+  useEffect(() => {
+    loadNotis();
+    const t = setInterval(() => { if (document.visibilityState === "visible") loadNotis(); }, 60_000);
+    return () => clearInterval(t);
+  }, [loadNotis, path]);
+  const unread = notis.filter((n) => !n.read_at).length;
+  const badge = pending.length + unread; // 알림 버튼의 빨간 숫자
+
+  // 알림 읽음 처리(ids 가 없으면 전체) 후 다시 읽기
+  const markRead = async (ids?: number[]) => {
+    await supabase.rpc("mark_notifications_read", { p_ids: ids ?? null });
+    loadNotis();
+  };
+  const openNoti = (n: Notification) => {
+    if (!n.read_at) markRead([n.id]);
+    if (n.link) {
+      setShowNoti(false);
+      router.push(n.link);
+    }
+  };
 
   const respond = async (id: string, accept: boolean) => {
     const { error } = await supabase.rpc("respond_record", { rid: id, accept });
@@ -116,9 +151,9 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             <button onClick={() => setShowNoti(true)} className={cn(itemCls(false), "relative")}>
               <Bell size={20} />
               알림
-              {pending.length > 0 && (
+              {badge > 0 && (
                 <span className="absolute right-3 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] text-white">
-                  {pending.length}
+                  {badge > 99 ? "99+" : badge}
                 </span>
               )}
             </button>
@@ -176,7 +211,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
           <>
             <button onClick={() => setShowNoti(true)} className={cn(tabCls(false), "relative")}>
               <Bell size={20} />알림
-              {pending.length > 0 && <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] text-white">{pending.length}</span>}
+              {badge > 0 && <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] text-white">{badge > 99 ? "99+" : badge}</span>}
             </button>
             <Link href="/notes" className={tabCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>
           </>
@@ -190,9 +225,9 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
 
       {loggedIn && <NewRecordModal open={showNew} onClose={() => setShowNew(false)} onSaved={() => setRefreshKey((k) => k + 1)} />}
 
-      {/* 알림 팝업: 오픈 기록 수락/거절 */}
+      {/* 알림 팝업: 오픈 기록 수락/거절 + 공용 알림 목록 */}
       <Modal open={showNoti} onClose={() => setShowNoti(false)} title="알림">
-        {pending.length === 0 && <p className="text-sm text-muted">새 알림이 없습니다</p>}
+        {pending.length === 0 && notis.length === 0 && <p className="text-sm text-muted">새 알림이 없습니다</p>}
         {pending.map((r) => (
           <div key={r.id} className="mb-3 rounded-md border border-line bg-panel2 p-3 text-sm">
             <p className="mb-2">
@@ -208,6 +243,36 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
             </div>
           </div>
         ))}
+        {notis.length > 0 && (
+          <>
+            <div className="mb-1.5 flex items-center text-xs text-muted">
+              <span className="mr-auto">최근 알림 (60일 보관)</span>
+              {unread > 0 && <button className="hover:text-foreground" onClick={() => markRead()}>모두 읽음</button>}
+            </div>
+            <ul className="space-y-1.5">
+              {notis.map((n) => (
+                <li key={n.id}>
+                  <button
+                    onClick={() => openNoti(n)}
+                    className={cn("w-full rounded-md border px-3 py-2 text-left text-sm", n.read_at ? "border-line text-muted" : "border-brand/40 bg-brand/5")}
+                  >
+                    <span className="flex items-start gap-2">
+                      {!n.read_at && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-label="읽지 않음" />}
+                      <span className="min-w-0 flex-1">
+                        <span className={cn("block", !n.read_at && "font-semibold text-foreground")}>{n.title}</span>
+                        {n.body && <span className="block whitespace-pre-wrap text-xs text-muted">{n.body}</span>}
+                      </span>
+                      <span className="shrink-0 text-[11px] text-muted">{timeAgo(n.created_at)}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11px] text-muted">
+              받을 알림은 <Link href="/?tab=community" className="text-brand" onClick={() => setShowNoti(false)}>마이 펜싱 &gt; 커뮤니티 설정</Link>에서 고를 수 있어요.
+            </p>
+          </>
+        )}
       </Modal>
     </div>
   );

@@ -56,7 +56,7 @@ export default function TermsPage() {
       </Clause>
 
       <Clause title="제8조 (회원의 의무와 금지행위)">
-        <p>회원은 다음 행위를 해서는 안 됩니다. 자세한 기준은 <Link href="/community" className="text-brand">커뮤니티 운영원칙</Link>을 따릅니다.</p>
+        <p>회원은 다음 행위를 해서는 안 됩니다. 자세한 기준은 <Link href="/guidelines" className="text-brand">커뮤니티 운영원칙</Link>을 따릅니다.</p>
         <ul>
           <li>허위 경기 기록 입력, 상대와 짜고 점수를 올리는 행위 등 점수·랭킹 조작</li>
           <li>타인 사칭, 타인의 개인정보 노출, 비방·욕설·차별 표현</li>
