@@ -77,11 +77,13 @@ function Write() {
 
   const toggleTag = (t: string) => setTags((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]));
 
-  const pick = async (files: FileList | null) => {
-    if (fileRef.current) fileRef.current.value = "";
-    if (!files?.length) return;
+  const pick = async (fileList: FileList | null) => {
+    // 고른 파일을 먼저 배열로 복사한다. FileList 는 입력칸과 연결돼 있어 value 를 비우면 목록도 같이 비어 버린다
+    const files = Array.from(fileList ?? []);
+    if (fileRef.current) fileRef.current.value = ""; // 같은 사진을 다시 고를 수 있게 입력칸 비우기
+    if (!files.length) return;
     const room = IMAGE_MAX - images.length;
-    const list = Array.from(files).slice(0, room);
+    const list = files.slice(0, room);
     if (files.length > room) toast.error(`사진은 ${IMAGE_MAX}장까지 올릴 수 있어요`);
     setUploading(true);
     for (const f of list) {

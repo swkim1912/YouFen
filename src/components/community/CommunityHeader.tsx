@@ -26,7 +26,8 @@ export function CommunityHeader({ active = "board" }: { active?: (typeof MENUS)[
     <div className="space-y-3">
       <div className="flex items-end gap-4 border-b border-line">
         <h1 className="pb-2 text-lg font-bold">커뮤니티</h1>
-        <nav className="flex gap-1 overflow-x-auto">
+        {/* 좁은 화면에서는 옆으로 밀어서 본다. 스크롤 막대는 숨기고, 탭 밑줄(-mb-px)이 세로 스크롤을 만들지 않게 세로 넘침은 자른다 */}
+        <nav className="flex gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {MENUS.map((m) =>
             m.ready ? (
               <Link key={m.key} href={m.href} className={cn("relative -mb-px shrink-0 border-b-2 px-3 py-2 text-sm", active === m.key ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>

@@ -80,13 +80,15 @@ function Write() {
   }, [editId, router]);
 
   const maxImages = MARKET_IMAGE_MAX[kind];
-  const pick = async (files: FileList | null) => {
-    if (fileRef.current) fileRef.current.value = "";
-    if (!files?.length) return;
+  const pick = async (fileList: FileList | null) => {
+    // 고른 파일을 먼저 배열로 복사한다. FileList 는 입력칸과 연결돼 있어 value 를 비우면 목록도 같이 비어 버린다
+    const files = Array.from(fileList ?? []);
+    if (fileRef.current) fileRef.current.value = ""; // 같은 사진을 다시 고를 수 있게 입력칸 비우기
+    if (!files.length) return;
     const room = maxImages - images.length;
     if (files.length > room) toast.error(`사진은 ${maxImages}장까지 올릴 수 있어요`);
     setUploading(true);
-    for (const file of Array.from(files).slice(0, room)) {
+    for (const file of files.slice(0, room)) {
       const r = await uploadCommunityImage(file, "market");
       if ("error" in r) { toast.error(r.error); break; }
       setImages((cur) => [...cur, r]);
