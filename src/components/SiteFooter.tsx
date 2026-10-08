@@ -12,7 +12,7 @@ export function SiteFooter({ className }: { className?: string }) {
           <span aria-hidden>·</span>
           <Link href="/privacy" className={cn(a, "font-semibold")}>개인정보 처리방침</Link>
           <span aria-hidden>·</span>
-          <Link href="/community" className={a}>커뮤니티 운영원칙</Link>
+          <Link href="/guidelines" className={a}>커뮤니티 운영원칙</Link>
           <span aria-hidden>·</span>
           <Link href="/support" className={a}>고객지원 · 버그 신고</Link>
         </nav>

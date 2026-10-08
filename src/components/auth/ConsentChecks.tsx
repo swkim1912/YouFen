@@ -14,7 +14,7 @@ const ITEMS: { key: keyof ConsentState; label: string; href?: string }[] = [
   { key: "age", label: "만 14세 이상입니다" },
   { key: "terms", label: "이용약관에 동의합니다", href: "/terms" },
   { key: "privacy", label: "개인정보 수집·이용에 동의합니다", href: "/privacy" },
-  { key: "community", label: "커뮤니티 운영원칙에 동의합니다", href: "/community" },
+  { key: "community", label: "커뮤니티 운영원칙에 동의합니다", href: "/guidelines" },
 ];
 
 export function ConsentChecks({ value, onChange }: { value: ConsentState; onChange: (v: ConsentState) => void }) {

@@ -1,59 +1,229 @@
-// 커뮤니티 운영원칙. 신고·제재 절차가 바뀌면 이 문서와 이용약관 제8·10조를 함께 맞춘다.
+"use client";
+// 커뮤니티 > 게시판 목록 (docs/COMMUNITY.md 2장)
+// 탭: 전체(최신순, 공지 맨 위) / 이번 주 인기(최근 7일 좋아요·댓글 많은 글 20개씩) / 내 글 / 내 댓글
+// 필터: 말머리 여러 개(합집합), 검색(제목·내용·제목+내용). 상태는 주소(?tab=&hot=&tags=&q=&f=)에 남겨 글을 보고 돌아와도 유지된다.
+// 데이터: board_list / board_my_comments RPC (로그인 회원만, 차단한 회원의 글은 빠짐).
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Clause, LegalPage } from "@/components/LegalPage";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Heart, Image as ImageIcon, MessageSquare, PenSquare, Pin, Search } from "lucide-react";
+import { AppShell } from "@/components/AppShell";
+import { CommunityHeader } from "@/components/community/CommunityHeader";
+import { CommunityCardView } from "@/components/community/CommunityCardView";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
+import { supabase } from "@/lib/supabase";
+import { BOARD_TAGS, type BoardItem, boardImageUrl, communityError, timeAgo } from "@/lib/community";
+import { cn } from "@/lib/utils";
 
-export const metadata = { title: "커뮤니티 운영원칙" };
+type Tab = "all" | "hot" | "mine" | "mycomments";
+const TABS: [Tab, string][] = [["all", "전체"], ["hot", "이번 주 인기"], ["mine", "내 글"], ["mycomments", "내 댓글"]];
+const FIELDS = [["both", "제목+내용"], ["title", "제목"], ["body", "내용"]] as const;
 
 export default function CommunityPage() {
   return (
-    <LegalPage path="/community" title="커뮤니티 운영원칙" intro="서로 존중하고 공정하게 겨루는 펜싱 문화를 위해 모두가 지켜야 할 기준입니다.">
-      <Clause title="1. 기본 원칙">
-        <ul>
-          <li><b>존중</b>: 상대 선수, 심판, 지도자, 다른 회원을 존중합니다.</li>
-          <li><b>정직</b>: 경기 결과는 있는 그대로 입력합니다. 점수는 모두가 믿을 수 있을 때 의미가 있습니다.</li>
-          <li><b>안전</b>: 나와 남의 개인정보를 지킵니다.</li>
-        </ul>
-      </Clause>
+    <AppShell requireAuth>
+      <Suspense>
+        <Board />
+      </Suspense>
+    </AppShell>
+  );
+}
 
-      <Clause title="2. 하지 말아야 할 행동">
-        <ul>
-          <li><b>기록 조작</b>: 하지 않은 경기를 입력하거나, 상대와 짜고 점수를 올리거나, 일부러 지는 경기를 만드는 행위</li>
-          <li><b>사칭</b>: 다른 사람의 이름·선수 정보·사진을 도용하거나 본인이 아닌 선수를 연결하는 행위</li>
-          <li><b>비방과 차별</b>: 욕설, 인신공격, 특정인에 대한 조롱, 성별·나이·소속·장애 등에 대한 차별 표현</li>
-          <li><b>개인정보 노출</b>: 다른 사람의 연락처, 생년월일, 번호 등을 동의 없이 공개하는 행위</li>
-          <li><b>부적절한 사진·글</b>: 선정적이거나 폭력적인 이미지, 타인의 초상·저작권을 침해하는 이미지</li>
-          <li><b>승부 조작·도박 권유</b>와 불법 행위 안내</li>
-          <li><b>광고·스팸</b>과 서비스 시스템을 자동화 도구로 악용하는 행위</li>
-        </ul>
-      </Clause>
+interface MyComment { id: number; post_id: number; body: string; created_at: string; anonymous: boolean; post_title: string; post_status: string }
 
-      <Clause title="3. 오픈 기록은 서로 확인합니다">
-        <p>오픈 기록은 상대 회원이 수락해야 전적과 점수에 반영됩니다. 사실과 다른 요청은 거절하고, 반복되면 신고해 주세요. 수락하지 않은 요청은 3일 후 프라이빗 기록으로 전환됩니다. 한 번 반영된 기록은 수정·삭제할 수 없으니 신중하게 수락해 주세요.</p>
-      </Clause>
+function Board() {
+  const sp = useSearchParams();
+  const router = useRouter();
+  const path = usePathname();
+  const tab = (TABS.some(([k]) => k === sp.get("tab")) ? sp.get("tab") : "all") as Tab;
+  const hot = sp.get("hot") === "comment" ? "comment" : "like";
+  const tagsParam = sp.get("tags") ?? "";
+  const tags = tagsParam.split(",").filter((t) => (BOARD_TAGS as readonly string[]).includes(t));
+  const q = sp.get("q") ?? "";
+  const field = (FIELDS.some(([k]) => k === sp.get("f")) ? sp.get("f") : "both") as (typeof FIELDS)[number][0];
 
-      <Clause title="4. 신고하는 방법">
-        <ul>
-          <li><b>프로필 사진</b>: 해당 프로필의 신고 버튼으로 바로 접수할 수 있습니다.</li>
-          <li><b>그 밖의 신고</b>(부적절한 닉네임, 기록 조작 의심, 사칭 등): <Link href="/support" className="text-brand">고객지원</Link>에서 &quot;신고&quot;를 선택하고 해당 닉네임·선수 이름, 날짜와 상황을 적어 주세요.</li>
-        </ul>
-        <p>신고자의 정보는 신고 대상자에게 알리지 않습니다. 허위 신고를 반복하면 제한될 수 있습니다.</p>
-      </Clause>
+  const [qInput, setQInput] = useState(q);
+  const [items, setItems] = useState<BoardItem[] | null>(null);
+  const [notices, setNotices] = useState<BoardItem[]>([]);
+  const [mine, setMine] = useState<MyComment[] | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-      <Clause title="5. 운영진의 조치">
-        <p>위반 정도에 따라 아래 조치를 할 수 있으며, 긴급하거나 중대한 경우에는 단계를 건너뛸 수 있습니다.</p>
-        <ul>
-          <li><b>안내·경고</b> → <b>게시물·사진·기록 숨김 또는 삭제</b> → <b>일부 기능 제한</b>(사진 변경, 기록 입력 등) → <b>일정 기간 이용 정지</b> → <b>영구 정지·계정 삭제</b></li>
-          <li>선수 사칭으로 확인된 연결은 해제하며, 점수 조작이 확인된 기록은 점수 계산에서 제외할 수 있습니다.</li>
-        </ul>
-      </Clause>
+  // 주소의 조건 바꾸기(목록 다시 읽기는 아래 load 가 주소 변화를 보고 한다)
+  const setParams = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(sp.toString());
+    for (const [k, v] of Object.entries(patch)) {
+      if (v) next.set(k, v);
+      else next.delete(k);
+    }
+    router.replace(`${path}?${next.toString()}`, { scroll: false });
+  };
 
-      <Clause title="6. 이의 제기">
-        <p>조치에 이의가 있으면 <Link href="/support" className="text-brand">고객지원</Link>으로 사유와 함께 알려 주세요. 확인 후 결과를 안내합니다.</p>
-      </Clause>
+  const load = useCallback(async (offset: number) => {
+    setError(null);
+    if (tab === "mycomments") {
+      const { data, error: e } = await supabase.rpc("board_my_comments", { p_offset: offset, p_limit: 20 });
+      if (e) return setError(communityError(e.message));
+      const r = data as { items: MyComment[]; has_more: boolean };
+      setMine((prev) => (offset === 0 ? r.items : [...(prev ?? []), ...r.items]));
+      setHasMore(r.has_more);
+      return;
+    }
+    const pTab = tab === "hot" ? (hot === "comment" ? "hot_comment" : "hot_like") : tab;
+    const { data, error: e } = await supabase.rpc("board_list", {
+      p_tab: pTab, p_tags: tags.length ? tags : null, p_q: q || null, p_field: field, p_offset: offset, p_limit: 20,
+    });
+    if (e) return setError(communityError(e.message));
+    const r = data as { items: BoardItem[]; notices: BoardItem[]; has_more: boolean };
+    setItems((prev) => (offset === 0 ? r.items : [...(prev ?? []), ...r.items]));
+    if (offset === 0) setNotices(r.notices ?? []);
+    setHasMore(r.has_more);
+    // tagsParam(문자열)로 바뀜을 감지한다 — tags 배열은 매번 새로 만들어져 의존성에 쓰지 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, hot, tagsParam, q, field]);
 
-      <Clause title="7. 참고">
-        <p>이 원칙은 서비스에 새 기능(커뮤니티, 오픈피스트 등)이 추가되면 함께 확장됩니다. 변경되면 서비스 안에 미리 알립니다. 자세한 이용 조건은 <Link href="/terms" className="text-brand">이용약관</Link>을 확인해 주세요.</p>
-      </Clause>
-    </LegalPage>
+  useEffect(() => {
+    setItems(null);
+    setMine(null);
+    load(0);
+  }, [load]);
+
+  const toggleTag = (t: string) => {
+    const next = tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t];
+    setParams({ tags: next.join(",") || null });
+  };
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setParams({ q: qInput.trim() || null });
+  };
+
+  const showFilters = tab === "all" || tab === "hot";
+  const count = tab === "mycomments" ? mine?.length : items?.length;
+
+  return (
+    <div className="space-y-4">
+      <CommunityHeader active="board" />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1 overflow-x-auto">
+          {TABS.map(([k, label]) => (
+            <button key={k} onClick={() => setParams({ tab: k === "all" ? null : k })}
+              className={cn("shrink-0 rounded px-3 py-1.5 text-sm", tab === k ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <Link href="/community/write" className="ml-auto">
+          <Button size="sm"><PenSquare size={15} />글쓰기</Button>
+        </Link>
+      </div>
+
+      {tab === "hot" && (
+        <div className="flex gap-3 text-sm">
+          {([["like", "좋아요 많은 글"], ["comment", "댓글 많은 글"]] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setParams({ hot: k === "like" ? null : k })} className={cn(hot === k ? "font-semibold text-brand" : "text-muted hover:text-foreground")}>{label}</button>
+          ))}
+          <span className="text-xs text-muted self-center">최근 7일 · 20개</span>
+        </div>
+      )}
+
+      {showFilters && (
+        <div className="space-y-2 rounded-lg border border-line bg-panel p-3">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="mr-1 self-center text-xs text-muted">말머리</span>
+            {BOARD_TAGS.map((t) => (
+              <button key={t} onClick={() => toggleTag(t)} aria-pressed={tags.includes(t)}
+                className={cn("rounded-full border px-2.5 py-1 text-xs", tags.includes(t) ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:text-foreground")}>
+                {t}
+              </button>
+            ))}
+            {tags.length > 0 && <button onClick={() => setParams({ tags: null })} className="px-1 text-xs text-muted underline">전체 보기</button>}
+          </div>
+          {tab === "all" && (
+            <form onSubmit={submitSearch} className="flex gap-2">
+              <Select className="h-9 w-28 shrink-0" value={field} onChange={(e) => setParams({ f: e.target.value === "both" ? null : e.target.value })} aria-label="검색 범위">
+                {FIELDS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+              </Select>
+              <Input className="h-9" value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder="검색어" maxLength={50} />
+              <Button type="submit" size="sm" variant="outline" className="h-9 shrink-0" aria-label="검색"><Search size={15} /></Button>
+            </form>
+          )}
+          {q && tab === "all" && (
+            <p className="text-xs text-muted">&quot;{q}&quot; 검색 결과 <button className="ml-1 underline" onClick={() => { setQInput(""); setParams({ q: null }); }}>검색 지우기</button></p>
+          )}
+        </div>
+      )}
+
+      {error && <p className="py-8 text-center text-sm text-loss">{error}</p>}
+      {!error && count === undefined && <p className="py-16 text-center text-muted">불러오는 중…</p>}
+
+      {tab === "mycomments" ? (
+        mine && (mine.length === 0 ? <p className="py-16 text-center text-sm text-muted">아직 쓴 댓글이 없어요</p> : (
+          <ul className="divide-y divide-line rounded-lg border border-line bg-panel">
+            {mine.map((c) => (
+              <li key={c.id}>
+                <Link href={`/community/${c.post_id}#c${c.id}`} className="block px-4 py-3 hover:bg-white/[0.03]">
+                  <p className="line-clamp-2 text-sm">{c.body}</p>
+                  <p className="mt-1 truncate text-xs text-muted">
+                    {c.anonymous && "익명 · "}「{c.post_title}」{c.post_status === "hidden" && " (가려진 글)"} · {timeAgo(c.created_at)}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ))
+      ) : (
+        items && (items.length === 0 && notices.length === 0 ? (
+          <p className="py-16 text-center text-sm text-muted">
+            {tab === "mine" ? "아직 쓴 글이 없어요" : q || tags.length ? "조건에 맞는 글이 없어요" : tab === "hot" ? "이번 주 인기 글이 아직 없어요" : "첫 글을 남겨 보세요"}
+          </p>
+        ) : (
+          <ul className="divide-y divide-line rounded-lg border border-line bg-panel">
+            {tab === "all" && notices.map((p) => <Row key={`n${p.id}`} p={p} />)}
+            {items.map((p) => <Row key={p.id} p={p} />)}
+          </ul>
+        ))
+      )}
+
+      {hasMore && (
+        <div className="text-center">
+          <Button variant="outline" size="sm" onClick={() => load(tab === "mycomments" ? mine?.length ?? 0 : items?.length ?? 0)}>더 보기</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 목록 한 줄: [공지] 말머리 · 제목 [댓글 수] / 작성자 · 시각 · 조회 · 좋아요, 사진이 있으면 오른쪽에 썸네일 */
+function Row({ p }: { p: BoardItem }) {
+  return (
+    <li>
+      <Link href={`/community/${p.id}`} className={cn("flex gap-3 px-4 py-3 hover:bg-white/[0.03]", p.is_notice && "bg-brand/[0.04]")}>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1">
+            {p.is_notice && <span className="inline-flex items-center gap-0.5 rounded bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-brand-ink"><Pin size={11} />공지</span>}
+            {!p.is_notice && p.tags.map((t) => <span key={t} className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] text-muted">{t}</span>)}
+            {p.status === "hidden" && <span className="rounded bg-loss/20 px-1.5 py-0.5 text-[11px] text-loss">가려짐</span>}
+          </div>
+          <p className="flex items-center gap-1.5 text-[15px] font-semibold">
+            <span className="truncate">{p.title}</span>
+            {p.image_count > 0 && <ImageIcon size={14} className="shrink-0 text-muted" aria-label={`사진 ${p.image_count}장`} />}
+            {p.comment_count > 0 && <span className="shrink-0 text-sm font-semibold text-brand">[{p.comment_count}]</span>}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+            <CommunityCardView card={p.card} size={18} link={false} className="text-xs text-foreground/90" />
+            <span>{timeAgo(p.created_at)}{p.edited && " (수정됨)"}</span>
+            <span>조회 {p.view_count}</span>
+            {p.like_count > 0 && <span className="inline-flex items-center gap-0.5"><Heart size={11} />{p.like_count}</span>}
+            {p.comment_count > 0 && <span className="inline-flex items-center gap-0.5 sm:hidden"><MessageSquare size={11} />{p.comment_count}</span>}
+          </div>
+        </div>
+        {p.thumb && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={boardImageUrl(p.thumb)} alt="" width={64} height={64} loading="lazy" className="h-16 w-16 shrink-0 rounded-md object-cover" />
+        )}
+      </Link>
+    </li>
   );
 }

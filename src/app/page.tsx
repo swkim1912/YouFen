@@ -1,9 +1,11 @@
 "use client";
 // 메인 = 마이페이지. 비로그인 사용자에게는 랜딩(로그인/회원가입 카드 + '비로그인으로 이용')을 보여주고,
 // 로그인한 사용자는 바로 마이 펜싱이 열린다.
-// 탭: 종합(프로필·티어·전적) / 상세정보(연결된 선수·협회 등록 확인 + 클럽 마크 신청 + 회원 탈퇴)
+// 탭: 종합(프로필·티어·전적) / 상세정보(연결된 선수·협회 등록 확인 + 클럽 마크 신청 + 회원 탈퇴) / 커뮤니티 설정(CommunitySettings)
+// 주소의 ?tab=detail|community 로 처음 열 탭을 정한다(알림에서 '/?tab=community' 로 들어오는 경우 등).
 // 선수가 연결된 회원(학부모 제외)의 종합 탭은 선수 프로필 통합 화면(AthleteView own 모드: 티어 카드·점수·추이·전적·노트)을 쓴다.
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AuthLanding } from "@/components/auth/AuthLanding";
 import { AppShell } from "@/components/AppShell";
 import { ProfileView } from "@/components/ProfileView";
@@ -11,6 +13,7 @@ import { LinkedAthletes } from "@/components/LinkedAthletes";
 import { AccountDelete } from "@/components/AccountDelete";
 import { ClubMarkRequest } from "@/components/ClubMarkRequest";
 import { AthleteView } from "@/components/AthleteView";
+import { CommunitySettings } from "@/components/community/CommunitySettings";
 import { isMergeable } from "@/lib/members";
 import { publicData } from "@/lib/fencing";
 import { useAuth } from "@/components/AuthProvider";
@@ -24,14 +27,23 @@ export default function Home() {
 
   return (
     <AppShell>
-      <MyPage />
+      {/* useSearchParams 를 쓰는 화면은 Suspense 안에 둬야 한다(Next 규칙) */}
+      <Suspense>
+        <MyPage />
+      </Suspense>
     </AppShell>
   );
 }
 
+type Tab = "main" | "detail" | "community";
+const isTab = (t: string | null): t is Tab => t === "main" || t === "detail" || t === "community";
+
 function MyPage() {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<"main" | "detail">("main");
+  const tabParam = useSearchParams().get("tab");
+  const [tab, setTab] = useState<Tab>(isTab(tabParam) ? tabParam : "main");
+  // 이미 마이 펜싱을 보고 있을 때 알림 링크(?tab=…)로 들어와도 탭을 바꾼다
+  useEffect(() => { if (isTab(tabParam)) setTab(tabParam); }, [tabParam]);
   // 이 회원에 연결된 선수들 (undefined = 확인 중)
   const [linked, setLinked] = useState<{ id: number; name: string }[] | undefined>(undefined);
   const [pick, setPick] = useState<number | null>(null);
@@ -50,13 +62,15 @@ function MyPage() {
   return (
     <div className="space-y-4">
       <div className="flex gap-1 border-b border-line">
-        {([["main", "종합"], ["detail", "상세정보"]] as const).map(([k, label]) => (
+        {([["main", "종합"], ["detail", "상세정보"], ["community", "커뮤니티 설정"]] as const).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className={cn("-mb-px border-b-2 px-4 py-2 text-sm", tab === k ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
             {label}
           </button>
         ))}
       </div>
-      {tab === "detail" ? (
+      {tab === "community" ? (
+        <CommunitySettings />
+      ) : tab === "detail" ? (
         <>
           <LinkedAthletes />
           <ClubMarkRequest />

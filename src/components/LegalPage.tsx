@@ -6,7 +6,7 @@ import { LEGAL_UPDATED } from "@/lib/legal";
 const TABS = [
   ["/terms", "이용약관"],
   ["/privacy", "개인정보 처리방침"],
-  ["/community", "커뮤니티 운영원칙"],
+  ["/guidelines", "커뮤니티 운영원칙"],
   ["/support", "고객지원"],
 ] as const;
 

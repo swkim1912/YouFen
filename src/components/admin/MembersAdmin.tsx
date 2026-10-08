@@ -1,5 +1,6 @@
 "use client";
-// 관리자: 회원 관리 — 검색(닉네임·이메일), 가입일·마지막 접속·연결 선수 수, 이용 정지/해제, 프로필 사진 변경 제한.
+// 관리자: 회원 관리 — 검색(닉네임·커뮤니티 닉네임·이메일), 가입일·마지막 접속·연결 선수 수, 이용 정지/해제, 프로필 사진 변경 제한,
+//   커뮤니티 정지/해제(CommunityBanModal, RPC admin_community_ban/unban — 커뮤니티 쓰기만 막음).
 // - 이용 정지는 서버 API(/api/admin/users)가 Supabase Auth 의 ban 으로 처리한다(로그인·토큰 갱신 차단). 생년월일 등 민감 정보는 관리자에게도 보여주지 않는다.
 // - 관리자 권한의 부여·해제는 웹에서 하지 않고 Supabase 대시보드 SQL 로만 한다(아래 안내 문구 참고).
 import { useCallback, useEffect, useState } from "react";
@@ -10,11 +11,13 @@ import { roleLabel } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Label, Select } from "@/components/ui/input";
+import { CommunityBanModal } from "./CommunityBanModal";
 
 interface Member {
   id: string; nickname: string | null; email: string | null; role: string | null; leader_status: string | null; weapon: string | null; region: string | null; affiliation: string | null;
   avatar_locked: boolean; is_admin: boolean; consent_version: string | null; onboarded: boolean; created_at: string; last_sign_in_at: string | null;
   banned_until: string | null; linked: number; tickets: number;
+  community_nickname: string | null; community_ban: { until: string | null; reason: string } | null; // 커뮤니티 정지(없으면 null, until null = 영구)
 }
 const isBanned = (m: Member) => !!m.banned_until && new Date(m.banned_until).getTime() > Date.now();
 
@@ -23,6 +26,7 @@ export function MembersAdmin() {
   const [list, setList] = useState<Member[] | null>(null);
   const [days, setDays] = useState("7");
   const [ban, setBan] = useState<Member | null>(null);
+  const [cban, setCban] = useState<{ id: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc("admin_members", { p_q: q, p_limit: 40 });
@@ -44,6 +48,12 @@ export function MembersAdmin() {
     toast.success("정지를 풀었어요");
     load();
   };
+  const cunban = async (m: Member) => {
+    const err = await rpcOk("admin_community_unban", { p_target: m.id });
+    if (err) return toast.error(err);
+    toast.success("커뮤니티 정지를 풀었어요");
+    load();
+  };
   const lock = async (m: Member) => {
     const err = await rpcOk("admin_set_avatar_lock", { p_target: m.id, p_lock: !m.avatar_locked });
     if (err) return toast.error(err);
@@ -55,7 +65,7 @@ export function MembersAdmin() {
     <section className="space-y-3 rounded-lg border border-line bg-panel p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="mr-auto text-base font-bold">회원 관리</h2>
-        <Input className="h-8 w-56" value={q} onChange={(e) => setQ(e.target.value)} placeholder="닉네임 또는 이메일 검색" />
+        <Input className="h-8 w-56" value={q} onChange={(e) => setQ(e.target.value)} placeholder="닉네임·커뮤니티 닉네임·이메일 검색" />
       </div>
       <p className="text-xs text-muted">검색하지 않으면 최근 가입한 회원 40명이 보여요. 관리자 권한은 이 화면이 아니라 Supabase 대시보드에서만 줄 수 있어요.</p>
       {list === null ? <p className="py-3 text-center text-sm text-muted">불러오는 중…</p> : list.length === 0 ? <p className="py-3 text-center text-sm text-muted">검색 결과가 없습니다</p> : (
@@ -66,6 +76,8 @@ export function MembersAdmin() {
                 <b>{m.nickname ?? "(닉네임 없음)"}</b>
                 {m.is_admin && <span className="rounded bg-brand/20 px-1.5 py-0.5 text-[11px] text-brand">관리자</span>}
                 {isBanned(m) && <span className="rounded bg-loss/20 px-1.5 py-0.5 text-[11px] text-loss">정지 ~{fmtDateTime(m.banned_until)}</span>}
+                {m.community_ban && <span className="rounded bg-loss/20 px-1.5 py-0.5 text-[11px] text-loss" title={m.community_ban.reason}>커뮤니티 정지 {m.community_ban.until ? `~${fmtDateTime(m.community_ban.until)}` : "(영구)"}</span>}
+                {m.community_nickname && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[11px] text-muted">커뮤니티: {m.community_nickname}</span>}
                 {m.avatar_locked && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[11px] text-muted">사진 제한</span>}
                 {!m.onboarded && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[11px] text-muted">가입 미완료</span>}
                 <span className="select-all text-xs text-muted">{m.email}</span>
@@ -77,12 +89,16 @@ export function MembersAdmin() {
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {isBanned(m) ? <Button size="sm" variant="outline" onClick={() => unsuspend(m)}>정지 해제</Button> : <Button size="sm" variant="danger" onClick={() => setBan(m)}>이용 정지</Button>}
                   <Button size="sm" variant="outline" onClick={() => lock(m)}>{m.avatar_locked ? "사진 제한 풀기" : "사진 변경 제한"}</Button>
+                  {m.community_ban
+                    ? <Button size="sm" variant="outline" onClick={() => cunban(m)}>커뮤니티 정지 해제</Button>
+                    : <Button size="sm" variant="outline" onClick={() => setCban({ id: m.id, name: m.nickname ?? "이 회원" })}>커뮤니티 정지</Button>}
                 </div>
               )}
             </li>
           ))}
         </ul>
       )}
+      <CommunityBanModal target={cban} onClose={() => setCban(null)} onDone={() => { toast.success("커뮤니티 이용을 정지했어요(회원에게 알림)"); load(); }} />
       <Modal open={!!ban} onClose={() => setBan(null)} title="이용 정지">
         <div className="space-y-3">
           <p className="text-sm">{ban?.nickname ?? "이 회원"} 님의 이용을 정지할까요? 정지 중에는 로그인할 수 없어요.</p>

@@ -1,32 +1,39 @@
 "use client";
-// 관리자 페이지(/admin): 탭 — 현황 / 공지 / 데이터 갱신 / 고객지원 / 사진 신고 / 선수 연결 / 지도자 승인 / 클럽 / 회원.
+// 관리자 페이지(/admin): 탭 — 현황 / 공지 / 데이터 갱신 / 고객지원 / 신고(커뮤니티 신고 + 프로필 사진 신고) / 선수 연결 / 지도자 승인 / 클럽 / 회원.
+// - 주소의 ?tab=<탭> 으로 처음 열 탭을 정한다(운영 알림의 링크 '/admin?tab=reports' 등).
 // - 관리자 권한(profiles.is_admin)은 Supabase 대시보드 SQL 로만 부여한다(웹에서는 부여·변경 불가).
 //   예) update public.profiles set is_admin = true where email = '가입한 이메일';
 // - 화면 보호는 보조 수단이고, 실제 권한 검사는 DB(RLS 정책·RPC 의 is_admin_user())와 서버 API(authed().isAdmin)가 한다.
 // - 탭 이름 옆 빨간 숫자는 처리할 일의 개수(admin_overview). 처리하면 해당 탭이 onChanged 로 숫자를 다시 읽는다.
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
 import { NoticeAdmin } from "@/components/admin/NoticeAdmin";
 import { RefreshPanel } from "@/components/admin/RefreshPanel";
 import { SupportAdmin } from "@/components/admin/SupportAdmin";
 import { ReportsAdmin } from "@/components/admin/ReportsAdmin";
+import { CommunityReportsAdmin } from "@/components/admin/CommunityReportsAdmin";
+import { CommunityBackupAdmin } from "@/components/admin/CommunityBackupAdmin";
 import { ClaimsAdmin } from "@/components/admin/ClaimsAdmin";
 import { ClubsAdmin } from "@/components/admin/ClubsAdmin";
 import { MembersAdmin } from "@/components/admin/MembersAdmin";
 import { LeadersAdmin } from "@/components/admin/LeadersAdmin";
+import { OpenpisteAdmin } from "@/components/admin/OpenpisteAdmin";
+import { CompNoticesAdmin } from "@/components/admin/CompNoticesAdmin";
 import { supabase } from "@/lib/supabase";
 import { fmtDateTime } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
 
 interface Overview {
-  users: number; linked_athletes: number; claims: number; support_new: number; avatar_reports: number; club_requests: number; leaders_pending: number; clubs_review: number;
+  users: number; linked_athletes: number; claims: number; support_new: number; avatar_reports: number; community_reports?: number; chat_today?: number; chat_senders_today?: number; openpiste_pending?: number; club_requests: number; leaders_pending: number; clubs_review: number;
   teams: number; clubs: number; players: number; competitions: number; last_competition: string | null; events: number;
   last_done: Record<string, string>;
 }
 interface AuditRow { id: number; action: string; target: string | null; detail: Record<string, unknown> | null; created_at: string; admin_nickname: string | null }
 
-type Tab = "home" | "notice" | "refresh" | "support" | "reports" | "claims" | "leaders" | "clubs" | "members";
+type Tab = "home" | "notice" | "refresh" | "support" | "reports" | "openpiste" | "compnotices" | "claims" | "leaders" | "clubs" | "members";
+const TAB_KEYS: Tab[] = ["home", "notice", "refresh", "support", "reports", "openpiste", "compnotices", "claims", "leaders", "clubs", "members"];
 
 const ACTION: Record<string, string> = {
   avatar_lock: "사진 변경 제한", avatar_unlock: "사진 제한 해제", avatar_remove: "사진 삭제", avatar_remove_lock: "사진 삭제+제한",
@@ -35,19 +42,27 @@ const ACTION: Record<string, string> = {
   club_confidence: "클럽 확인 표시", club_rename: "클럽 이름 변경", club_merge: "클럽 병합",
   club_image_set: "클럽 마크 등록", club_image_approve: "클럽 마크 승인", club_image_reject: "클럽 마크 반려", club_image_remove: "클럽 마크 제거",
   suspend: "이용 정지", unsuspend: "정지 해제", leader_approve: "지도자 승인", leader_reject: "지도자 반려",
+  community_ban: "커뮤니티 정지", community_unban: "커뮤니티 정지 해제", community_nick_clear: "커뮤니티 닉네임 삭제", chat_nick_clear: "자유톡방 닉네임 삭제", op_approve: "오픈피스트 승인", op_reject: "오픈피스트 반려", comp_notice_create: "다가오는 대회 등록", comp_notice_update: "다가오는 대회 수정", comp_notice_delete: "다가오는 대회 삭제",
+  creport_resolved: "커뮤니티 신고 처리", creport_dismissed: "커뮤니티 신고 기각", creport_open: "커뮤니티 신고 되돌림",
+  cavatar_remove: "커뮤니티 사진 삭제", cavatar_remove_lock: "커뮤니티 사진 삭제+제한",
+  content_active: "글·댓글 복구", content_hidden: "글·댓글 숨김", content_deleted: "글·댓글 삭제", reveal_author: "익명 작성자 확인", backup_export: "삭제 콘텐츠 백업",
 };
 
 export default function AdminPage() {
   return (
     <AppShell requireAuth>
-      <Admin />
+      <Suspense>
+        <Admin />
+      </Suspense>
     </AppShell>
   );
 }
 
 function Admin() {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<Tab>("home");
+  const tabParam = useSearchParams().get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(tabParam && TAB_KEYS.includes(tabParam) ? tabParam : "home");
+  useEffect(() => { if (tabParam && TAB_KEYS.includes(tabParam)) setTab(tabParam); }, [tabParam]);
   const [ov, setOv] = useState<Overview | null>(null);
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const isAdmin = !!profile?.is_admin;
@@ -64,11 +79,14 @@ function Admin() {
 
   const TABS: [Tab, string, number | undefined][] = [
     ["home", "현황", undefined], ["notice", "공지", undefined], ["refresh", "데이터 갱신", undefined],
-    ["support", "고객지원", ov?.support_new], ["reports", "사진 신고", ov?.avatar_reports], ["claims", "선수 연결", ov?.claims],
+    ["support", "고객지원", ov?.support_new], ["reports", "신고", ((ov?.avatar_reports ?? 0) + (ov?.community_reports ?? 0)) || undefined], ["openpiste", "오픈피스트", ov?.openpiste_pending], ["compnotices", "다가오는 대회", undefined], ["claims", "선수 연결", ov?.claims],
     ["leaders", "지도자 승인", ov?.leaders_pending], ["clubs", "클럽", (ov?.club_requests ?? 0) || undefined], ["members", "회원", undefined],
   ];
   const cards: [string, string | number | undefined][] = [
-    ["회원", ov?.users], ["연결된 선수", ov?.linked_athletes], ["새 고객지원 접수", ov?.support_new], ["미처리 사진 신고", ov?.avatar_reports],
+    ["회원", ov?.users], ["연결된 선수", ov?.linked_athletes], ["새 고객지원 접수", ov?.support_new], ["미처리 사진 신고", ov?.avatar_reports], ["미처리 커뮤니티 신고", ov?.community_reports],
+    // 자유톡방 최근 24시간(실시간 연결 무료 한도 관리용 — docs/COMMUNITY.md 9장)
+    ["자유톡방 메시지 / 보낸 회원(24시간)", ov ? `${ov.chat_today ?? 0} / ${ov.chat_senders_today ?? 0}` : undefined],
+    ["오픈피스트 승인 대기", ov?.openpiste_pending],
     ["미처리 선수 연결 문의", ov?.claims], ["지도자 승인 대기", ov?.leaders_pending], ["클럽 마크 신청 대기", ov?.club_requests], ["확인 필요 클럽", ov?.clubs_review],
     ["협회 팀 / 클럽", ov ? `${ov.teams} / ${ov.clubs}` : undefined], ["협회 선수", ov?.players],
     ["대회 / 종목", ov ? `${ov.competitions} / ${ov.events}` : undefined], ["가장 최근 대회", ov?.last_competition ?? undefined],
@@ -114,7 +132,15 @@ function Admin() {
       {tab === "notice" && <NoticeAdmin />}
       {tab === "refresh" && <RefreshPanel lastDone={ov?.last_done ?? {}} />}
       {tab === "support" && <SupportAdmin onChanged={loadOv} />}
-      {tab === "reports" && <ReportsAdmin onChanged={loadOv} />}
+      {tab === "reports" && (
+        <>
+          <CommunityReportsAdmin onChanged={loadOv} />
+          <ReportsAdmin onChanged={loadOv} />
+          <CommunityBackupAdmin />
+        </>
+      )}
+      {tab === "openpiste" && <OpenpisteAdmin onChanged={loadOv} />}
+      {tab === "compnotices" && <CompNoticesAdmin />}
       {tab === "claims" && <ClaimsAdmin onChanged={loadOv} />}
       {tab === "leaders" && <LeadersAdmin onChanged={loadOv} />}
       {tab === "clubs" && <ClubsAdmin onChanged={loadOv} />}
