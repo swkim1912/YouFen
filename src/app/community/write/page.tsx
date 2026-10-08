@@ -2,7 +2,7 @@
 // 커뮤니티 > 글쓰기 / 글 수정(/community/write?edit=123)
 // - 말머리 여러 개(안 고르면 '자유'), 제목 60자, 내용 5,000자, 사진 3장, 익명으로 쓰기(새 글만 — 수정 때 바꾸면 작성자가 드러날 수 있어 고정)
 // - 관리자는 '공지로 올리기'(목록 맨 위 고정, 익명 불가)
-// - 사진: 브라우저에서 긴 변 2048px 로 줄여 서버(/api/community-image)로 한 장씩 → 서버가 위치 정보 제거·1280px webp·썸네일을 만든다
+// - 사진: lib/communityUpload.ts 가 긴 변 2048px 로 줄여 서버(/api/community-image?kind=post)로 한 장씩 → 서버가 위치 정보 제거·1280px webp·썸네일을 만든다
 // - 올라갈 얼굴 미리보기: 지금 커뮤니티 설정의 프로필(익명이면 '익명'). 글은 쓸 때의 얼굴로 계속 보인다.
 // 저장: board_write / board_edit RPC (도배 방지·정지 검사는 DB 가 한다)
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -17,14 +17,12 @@ import { CommunityCardView } from "@/components/community/CommunityCardView";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { callApi } from "@/lib/adminApi";
+import { uploadCommunityImage } from "@/lib/communityUpload";
 import {
   BOARD_TAGS, BODY_MAX, IMAGE_MAX, TITLE_MAX, type BoardImage, type BoardPost, type CommunityCard, type CommunityStatus,
   boardImageUrl, communityError, fetchMyCommunity, hasPhoneNumber,
 } from "@/lib/community";
 import { cn } from "@/lib/utils";
-
-const MAX_PICK_MB = 20; // 고를 수 있는 원본 최대 용량(줄여서 보내므로 넉넉히)
 
 export default function WritePage() {
   return (
@@ -34,19 +32,6 @@ export default function WritePage() {
       </Suspense>
     </AppShell>
   );
-}
-
-/** 사진을 긴 변 2048px 이하 JPEG 로 줄인다(서버 요청 한도 4.5MB 안쪽으로). 이미 작으면 그대로 */
-async function shrink(file: File): Promise<Blob> {
-  const bmp = await createImageBitmap(file).catch(() => null);
-  if (!bmp) return file; // 브라우저가 못 읽는 형식이면 서버가 판단하게 그대로 보낸다
-  const scale = Math.min(1, 2048 / Math.max(bmp.width, bmp.height));
-  if (scale === 1 && file.size < 3.5 * 1024 * 1024) return file;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bmp.width * scale);
-  canvas.height = Math.round(bmp.height * scale);
-  canvas.getContext("2d")?.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-  return new Promise((res) => canvas.toBlob((b) => res(b ?? file), "image/jpeg", 0.9));
 }
 
 function Write() {
@@ -100,12 +85,9 @@ function Write() {
     if (files.length > room) toast.error(`사진은 ${IMAGE_MAX}장까지 올릴 수 있어요`);
     setUploading(true);
     for (const f of list) {
-      if (f.size > MAX_PICK_MB * 1024 * 1024) { toast.error(`${MAX_PICK_MB}MB 이하 사진만 올릴 수 있어요`); continue; }
-      const fd = new FormData();
-      fd.append("file", new File([await shrink(f)], "photo.jpg", { type: "image/jpeg" }));
-      const r = await callApi("/api/community-image", { method: "POST", body: fd });
-      if (!r.ok) { toast.error(r.message ?? "사진을 올리지 못했어요"); break; }
-      setImages((cur) => [...cur, { id: r.id as number, path: r.path as string, thumb: r.thumb as string, w: (r.w as number) ?? null, h: (r.h as number) ?? null }]);
+      const r = await uploadCommunityImage(f, "post");
+      if ("error" in r) { toast.error(r.error); break; }
+      setImages((cur) => [...cur, r]);
     }
     setUploading(false);
   };

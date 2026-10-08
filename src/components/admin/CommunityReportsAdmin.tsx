@@ -26,7 +26,7 @@ interface CReport {
   target_anonymous: boolean; content_status: string | null; // 게시글·댓글: 익명 여부, 지금 상태(active/hidden/deleted, 완전 삭제되면 null)
 }
 const STATUS = { open: "미처리", resolved: "처리됨", dismissed: "기각" } as const;
-const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글" };
+const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글", listing: "장터 글", dmthread: "1:1 채팅" };
 const CONTENT_STATUS: Record<string, string> = { active: "게시 중", hidden: "가려짐", deleted: "삭제됨" };
 
 export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void }) {
@@ -109,7 +109,7 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
                       </>
                     )}
                   </div>
-                  {!isProfile && r.content_status && (r.target_kind === "post" || r.target_kind === "comment") && (
+                  {!isProfile && r.content_status && (r.target_kind === "post" || r.target_kind === "comment" || r.target_kind === "listing") && (
                     <AdminContentTools kind={r.target_kind} refId={r.target_ref} status={r.content_status} onChanged={load} />
                   )}
                 </div>
@@ -128,13 +128,22 @@ function ContentPreview({ r }: { r: CReport }) {
   const snap = r.snapshot ?? {};
   if (snap.purged) return <p className="text-xs text-muted">월말 정리로 완전히 삭제된 내용이에요</p>;
   const postId = snap.post_id as number | undefined;
+  const listingId = snap.listing_id as number | undefined;
+  const msgs = Array.isArray(snap.messages) ? (snap.messages as { from: string; body: string; image: string | null; at: string }[]) : null;
   return (
     <div className="space-y-1 rounded-md border border-line bg-panel px-3 py-2 text-xs">
       {typeof snap.title === "string" && <p className="font-semibold">{snap.title}</p>}
       {typeof snap.body === "string" && <p className="line-clamp-4 whitespace-pre-wrap">{snap.body}</p>}
+      {msgs && (
+        // 1:1 채팅 신고: 신고 당시 최근 메시지 30개(누가 보냈는지는 신고자/상대로만)
+        <ul className="max-h-48 space-y-0.5 overflow-y-auto">
+          {msgs.map((m, i) => <li key={i}><b className={m.from === "상대" ? "text-loss" : "text-muted"}>{m.from}</b> {m.body || (m.image ? "(사진)" : "")}</li>)}
+        </ul>
+      )}
       <p className="text-muted">
-        표시 이름 {String(snap.nickname ?? "-")} · 지금 상태 {r.content_status ? CONTENT_STATUS[r.content_status] ?? r.content_status : "완전 삭제"}
+        표시 이름 {String(snap.nickname ?? "-")}{r.target_kind !== "dmthread" && <> · 지금 상태 {r.content_status ? CONTENT_STATUS[r.content_status] ?? r.content_status : "완전 삭제"}</>}
         {postId && <> · <Link href={`/community/${postId}${r.target_kind === "comment" ? `#c${r.target_ref}` : ""}`} className="text-brand" target="_blank">글 열기</Link></>}
+        {listingId && <> · <Link href={`/community/market/${listingId}`} className="text-brand" target="_blank">장터 글 열기</Link></>}
       </p>
     </div>
   );

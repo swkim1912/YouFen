@@ -1,5 +1,6 @@
 "use client";
-// 커뮤니티 공용 머리: 제목 + 하위 메뉴(게시판 / 채팅 / 장터). 채팅·장터는 3·4단계에서 열린다(docs/COMMUNITY.md 8장).
+// 커뮤니티 공용 머리: 제목 + 하위 메뉴(게시판 / 채팅 / 장터 / 1:1 채팅). 단체 채팅은 4단계에서 열린다(docs/COMMUNITY.md 8장).
+// 1:1 채팅은 장터 거래용(장터 글에서 시작). 안 읽은 대화가 있으면 점을 띄운다(목록을 열 때 한 번 확인).
 // 커뮤니티 이용이 제한된 회원에게는 사유·기간을 짧게 알린다(자세한 내용은 마이 펜싱 > 커뮤니티 설정).
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -10,26 +11,30 @@ import { cn } from "@/lib/utils";
 const MENUS = [
   { key: "board", label: "게시판", href: "/community", ready: true },
   { key: "chat", label: "채팅", href: "#", ready: false },
-  { key: "market", label: "장터", href: "#", ready: false },
+  { key: "market", label: "장터", href: "/community/market", ready: true },
+  { key: "dm", label: "1:1 채팅", href: "/community/messages", ready: true },
 ] as const;
 
 export function CommunityHeader({ active = "board" }: { active?: (typeof MENUS)[number]["key"] }) {
   const [status, setStatus] = useState<CommunityStatus | null>(null);
+  const [unreadDm, setUnreadDm] = useState(false);
   useEffect(() => {
     supabase.rpc("my_community_status").then(({ data }) => setStatus((data as CommunityStatus | null) ?? null));
+    supabase.rpc("dm_list").then(({ data }) => setUnreadDm(((data ?? []) as { unread: boolean }[]).some((t) => t.unread)));
   }, []);
   return (
     <div className="space-y-3">
       <div className="flex items-end gap-4 border-b border-line">
         <h1 className="pb-2 text-lg font-bold">커뮤니티</h1>
-        <nav className="flex gap-1">
+        <nav className="flex gap-1 overflow-x-auto">
           {MENUS.map((m) =>
             m.ready ? (
-              <Link key={m.key} href={m.href} className={cn("-mb-px border-b-2 px-3 py-2 text-sm", active === m.key ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
+              <Link key={m.key} href={m.href} className={cn("relative -mb-px shrink-0 border-b-2 px-3 py-2 text-sm", active === m.key ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
                 {m.label}
+                {m.key === "dm" && unreadDm && <span className="absolute right-1 top-1.5 h-1.5 w-1.5 rounded-full bg-loss" aria-label="안 읽은 메시지" />}
               </Link>
             ) : (
-              <span key={m.key} className="-mb-px cursor-default border-b-2 border-transparent px-3 py-2 text-sm text-muted/60" title="준비 중이에요">
+              <span key={m.key} className="-mb-px shrink-0 cursor-default border-b-2 border-transparent px-3 py-2 text-sm text-muted/60" title="준비 중이에요">
                 {m.label}<span className="ml-1 text-[10px]">준비 중</span>
               </span>
             ),

@@ -61,6 +61,19 @@ const ERROR_TEXT: Record<string, string> = {
   own_like: "내 글에는 좋아요를 누를 수 없어요",
   not_mine: "내가 쓴 글만 고칠 수 있어요",
   not_found: "글이 없거나 볼 수 없는 글이에요",
+  market_not_eligible: "장터는 선수를 연결한 회원(학부모·지도자 포함)만 이용할 수 있어요. 마이 펜싱 > 상세정보에서 선수를 연결해 주세요",
+  rate_market_day: "장터 글은 하루 20개까지 쓸 수 있어요",
+  extend_limit: "연장은 2번까지 할 수 있어요",
+  extend_early: "만료 7일 전(구매 글은 3일 전)부터 연장할 수 있어요",
+  dm_own: "내 글에는 채팅을 시작할 수 없어요",
+  dm_blocked: "차단 중인 회원과는 채팅할 수 없어요",
+  dm_gone: "상대가 탈퇴해서 메시지를 보낼 수 없어요",
+  rate_dm_start: "새 채팅은 하루 30개까지 시작할 수 있어요",
+  rate_dm: "메시지를 너무 빨리 보내고 있어요. 잠시 후 다시 보내 주세요",
+  "bad_input:price": "가격을 다시 확인해 주세요(구매 글은 최소 ≤ 최대, 또는 '가격 협의')",
+  "bad_input:title": "물품명을 1~60자로 적어 주세요",
+  "bad_input:body": "내용을 확인해 주세요",
+  bad_input: "입력값을 다시 확인해 주세요",
 };
 
 /** DB 함수가 보낸 오류(raise exception)를 화면 문구로 바꾼다. 코드가 아니면 원문(이미 한글 문구) 그대로 */
@@ -213,4 +226,105 @@ export interface BoardPost {
 /** 글·댓글 본문에 전화번호처럼 보이는 것이 있는지(연락처 노출 경고용) */
 export function hasPhoneNumber(text: string): boolean {
   return /01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/.test(text);
+}
+
+// ───────────────────────── 장터·1:1 채팅 (3단계) ─────────────────────────
+
+/** 장터 값 목록 (DB 제약 market_listings 와 같은 값 — 한쪽만 바꾸지 말 것) */
+export const MARKET_CATEGORIES = ["검·부품", "마스크", "도복", "장갑", "신발", "가방", "바디코드·전자장비", "기타"] as const;
+export const MARKET_WEAPONS = ["에페", "플뢰레", "사브르", "공용"] as const;
+export const USAGE_PERIODS = ["미사용", "1개월 이하", "1~6개월", "6~12개월", "1~2년", "2년 이상"] as const;
+export const SELL_CONDITIONS = ["새상품", "거의 새것", "사용감 적음", "사용감 많음", "수리 필요"] as const;
+export const BUY_CONDITIONS = ["새것", "사용감 적음", "상관없음"] as const;
+export const HANDS = ["오른손", "왼손", "양손"] as const;
+export const SELL_TRADES = ["판매중", "예약중", "거래완료"] as const;
+export const BUY_TRADES = ["구하는 중", "구했어요"] as const;
+export const MARKET_IMAGE_MAX = { sell: 10, buy: 1 } as const;
+
+/** 카테고리에 따라 '손'·'사이즈' 입력이 필요한지 (검 그립·장갑·도복은 손 방향, 마스크·도복·장갑·신발은 사이즈) */
+export const needsHand = (c: string) => c === "검·부품" || c === "장갑" || c === "도복";
+export const needsSize = (c: string) => c === "마스크" || c === "도복" || c === "장갑" || c === "신발";
+
+/** 장터 상단 고정 안내(면책) */
+export const MARKET_DISCLAIMER =
+  "유펜은 거래 당사자가 아니며, 상품과 거래에 대한 책임은 판매자에게 있습니다. 선입금 요구에 주의하고, 마스크 인증(800N/1600N) 등 장비의 안전 상태는 직접 확인하세요.";
+
+/** 가격 표시: 판매 0원 = 나눔, 구매 = 희망 가격대 또는 가격 협의 */
+export function priceText(l: { kind: "sell" | "buy"; price: number | null; price_min: number | null; price_max: number | null; price_nego: boolean }): string {
+  const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
+  if (l.kind === "sell") return l.price === 0 ? "나눔" : l.price != null ? won(l.price) : "-";
+  if (l.price_nego) return "가격 협의";
+  if (l.price_min != null && l.price_max != null) return l.price_min === l.price_max ? `희망 ${won(l.price_min)}` : `희망 ${l.price_min.toLocaleString("ko-KR")}~${won(l.price_max)}`;
+  return "-";
+}
+
+/** 장터 글 요약(market_list 한 줄, market_get 의 바탕) */
+export interface MarketItem {
+  id: number;
+  kind: "sell" | "buy";
+  title: string;
+  category: string;
+  weapon: string | null;
+  price: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  price_nego: boolean;
+  usage_period: string | null;
+  condition: string | null;
+  hand: string | null;
+  size: string | null;
+  regions: string | null;
+  delivery: boolean;
+  trade_status: string;
+  status: "active" | "hidden" | "expired";
+  thumb: string | null;
+  image_count: number;
+  created_at: string;
+  edited: boolean;
+  expires_at: string;
+  extend_count: number;
+  view_count: number;
+  is_mine: boolean;
+  card: CommunityCard;
+}
+
+/** 장터 글 상세(market_get). 차단한 회원의 글이면 { id, blocked: true } 만 온다 */
+export interface MarketDetail extends MarketItem {
+  blocked?: boolean;
+  body: string;
+  images: BoardImage[];
+  is_admin: boolean;
+  eligible: boolean;   // 내가 장터를 쓸 수 있는지(선수 연결)
+  my_thread: number | null; // 이 글로 이미 시작한 내 1:1 채팅
+}
+
+/** 1:1 채팅 목록 한 줄(dm_list) */
+export interface DmThreadItem {
+  id: number;
+  listing_id: number | null;
+  listing_title: string;
+  listing_thumb: string | null;
+  listing_kind: "sell" | "buy" | null;
+  trade_status: string | null;
+  last_message_at: string;
+  i_am_seller: boolean;
+  other: CommunityCard;
+  last: { body: string; image: boolean; mine: boolean } | null;
+  unread: boolean;
+}
+
+export interface DmMessage { id: number; mine: boolean; body: string | null; image: BoardImage | null; status: string; created_at: string }
+
+/** 대화방(dm_thread) */
+export interface DmThread {
+  id: number;
+  listing_id: number | null;
+  listing_title: string;
+  i_am_seller: boolean;
+  other: CommunityCard;
+  blocked: boolean;
+  other_left: boolean;
+  other_read_at: string | null;
+  listing: { status: string; trade_status: string; kind: "sell" | "buy"; thumb: string | null; price: number | null; price_min: number | null; price_max: number | null; price_nego: boolean } | null;
+  messages: DmMessage[];
 }

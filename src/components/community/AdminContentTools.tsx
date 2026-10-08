@@ -1,5 +1,5 @@
 "use client";
-// 관리자 전용: 게시글·댓글 처리 도구 (게시글 상세 화면과 관리자 신고 화면 공용)
+// 관리자 전용: 게시글·댓글·장터 글 처리 도구 (게시글·장터 글 상세 화면과 관리자 신고 화면 공용)
 // - 숨김 / 복구 / 삭제(사유 입력 → 작성자에게 알림, 다음 달 1일 완전 삭제): RPC admin_set_content_status
 // - 작성자 확인: RPC admin_reveal_author — 익명·전용 프로필 글의 실제 회원을 보여 준다. 문제가 되거나 신고가 들어온 경우에만 쓰고,
 //   누를 때마다 관리 기록(admin_audit 'reveal_author')에 남는다.
@@ -11,7 +11,7 @@ import { rpcOk } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
 
 export function AdminContentTools({ kind, refId, status, onChanged, compact }: {
-  kind: "post" | "comment";
+  kind: "post" | "comment" | "listing";
   refId: string;
   status: string;
   onChanged: () => void;

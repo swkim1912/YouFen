@@ -144,6 +144,13 @@
   - 사진: `/api/community-image`(로그인·정지 아님·24시간 30장, sharp 로 EXIF 제거 → 긴 변 1280 webp + 320 썸네일, 경로 `posts/<무작위>.webp` — 회원 id 를 경로에 넣지 않음, Vision 검사 없음) → `community_uploads` → 글 저장 때 id 로 붙임(최대 3장). 글에 안 붙은 채 하루 지난 사진(작성 취소·수정으로 빠짐·완전 삭제된 글)은 이 API 가 불릴 때마다 20개씩 저장소 API 로 지운다(**storage.objects 는 SQL 로 못 지움**). 브라우저는 긴 변 2048px JPEG 로 줄여 보냄.
   - 탈퇴 회원의 글·댓글은 남기고 작성자만 비움('탈퇴 회원'). 시퀀스 읽기 권한 회수(마이그레이션 `community_sequences_private`) — **새 표를 만들면 시퀀스 권한도 회수할 것.**
 
+- **커뮤니티 3단계 — 장터·1:1 채팅(2026-10-08, 같은 브랜치, SQL `supabase/community_3_market.sql` = 마이그레이션 35):**
+  - 화면: `/community/market`(전체/팝니다/삽니다/내 장터 글, 카테고리·종목(공용 포함)·거래 전/완료·검색, 면책 문구 고정), `/community/market/[id]`(사진 넘겨 보기, 상품 정보, 게시일·자동 정리 예정일, 판매자와 채팅하기/제 물건 있어요, 내 글: 거래 상태·수정·연장(n/2)·삭제), `/community/market/write?kind=sell|buy`(사진 10/1장 — 첫 장 = 대표, 누르면 대표로, 손·사이즈는 카테고리에 따라 `needsHand`/`needsSize`), `/community/messages`(1:1 채팅 목록, 30초 갱신), `/community/messages/[id]`(대화방, **4초 폴링** `dm_thread(p_after)`, 사진 1장, 읽음 표시, 나가기·신고·차단). `CommunityHeader` 에 장터·1:1 채팅(안 읽음 점).
+  - **자격:** 글쓰기·채팅·장터 사진 = `private.market_eligible`(athlete_links 1건 이상 — 학부모·지도자 포함), 둘러보기는 로그인 회원 누구나. 장터·채팅에 익명 없음(persona y/c 저장). `market_clean` 이 입력값 검사(오류 `bad_input:<항목>`), 1분 1개·24시간 20개.
+  - **노출 기간:** 판매 6개월·구매 30일, 만료 7일·3일 전 알림(`expiry_notified`), 연장 2회(`extend_count`, 만료 전 7/3일부터·만료 후에도 가능), 만료 → `expired`(작성자만 봄) → 30일 뒤 `deleted` → 다음 달 1일 완전 삭제. 모두 `private.community_daily`.
+  - **1:1 채팅:** `dm_threads`(장터 글 × 문의자 a, 글쓴이 b, 양쪽 persona 고정, `unique(listing_id, a_id)`), `dm_messages`(보낸 사람 id 는 화면에 안 내고 `mine` 만). 메시지 1달 보관(daily 가 삭제 → 사진 기록이 비워져 사진 API 가 파일 정리). 차단(양방향 `blocked_either`)이면 시작·전송 불가. 새 메시지 알림은 그 방의 안 읽은 dm 알림이 없을 때만. 신고 = 대화방 단위 `dmthread`(사본 = 최근 30개, 신고자/상대로만 표시).
+  - 사진 API `?kind=post|market|dm`(하루 30·40·30장, 경로 `posts/`·`market/`·`dm/`, 장터·채팅은 선수 연결 회원만), 고아 정리 조건 = post_id·listing_id·message_id 모두 비어 있음. 업로드 도우미 `lib/communityUpload.ts`. 관리자 신고 화면에 장터 글·1:1 채팅 사본, `AdminContentTools` 가 listing 까지. **plpgsql 변수 이름이 표의 열 이름과 같으면 오류(`link` 사례) — `v_` 접두사를 쓸 것.**
+
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 -
 
@@ -154,7 +161,7 @@
 - 
 
 ## 미구현 / 나중에 할 일
-- 오픈피스트·커뮤니티·아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는 `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1단계 기반·2단계 게시판 완료, 3단계 장터·1:1 채팅부터)
+- 오픈피스트·커뮤니티·아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는 `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~3단계 완료: 기반·게시판·장터/1:1 채팅, 다음은 4단계 단체 채팅)
 - 친구 추가(현재 상대 선택은 전체 회원 닉네임 검색), 뱃지 실제 디자인
 - 앱 이식
 

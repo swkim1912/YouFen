@@ -1,4 +1,5 @@
 -- 커뮤니티 2단계 게시판 (마이그레이션 34 `community_board`, 2026-10-08, 브랜치 feature/community)
+-- ※ board_write/board_edit 의 사진 조건(kind='post', listing_id·message_id 비어 있음)은 3단계에서 열을 추가한 뒤 `community_board_upload_kind` 로 바꾼 최종본이다.
 -- 기획: docs/COMMUNITY.md 2장. 1단계(community_1_foundation.sql)의 카드·알림·신고·차단·정지 위에 올린다.
 -- 표: community_posts(글) / community_comments(댓글·답글 1단계) / community_post_likes(좋아요) / community_uploads(사진 파일 기록)
 -- 원칙
@@ -267,7 +268,8 @@ begin
   if exists (select 1 from public.community_posts where author_id = me and created_at > now() - interval '1 minute') then raise exception 'rate_post_min'; end if;
   if (select count(*) from public.community_posts where author_id = me and created_at > now() - interval '24 hours') >= 30 then raise exception 'rate_post_day'; end if;
   -- 사진: 내가 올렸고 아직 글에 붙지 않은 것만, 3장까지
-  if cardinality(ups) > 3 or cardinality(ups) <> (select count(*) from public.community_uploads where id = any (ups) and user_id = me and post_id is null) then
+  if cardinality(ups) > 3 or cardinality(ups) <> (select count(*) from public.community_uploads where id = any (ups) and user_id = me and kind = 'post'
+                                                  and post_id is null and listing_id is null and message_id is null) then
     raise exception 'uploads_invalid';
   end if;
   insert into public.community_posts (author_id, persona, tags, title, body, is_notice)
@@ -291,7 +293,7 @@ begin
   tg := coalesce(nullif(array(select distinct t from unnest(coalesce(p_tags, '{}')) t), '{}'), '{자유}');
   if cardinality(tg) > 8 or not (tg <@ array['자유','대회','장비','기술','에페','플뢰레','사브르','학부모']) then raise exception 'bad_tags'; end if;
   if cardinality(ups) > 3 or cardinality(ups) <> (select count(*) from public.community_uploads
-        where id = any (ups) and user_id = me and (post_id is null or post_id = p_id)) then
+        where id = any (ups) and user_id = me and kind = 'post' and listing_id is null and message_id is null and (post_id is null or post_id = p_id)) then
     raise exception 'uploads_invalid';
   end if;
   update public.community_uploads set post_id = null where post_id = p_id and not (id = any (ups)); -- 빠진 사진은 하루 뒤 정리
