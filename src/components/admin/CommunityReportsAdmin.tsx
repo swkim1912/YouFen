@@ -2,8 +2,8 @@
 // 관리자: 커뮤니티 신고 처리 (docs/COMMUNITY.md 0-5·0-6)
 // - 목록: admin_community_reports(상태별 최근 100건). 신고 당시 내용 사본(snapshot)·신고 수·대상 회원(유펜 닉네임 + 커뮤니티 닉네임)·현재 정지 상태.
 // - 처리: 처리 완료/기각(같은 대상의 열린 신고를 한꺼번에), 커뮤니티 정지(1·7·30일·영구, 사유 필수), 커뮤니티 닉네임 지우기, 커뮤니티 사진 삭제,
-//   게시글·댓글은 숨김/복구/삭제(AdminContentTools) + 글 열어 보기.
-// - 대상 회원이 누구인지(실제 계정)는 관리자에게만 보인다. 익명 글·댓글은 이름을 숨기고 '작성자 확인'(기록이 남음)으로만 본다.
+//   게시글·댓글·장터 글·자유톡방 메시지는 숨김/복구/삭제(AdminContentTools) + 글 열어 보기, 자유톡방 익명 닉네임 지우기.
+// - 대상 회원이 누구인지(실제 계정)는 관리자에게만 보인다. 익명 글·댓글·자유톡방 익명 닉네임 메시지는 이름을 숨기고 '작성자 확인'(기록이 남음)으로만 본다.
 //   처리 내역은 관리 기록(admin_audit)에 남는다.
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import { AdminContentTools } from "@/components/community/AdminContentTools";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { CommunityBanModal } from "./CommunityBanModal";
+import { boardImageUrl } from "@/lib/community";
 
 interface CReport {
   id: number; target_kind: string; target_ref: string; reason: string; detail: string | null;
@@ -24,9 +25,13 @@ interface CReport {
   reporter_nickname: string | null; same_target_count: number; target_user_count: number;
   ban_until: string | null; ban_permanent: boolean;
   target_anonymous: boolean; content_status: string | null; // 게시글·댓글: 익명 여부, 지금 상태(active/hidden/deleted, 완전 삭제되면 null)
+  target_has_chat_nickname?: boolean; // 대상 회원에게 자유톡방 익명 닉네임이 있는지
 }
 const STATUS = { open: "미처리", resolved: "처리됨", dismissed: "기각" } as const;
-const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글", listing: "장터 글", dmthread: "1:1 채팅" };
+const KIND: Record<string, string> = { cprofile: "커뮤니티 프로필", yprofile: "유펜 프로필(커뮤니티)", post: "게시글", comment: "댓글", listing: "장터 글", dmthread: "1:1 채팅", chat: "자유톡방 메시지" };
+const CONTENT_KINDS = ["post", "comment", "listing", "chat"] as const;
+type ContentKind = (typeof CONTENT_KINDS)[number];
+const isContentKind = (k: string): k is ContentKind => (CONTENT_KINDS as readonly string[]).includes(k);
 const CONTENT_STATUS: Record<string, string> = { active: "게시 중", hidden: "가려짐", deleted: "삭제됨" };
 
 export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void }) {
@@ -52,6 +57,12 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
     if (err) return toast.error(err);
     done("커뮤니티 닉네임을 지웠어요(회원에게 알림)");
   };
+  const clearChatNick = async (r: CReport) => {
+    if (!r.target_user_id) return;
+    const err = await rpcOk("admin_clear_chat_nickname", { p_target: r.target_user_id });
+    if (err) return toast.error(err);
+    done("자유톡방 닉네임을 지웠어요(회원에게 알림, 다음 입장 때 새로 정함)");
+  };
   const removePhoto = async (r: CReport, lock: boolean) => {
     if (!r.target_user_id) return;
     const res = await callApi(`/api/avatar?slot=community&target=${r.target_user_id}${lock ? "" : "&lock=0"}`, { method: "DELETE" });
@@ -67,7 +78,7 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
           <option value="open">미처리</option><option value="resolved">처리됨</option><option value="dismissed">기각</option><option value="all">전체</option>
         </Select>
       </div>
-      <p className="text-xs text-muted">같은 대상을 서로 다른 3명이 신고하면 자동으로 임시 숨김돼요(게시글·댓글·채팅부터 적용). 처리/기각은 같은 대상의 열린 신고에 함께 적용돼요.</p>
+      <p className="text-xs text-muted">같은 대상을 서로 다른 3명이 신고하면 자동으로 임시 숨김돼요(게시글·댓글·장터 글·자유톡방 메시지). 처리/기각은 같은 대상의 열린 신고에 함께 적용돼요.</p>
       {list === null ? <p className="py-4 text-center text-sm text-muted">불러오는 중…</p> : list.length === 0 ? <p className="py-4 text-center text-sm text-muted">해당하는 신고가 없습니다</p> : (
         <ul className="space-y-2">
           {list.map((r) => {
@@ -102,6 +113,9 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
                     )}
                     {r.target_user_id && !banned && <Button size="sm" variant="danger" onClick={() => setBanFor({ id: r.target_user_id!, name: r.target_anonymous ? "이 익명 작성자" : r.target_nickname ?? "이 회원" })}>커뮤니티 정지</Button>}
                     {r.target_kind === "cprofile" && r.target_community_nickname && <Button size="sm" variant="outline" onClick={() => clearNick(r)}>커뮤니티 닉네임 지우기</Button>}
+                    {r.target_kind === "chat" && r.snapshot?.persona === "n" && r.target_has_chat_nickname && (
+                      <Button size="sm" variant="outline" onClick={() => clearChatNick(r)}>자유톡방 닉네임 지우기</Button>
+                    )}
                     {r.target_kind === "cprofile" && r.target_community_avatar?.startsWith("http") && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => removePhoto(r, true)}>사진 삭제 + 변경 제한</Button>
@@ -109,7 +123,7 @@ export function CommunityReportsAdmin({ onChanged }: { onChanged?: () => void })
                       </>
                     )}
                   </div>
-                  {!isProfile && r.content_status && (r.target_kind === "post" || r.target_kind === "comment" || r.target_kind === "listing") && (
+                  {!isProfile && r.content_status && isContentKind(r.target_kind) && (
                     <AdminContentTools kind={r.target_kind} refId={r.target_ref} status={r.content_status} onChanged={load} />
                   )}
                 </div>
@@ -129,21 +143,29 @@ function ContentPreview({ r }: { r: CReport }) {
   if (snap.purged) return <p className="text-xs text-muted">월말 정리로 완전히 삭제된 내용이에요</p>;
   const postId = snap.post_id as number | undefined;
   const listingId = snap.listing_id as number | undefined;
-  const msgs = Array.isArray(snap.messages) ? (snap.messages as { from: string; body: string; image: string | null; at: string }[]) : null;
+  const msgs = Array.isArray(snap.messages) ? (snap.messages as { from: string; body: string; image: string | null; at: string; target?: boolean }[]) : null;
+  const isChat = r.target_kind === "chat";
   return (
     <div className="space-y-1 rounded-md border border-line bg-panel px-3 py-2 text-xs">
       {typeof snap.title === "string" && <p className="font-semibold">{snap.title}</p>}
-      {typeof snap.body === "string" && <p className="line-clamp-4 whitespace-pre-wrap">{snap.body}</p>}
+      {/* 자유톡방은 아래 대화 흐름에 신고된 메시지가 표시되므로 본문을 따로 쓰지 않는다 */}
+      {!isChat && typeof snap.body === "string" && <p className="line-clamp-4 whitespace-pre-wrap">{snap.body}</p>}
       {msgs && (
         // 1:1 채팅 신고: 신고 당시 최근 메시지 30개(누가 보냈는지는 신고자/상대로만)
+        // 자유톡방 신고: 신고된 메시지(빨간 바탕)와 바로 앞 10개(보낸 이름 포함)
         <ul className="max-h-48 space-y-0.5 overflow-y-auto">
-          {msgs.map((m, i) => <li key={i}><b className={m.from === "상대" ? "text-loss" : "text-muted"}>{m.from}</b> {m.body || (m.image ? "(사진)" : "")}</li>)}
+          {msgs.map((m, i) => (
+            <li key={i} className={m.target ? "rounded bg-loss/15 px-1" : undefined}>
+              <b className={isChat ? (m.target ? "text-loss" : "text-muted") : m.from === "상대" ? "text-loss" : "text-muted"}>{m.from}</b> {m.body || (m.image ? "(사진)" : "")}
+            </li>
+          ))}
         </ul>
       )}
       <p className="text-muted">
         표시 이름 {String(snap.nickname ?? "-")}{r.target_kind !== "dmthread" && <> · 지금 상태 {r.content_status ? CONTENT_STATUS[r.content_status] ?? r.content_status : "완전 삭제"}</>}
         {postId && <> · <Link href={`/community/${postId}${r.target_kind === "comment" ? `#c${r.target_ref}` : ""}`} className="text-brand" target="_blank">글 열기</Link></>}
         {listingId && <> · <Link href={`/community/market/${listingId}`} className="text-brand" target="_blank">장터 글 열기</Link></>}
+        {isChat && typeof snap.image === "string" && <> · <a href={boardImageUrl(snap.image)} className="text-brand" target="_blank" rel="noopener noreferrer">사진 보기</a></>}
       </p>
     </div>
   );

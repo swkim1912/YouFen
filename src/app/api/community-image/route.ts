@@ -1,9 +1,9 @@
-// 커뮤니티 사진 서버 API (docs/COMMUNITY.md 2·3·9장) — 게시판·장터·1:1 채팅 공용
-//  POST multipart(file) ?kind=post|market|dm : 사진 한 장 올리기 → 형식 검사 → EXIF(촬영 위치 등) 제거 → 긴 변 1280px webp + 320px 정사각 썸네일 → 버킷 community 저장
-//                          → community_uploads(kind)에 기록하고 {id, path, thumb} 를 돌려준다. 저장할 때 board_write·market_write·dm_send 에 이 id 를 넘긴다.
-// 규칙: 로그인 + 커뮤니티 정지 아님, 24시간 한도 = 게시판 30장·장터 40장·채팅 30장. 장터·채팅은 선수 연결 회원만(DB 함수도 다시 검사).
+// 커뮤니티 사진 서버 API (docs/COMMUNITY.md 2·3·4·9장) — 게시판·장터·1:1 채팅·자유톡방 공용
+//  POST multipart(file) ?kind=post|market|dm|chat : 사진 한 장 올리기 → 형식 검사 → EXIF(촬영 위치 등) 제거 → 긴 변 1280px webp + 320px 정사각 썸네일 → 버킷 community 저장
+//                          → community_uploads(kind)에 기록하고 {id, path, thumb} 를 돌려준다. 저장할 때 board_write·market_write·dm_send·chat_send 에 이 id 를 넘긴다.
+// 규칙: 로그인 + 커뮤니티 정지 아님, 24시간 한도 = 게시판 30장·장터 40장·1:1 채팅 30장·자유톡방 30장. 장터·1:1 채팅은 선수 연결 회원만(DB 함수도 다시 검사).
 //       부적절성 자동 검사(Vision)는 하지 않는다(사용자 결정 — 신고로 처리).
-// 정리: 글·장터 글·메시지 어디에도 붙지 않은 채 하루가 지난 사진(작성 취소, 수정으로 빠짐, 완전 삭제된 글, 1달 지난 메시지)은
+// 정리: 글·장터 글·1:1 메시지·자유톡방 메시지 어디에도 붙지 않은 채 하루가 지난 사진(작성 취소, 수정으로 빠짐, 완전 삭제된 글, 1달 지난 메시지)은
 //       이 API 가 불릴 때마다 조금씩(최대 20개) 파일과 기록을 지운다.
 //       (Supabase 는 storage.objects 를 SQL 로 지울 수 없어 서버가 저장소 API 로 지워야 한다)
 // 용량: 브라우저가 긴 변 2048px 로 줄여 보낸다(Vercel 요청 본문 한도 4.5MB). 서버는 4MB 까지만 받는다.
@@ -16,15 +16,15 @@ export const runtime = "nodejs";
 const BUCKET = "community";
 const MAX_BYTES = 4 * 1024 * 1024;
 const MAX_PIXELS = 8000 * 8000; // 압축 폭탄 방지
-const LIMITS = { post: 30, market: 40, dm: 30 } as const; // 종류별 24시간 한도
+const LIMITS = { post: 30, market: 40, dm: 30, chat: 30 } as const; // 종류별 24시간 한도
 type Kind = keyof typeof LIMITS;
-const DIRS: Record<Kind, string> = { post: "posts", market: "market", dm: "dm" };
+const DIRS: Record<Kind, string> = { post: "posts", market: "market", dm: "dm", chat: "chat" };
 
 /** 어디에도 붙지 않은 채 하루 지난 사진을 최대 n개 정리 */
 async function cleanupOrphans(admin: SupabaseClient, n = 20) {
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { data } = await admin.from("community_uploads").select("id,path,thumb")
-    .is("post_id", null).is("listing_id", null).is("message_id", null).lt("created_at", since).limit(n);
+    .is("post_id", null).is("listing_id", null).is("message_id", null).is("chat_message_id", null).lt("created_at", since).limit(n);
   if (!data?.length) return;
   await admin.storage.from(BUCKET).remove(data.flatMap((u) => [u.path, u.thumb]));
   await admin.from("community_uploads").delete().in("id", data.map((u) => u.id));
@@ -35,15 +35,15 @@ export async function POST(req: Request) {
   if (a instanceof Response) return a;
   const { admin, uid } = a;
   const k = new URL(req.url).searchParams.get("kind");
-  const kind: Kind = k === "market" || k === "dm" ? k : "post";
+  const kind: Kind = k === "market" || k === "dm" || k === "chat" ? k : "post";
 
   // 커뮤니티 정지 중이면 올릴 수 없다
   const { data: ban } = await admin.from("community_bans").select("id,until").eq("user_id", uid).is("lifted_at", null)
     .or(`until.is.null,until.gt.${new Date().toISOString()}`).limit(1);
   if (ban?.length) return fail(403, "커뮤니티 이용이 제한되어 사진을 올릴 수 없어요");
 
-  // 장터·1:1 채팅은 선수를 연결한 회원만
-  if (kind !== "post") {
+  // 장터·1:1 채팅은 선수를 연결한 회원만(게시판·자유톡방은 로그인 회원 누구나)
+  if (kind === "market" || kind === "dm") {
     const { count: links } = await admin.from("athlete_links").select("athlete_id", { count: "exact", head: true }).eq("profile_id", uid);
     if (!links) return fail(403, "장터는 선수를 연결한 회원만 이용할 수 있어요");
   }

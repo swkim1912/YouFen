@@ -1,6 +1,6 @@
 // 커뮤니티 사진 올리기(브라우저 전용): 긴 변 2048px JPEG 로 줄여서 서버(/api/community-image?kind=…)로 한 장 보낸다.
 // 서버가 위치 정보(EXIF)를 지우고 1280px webp + 썸네일을 만들어 {id, path, thumb, w, h} 를 돌려준다.
-// kind: post(게시판) | market(장터) | dm(1:1 채팅) — 종류마다 하루 한도가 다르다(게시판 30·장터 40·채팅 30장).
+// kind: post(게시판) | market(장터) | dm(1:1 채팅) | chat(자유톡방) — 종류마다 하루 한도가 다르다(게시판 30·장터 40·1:1 채팅 30·자유톡방 30장).
 import { callApi } from "./adminApi";
 import type { BoardImage } from "./community";
 
@@ -20,7 +20,7 @@ export async function shrinkImage(file: File): Promise<Blob> {
 }
 
 /** 사진 한 장 올리기. 성공하면 사진 정보, 실패하면 { error } */
-export async function uploadCommunityImage(file: File, kind: "post" | "market" | "dm"): Promise<BoardImage | { error: string }> {
+export async function uploadCommunityImage(file: File, kind: "post" | "market" | "dm" | "chat"): Promise<BoardImage | { error: string }> {
   if (file.size > MAX_PICK_MB * 1024 * 1024) return { error: `${MAX_PICK_MB}MB 이하 사진만 올릴 수 있어요` };
   const fd = new FormData();
   fd.append("file", new File([await shrinkImage(file)], "photo.jpg", { type: "image/jpeg" }));

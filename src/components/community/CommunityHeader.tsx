@@ -1,5 +1,5 @@
 "use client";
-// 커뮤니티 공용 머리: 제목 + 하위 메뉴(게시판 / 채팅 / 장터 / 1:1 채팅). 단체 채팅은 4단계에서 열린다(docs/COMMUNITY.md 8장).
+// 커뮤니티 공용 머리: 제목 + 하위 메뉴(게시판 / 자유톡방 / 장터 / 1:1 채팅) (docs/COMMUNITY.md 8장).
 // 1:1 채팅은 장터 거래용(장터 글에서 시작). 안 읽은 대화가 있으면 점을 띄운다(목록을 열 때 한 번 확인).
 // 커뮤니티 이용이 제한된 회원에게는 사유·기간을 짧게 알린다(자세한 내용은 마이 펜싱 > 커뮤니티 설정).
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const MENUS = [
   { key: "board", label: "게시판", href: "/community", ready: true },
-  { key: "chat", label: "채팅", href: "#", ready: false },
+  { key: "chat", label: "자유톡방", href: "/community/chat", ready: true },
   { key: "market", label: "장터", href: "/community/market", ready: true },
   { key: "dm", label: "1:1 채팅", href: "/community/messages", ready: true },
 ] as const;

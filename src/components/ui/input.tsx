@@ -15,7 +15,8 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
 );
 Select.displayName = "Select";
 
-export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+// React 19: ref 도 일반 prop 으로 넘어온다(ComponentProps 에 ref 포함) — 자유톡방 입력칸이 @부르기 뒤 초점을 옮길 때 쓴다
+export function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return <textarea className={cn(base, "h-auto min-h-24 py-2", className)} {...props} />;
 }
 

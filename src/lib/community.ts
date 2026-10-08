@@ -70,6 +70,12 @@ const ERROR_TEXT: Record<string, string> = {
   dm_gone: "상대가 탈퇴해서 메시지를 보낼 수 없어요",
   rate_dm_start: "새 채팅은 하루 30개까지 시작할 수 있어요",
   rate_dm: "메시지를 너무 빨리 보내고 있어요. 잠시 후 다시 보내 주세요",
+  chat_need_agree: "자유톡방 이용 규칙에 동의해야 메시지를 보낼 수 있어요",
+  chat_need_nick: "자유톡방 익명 닉네임을 먼저 정해 주세요",
+  chat_nick_wait: "익명 닉네임은 10분에 한 번 바꿀 수 있어요",
+  rate_chat_fast: "메시지를 너무 빨리 보내고 있어요(1분에 20개까지). 잠시 후 다시 보내 주세요",
+  rate_chat_day: "자유톡방 메시지는 하루 1,000개까지 보낼 수 있어요",
+  rate_chat_same: "같은 내용을 연달아 보낼 수 없어요",
   "bad_input:price": "가격을 다시 확인해 주세요(구매 글은 최소 ≤ 최대, 또는 '가격 협의')",
   "bad_input:title": "물품명을 1~60자로 적어 주세요",
   "bad_input:body": "내용을 확인해 주세요",
@@ -128,7 +134,7 @@ export const NOTIFY_KINDS: { key: string; label: string; desc: string }[] = [
   { key: "comment", label: "내 글에 댓글", desc: "내가 쓴 게시글에 댓글이 달리면" },
   { key: "reply", label: "내 댓글에 답글", desc: "내 댓글에 답글이 달리면" },
   { key: "like", label: "좋아요", desc: "내 글의 좋아요가 10·50·100개를 넘으면" },
-  { key: "mention", label: "@멘션", desc: "채팅·댓글에서 나를 @닉네임으로 부르면" },
+  { key: "mention", label: "@멘션", desc: "자유톡방·댓글에서 나를 @닉네임으로 부르면" },
   { key: "dm", label: "1:1 채팅", desc: "장터 1:1 채팅에 새 메시지가 오면" },
   { key: "market", label: "장터 만료 예정", desc: "내 장터 글이 곧 자동 정리될 때" },
   { key: "openpiste", label: "오픈피스트 새 모집", desc: "관심 종목·지역의 모집이 올라오면" },
@@ -327,4 +333,47 @@ export interface DmThread {
   other_read_at: string | null;
   listing: { status: string; trade_status: string; kind: "sell" | "buy"; thumb: string | null; price: number | null; price_min: number | null; price_max: number | null; price_nego: boolean } | null;
   messages: DmMessage[];
+}
+
+// ───────────────────────── 자유톡방(단체 채팅, 4단계) ─────────────────────────
+
+/** 자유톡방 이용 규칙(docs/COMMUNITY.md 4장). 처음 들어올 때와 얼굴을 바꾼 뒤 동의한다 */
+export const CHAT_RULES = [
+  "펜싱 및 펜싱 정보와 관련된 이야기는 항상 환영입니다",
+  "반말 금지 (서로 아는 분들이어도 단톡방인 만큼 존칭 사용 부탁드립니다.)",
+  "다른 사람에게 불쾌함을 줄 수 있는 언어 사용 금지 (욕설 등)",
+  "실명 언급 금지 (유명인을 제외한 동호인과 같은 일반인의 실명)",
+  "비난 및 지나친 비판 금지",
+  "익명일지라도 타인의 신상에 대한 이야기 자제",
+  "펜싱과 거리가 먼 사담 자제",
+] as const;
+export const CHAT_MAX = 1000;
+
+/** 내 자유톡방 상태(chat_me). persona: y = 유펜 프로필, c = 커뮤니티 전용 프로필, n = 자유톡방 익명 닉네임 */
+export interface ChatMe {
+  persona: "y" | "c" | "n";
+  use_nickname: boolean;
+  chat_nickname: string | null;
+  agreed: boolean;        // 지금 얼굴로 이용 규칙에 동의했는지(얼굴을 바꾸면 false)
+  ever_agreed: boolean;   // 한 번이라도 들어온 적 있는지
+  card: CommunityCard;    // 지금 톡방에서 보이는 얼굴
+  profile_card: CommunityCard; // '커뮤니티 프로필'을 고르면 보일 얼굴(커뮤니티 설정 그대로)
+  need_nick: boolean;     // '커뮤니티 프로필' 쪽이 닉네임 없는 전용 프로필 → 그 얼굴로는 보낼 수 없음(익명 닉네임은 가능)
+  banned: boolean;
+  ban_until: string | null;
+  ban_permanent: boolean;
+  is_admin: boolean;
+}
+
+/** 자유톡방 메시지(chat_feed). 보낸 사람 id 는 없고 '내 것인지'와 카드만 온다.
+ *  status: active | hidden(신고로 가려짐 — 내용은 보낸 사람·관리자만) | deleted(by_admin 이면 관리자 삭제) */
+export interface ChatMessage {
+  id: number;
+  mine: boolean;
+  created_at: string;
+  status: "active" | "hidden" | "deleted";
+  by_admin: boolean;
+  body: string | null;
+  image: BoardImage | null;
+  card: CommunityCard;
 }

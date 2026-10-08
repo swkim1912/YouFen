@@ -1,5 +1,5 @@
 "use client";
-// 관리자 전용: 게시글·댓글·장터 글 처리 도구 (게시글·장터 글 상세 화면과 관리자 신고 화면 공용)
+// 관리자 전용: 게시글·댓글·장터 글·자유톡방 메시지 처리 도구 (게시글·장터 글 상세, 자유톡방, 관리자 신고 화면 공용)
 // - 숨김 / 복구 / 삭제(사유 입력 → 작성자에게 알림, 다음 달 1일 완전 삭제): RPC admin_set_content_status
 // - 작성자 확인: RPC admin_reveal_author — 익명·전용 프로필 글의 실제 회원을 보여 준다. 문제가 되거나 신고가 들어온 경우에만 쓰고,
 //   누를 때마다 관리 기록(admin_audit 'reveal_author')에 남는다.
@@ -11,7 +11,7 @@ import { rpcOk } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
 
 export function AdminContentTools({ kind, refId, status, onChanged, compact }: {
-  kind: "post" | "comment" | "listing";
+  kind: "post" | "comment" | "listing" | "chat";
   refId: string;
   status: string;
   onChanged: () => void;
@@ -34,8 +34,10 @@ export function AdminContentTools({ kind, refId, status, onChanged, compact }: {
     if (!window.confirm("작성자를 확인할까요? 확인 기록이 관리 기록에 남아요. 문제가 되거나 신고가 들어온 경우에만 확인해 주세요.")) return;
     const { data, error } = await supabase.rpc("admin_reveal_author", { p_kind: kind, p_ref: refId });
     if (error) return toast.error(error.message);
-    const r = data as { found: boolean; nickname?: string | null; community_nickname?: string | null };
-    setWho(r.found ? `${r.nickname ?? "(닉네임 없음)"}${r.community_nickname ? ` · 커뮤니티 ${r.community_nickname}` : ""}` : "탈퇴했거나 찾을 수 없어요");
+    const r = data as { found: boolean; nickname?: string | null; community_nickname?: string | null; chat_nickname?: string | null };
+    setWho(r.found
+      ? `${r.nickname ?? "(닉네임 없음)"}${r.community_nickname ? ` · 커뮤니티 ${r.community_nickname}` : ""}${kind === "chat" && r.chat_nickname ? ` · 톡방 ${r.chat_nickname}` : ""}`
+      : "탈퇴했거나 찾을 수 없어요");
   };
 
   const btn = "rounded border border-line px-2 py-0.5 hover:bg-white/5";

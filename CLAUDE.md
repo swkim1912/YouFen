@@ -151,6 +151,13 @@
   - **1:1 채팅:** `dm_threads`(장터 글 × 문의자 a, 글쓴이 b, 양쪽 persona 고정, `unique(listing_id, a_id)`), `dm_messages`(보낸 사람 id 는 화면에 안 내고 `mine` 만). 메시지 1달 보관(daily 가 삭제 → 사진 기록이 비워져 사진 API 가 파일 정리). 차단(양방향 `blocked_either`)이면 시작·전송 불가. 새 메시지 알림은 그 방의 안 읽은 dm 알림이 없을 때만. 신고 = 대화방 단위 `dmthread`(사본 = 최근 30개, 신고자/상대로만 표시).
   - 사진 API `?kind=post|market|dm`(하루 30·40·30장, 경로 `posts/`·`market/`·`dm/`, 장터·채팅은 선수 연결 회원만), 고아 정리 조건 = post_id·listing_id·message_id 모두 비어 있음. 업로드 도우미 `lib/communityUpload.ts`. 관리자 신고 화면에 장터 글·1:1 채팅 사본, `AdminContentTools` 가 listing 까지. **plpgsql 변수 이름이 표의 열 이름과 같으면 오류(`link` 사례) — `v_` 접두사를 쓸 것.**
 
+- **커뮤니티 4단계 — 자유톡방(단체 채팅)(2026-10-08, 같은 브랜치, SQL `supabase/community_4_chat.sql` = 마이그레이션 36):**
+  - 화면 `/community/chat`(`CommunityHeader` '자유톡방'): 입장 화면 `ChatGate`(얼굴 고르기 + 이용 규칙 7개 `CHAT_RULES` 동의) → 방(접속자 수, 내 이름·바꾸기, 규칙, 이전 메시지 50개씩, 말풍선을 누르면 @부르기·신고·차단 / 내 것 삭제 / 관리자 도구, 사진 1장, `@닉네임` 강조, 나를 부른 메시지 테두리).
+  - **얼굴:** `y`/`c` = 지금 커뮤니티 설정, `n` = 자유톡방 익명 닉네임(`community_profiles.chat_nickname`, 중복 규칙은 커뮤니티 닉네임과 같은 트리거, 10분 1회 변경, 카드는 이름만 — kind `'a'`). 메시지에 보낼 때의 얼굴 저장. **얼굴이 바뀌면(`chat_agreed_persona` ≠ 지금 얼굴) 규칙에 다시 동의해야 보낼 수 있다**(`chat_send` 가 `chat_need_agree`).
+  - **실시간:** 저장 시 `private.chat_ping` → `realtime.send` 로 비공개 채널 `community-chat` 에 메시지 번호만 보냄(`new`/`update`). 화면은 `supabase.realtime.setAuth()` 후 `private: true` 로 구독하고 신호를 받으면 `chat_feed(p_after)`, 상태 변경은 `chat_feed(p_ids)`. `realtime.messages` 정책: 로그인 회원은 이 주제의 broadcast·presence 받기, 보내기는 presence 만(가짜 신호 불가). 접속자 수 = presence(무작위 키). 놓친 신호 대비 1분(끊김 15초) 주기 확인. `chat_feed` 는 `throttle()` 을 쓰지 않는다(같은 와이파이의 여러 회원이 신호마다 조회하므로).
+  - 도배 방지 1초 1개·1분 20개·하루 1,000개·30초 안 같은 내용 금지, 글 1,000자, 사진(`/api/community-image?kind=chat`, 하루 30장, 로그인 회원 누구나). @멘션 알림은 그 이름을 지금 톡방에서 쓰는 회원에게만(안 읽은 톡방 멘션 알림이 있으면 생략). 메시지 1달 보관(`community_daily`).
+  - 신고·차단 kind `chat`(사본 = 그 메시지 + 앞 10개, 익명 닉네임 메시지는 관리자 목록에서 이름 숨김 → 작성자 확인), 자동 가림, 관리자 삭제('관리자에 의해 삭제된 메시지'), `admin_clear_chat_nickname`, 백업 JSON 에 `chat`, 관리자 현황에 24시간 메시지·보낸 회원 수. `ui/input` 의 `Textarea` 는 ref 를 받는다(React 19 `ComponentProps`).
+
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 -
 
@@ -161,7 +168,7 @@
 - 
 
 ## 미구현 / 나중에 할 일
-- 오픈피스트·커뮤니티·아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는 `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~3단계 완료: 기반·게시판·장터/1:1 채팅, 다음은 4단계 단체 채팅)
+- 오픈피스트·커뮤니티·아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는 `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~4단계 완료: 기반·게시판·장터/1:1 채팅·자유톡방, 다음은 5단계 오픈피스트)
 - 친구 추가(현재 상대 선택은 전체 회원 닉네임 검색), 뱃지 실제 디자인
 - 앱 이식
 
