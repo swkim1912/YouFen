@@ -1,11 +1,13 @@
 "use client";
 // 대회 목록(Pistelog '대회' 탭): 탭 × 종별 × 성별 × 종목을 고르면 그 종목이 열린 대회를 최신순으로 보여준다.
 // 한 줄 = 대회 하나의 해당 종목(예: 2026 FILA배 동호인 일반부 남자 에페). 누르면 대회 상세로 이동.
+// 맨 위에는 관리자가 게시한 '다가오는 대회'(UpcomingCompetitions)가 있으면 보여 준다.
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { FilterRow } from "@/components/FilterRow";
+import { UpcomingCompetitions } from "@/components/UpcomingCompetitions";
 import {
   AGES, GENDER_VALUES, TABS, WEAPON_VALUES, agesFor, ageLabel, fmtRange, genderLabel, publicData, weaponLabel,
   type Age, type GenderValue, type Tab, type WeaponValue,
@@ -68,6 +70,9 @@ function Inner() {
       <div>
         <h1 className="text-2xl font-extrabold">대회</h1>
       </div>
+      {/* 다가오는 대회(관리자 게시, 없으면 숨김) → 아래는 지난 대회 결과 */}
+      <UpcomingCompetitions />
+      <h2 className="text-lg font-bold">대회 결과</h2>
       <div className="space-y-2">
         <FilterRow label="구분" options={TABS} value={tab} onChange={setTab} />
         <FilterRow label="종별" options={agesFor(tab)} value={curAge} onChange={setAge} render={ageLabel} />

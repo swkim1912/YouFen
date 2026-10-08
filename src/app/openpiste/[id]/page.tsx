@@ -1,6 +1,6 @@
 "use client";
 // 오픈피스트 모집 상세: /openpiste/123
-// - 정보: 종목·상태, 제목, 일시·진행 시간, 지역·장소, 레벨, 참가비, 신청 인원/정원, 주최자(유펜 프로필), 상세 내용
+// - 정보: 종목·상태, 제목, 일시·진행 시간, 지역·장소, 레벨, 참가비, 신청 인원/정원, 주최자(유펜 프로필), 사진(최대 3장), 상세 내용
 // - 참가자(신청한 회원)·주최자에게만 오픈채팅 링크와 '참가자 방' 버튼이 보인다.
 // - 신청/신청 취소(시작 전), 주최자: 고치기(게시 중이면 승인 필요)·모집 마감/다시 열기·모집 취소(참가자에게 알림)·삭제(끝난 뒤)
 // - 주최자에게는 승인 대기·반려(사유)·수정 승인 대기 안내. 다른 회원은 신고·차단, 관리자는 숨김·삭제 도구.
@@ -17,6 +17,7 @@ import { AdminContentTools } from "@/components/community/AdminContentTools";
 import { Button } from "@/components/ui/button";
 import { Confirm } from "@/components/ui/modal";
 import { supabase } from "@/lib/supabase";
+import { type BoardImage, boardImageUrl } from "@/lib/community";
 import { type OpDetail, durationText, feeText, opDateText, opError, statusText } from "@/lib/openpiste";
 import { cn } from "@/lib/utils";
 
@@ -145,6 +146,8 @@ function Body({ p, busy, run, onCancel, setAsk, reload, onBlocked }: {
           <Info label="레벨">{p.levels.join(" · ")}</Info>
         </dl>
 
+        {p.images.length > 0 && <Gallery images={p.images} />}
+
         {p.body && <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{p.body}</p>}
 
         {p.chat_url ? (
@@ -185,6 +188,30 @@ function Body({ p, busy, run, onCancel, setAsk, reload, onBlocked }: {
 
       {p.is_admin && <AdminContentTools kind="openpiste" refId={String(p.id)} status={adminStatus} onChanged={reload} />}
     </>
+  );
+}
+
+/** 사진: 큰 사진 하나(누르면 원본) + 아래 작은 사진으로 바꿔 보기 */
+function Gallery({ images }: { images: BoardImage[] }) {
+  const [i, setI] = useState(0);
+  const cur = images[Math.min(i, images.length - 1)];
+  return (
+    <div className="space-y-2">
+      <a href={boardImageUrl(cur.path)} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-md bg-panel2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={boardImageUrl(cur.path)} alt="모집 사진" className="mx-auto max-h-80 w-auto object-contain" />
+      </a>
+      {images.length > 1 && (
+        <div className="flex gap-2">
+          {images.map((im, j) => (
+            <button key={im.id} onClick={() => setI(j)} className={cn("h-14 w-14 overflow-hidden rounded border", j === i ? "border-brand" : "border-line opacity-70")}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={boardImageUrl(im.thumb)} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

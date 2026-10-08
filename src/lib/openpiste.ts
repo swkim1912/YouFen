@@ -1,6 +1,6 @@
 // 오픈피스트 공용: 값 목록, 화면 타입, 표시 도우미, DB 오류 코드 → 한글 문구.
 // 기획: docs/COMMUNITY.md 5장, DB: supabase/community_5_openpiste.sql (op_* RPC)
-import type { CommunityCard } from "./community";
+import type { BoardImage, CommunityCard } from "./community";
 import { communityError } from "./community";
 
 /** 값 목록 (DB 제약 openpiste_posts 와 같은 값 — 한쪽만 바꾸지 말 것) */
@@ -11,6 +11,7 @@ export const OP_TITLE_MAX = 50;
 export const OP_PLACE_MAX = 60;
 export const OP_BODY_MAX = 2000;
 export const OP_BODY_PLACEHOLDER = "장비 대여 여부, 취소 규칙 등을 적어주세요";
+export const OP_IMAGE_MAX = 3; // 사진(첫 장 = 대표 — 목록에 보임). DB 제약 openpiste_posts.images 와 같은 값
 
 /** 상태: pending(승인 대기) open(모집 중) rejected(반려) closed(모집 마감) cancelled(취소) ended(종료) hidden(신고로 가려짐) */
 export type OpStatus = "pending" | "open" | "rejected" | "closed" | "cancelled" | "ended" | "hidden";
@@ -35,6 +36,8 @@ export interface OpItem {
   is_mine: boolean;
   joined: boolean;
   has_pending_edit: boolean;
+  thumb: string | null;  // 대표 사진(첫 장) 썸네일
+  image_count: number;
   host: CommunityCard; // 주최자 유펜 프로필
 }
 
@@ -57,9 +60,11 @@ export interface OpDraft {
 export interface OpDetail extends OpItem {
   blocked?: boolean;
   body: string;
+  images: BoardImage[];      // 첫 장 = 대표
   chat_url: string | null;   // 주최자·참가자에게만
   has_chat_url: boolean;
-  pending_edit: OpDraft | null; // 주최자·관리자에게만
+  pending_edit: (OpDraft & { uploads?: number[] }) | null; // 주최자·관리자에게만
+  pending_images: BoardImage[] | null; // 수정안의 사진(주최자·관리자에게만)
   status_reason: string | null;
   edited: boolean;
   is_admin: boolean;

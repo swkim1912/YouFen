@@ -20,7 +20,7 @@ export async function shrinkImage(file: File): Promise<Blob> {
 }
 
 /** 사진 한 장 올리기. 성공하면 사진 정보, 실패하면 { error } */
-export async function uploadCommunityImage(file: File, kind: "post" | "market" | "dm" | "chat"): Promise<BoardImage | { error: string }> {
+export async function uploadCommunityImage(file: File, kind: "post" | "market" | "dm" | "chat" | "openpiste"): Promise<BoardImage | { error: string }> {
   if (file.size > MAX_PICK_MB * 1024 * 1024) return { error: `${MAX_PICK_MB}MB 이하 사진만 올릴 수 있어요` };
   const fd = new FormData();
   fd.append("file", new File([await shrinkImage(file)], "photo.jpg", { type: "image/jpeg" }));

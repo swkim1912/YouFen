@@ -12,6 +12,7 @@ import { CommunityCardView } from "@/components/community/CommunityCardView";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
+import { boardImageUrl } from "@/lib/community";
 import { OP_WEAPONS, type OpItem, durationText, feeText, opDateText, opError, statusText } from "@/lib/openpiste";
 import { REGIONS, cn } from "@/lib/utils";
 
@@ -125,7 +126,7 @@ function List() {
   );
 }
 
-/** 목록 한 줄: 날짜 칸 · [종목][상태] 제목 · 장소·지역 · 레벨·시간·참가비 · 신청 인원 · 주최자 */
+/** 목록 한 줄: 날짜 칸 · [종목][상태] 제목 · 장소·지역 · 레벨·시간·참가비 · 신청 인원 · 주최자 · 대표 사진(있으면, 아주 좁은 화면에선 숨김) */
 function Row({ p }: { p: OpItem }) {
   const d = new Date(p.starts_at);
   const st = statusText(p);
@@ -158,6 +159,14 @@ function Row({ p }: { p: OpItem }) {
             <span className="ml-auto"><CommunityCardView card={p.host} size={18} link={false} className="text-xs" /></span>
           </div>
         </div>
+        {/* 대표 사진(첫 장) */}
+        {p.thumb && (
+          <div className="relative hidden h-[5.5rem] w-[5.5rem] shrink-0 overflow-hidden rounded-md bg-panel2 min-[420px]:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={boardImageUrl(p.thumb)} alt="" loading="lazy" className="h-full w-full object-cover" />
+            {p.image_count > 1 && <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 text-[10px] text-white">+{p.image_count - 1}</span>}
+          </div>
+        )}
       </Link>
     </li>
   );

@@ -165,6 +165,11 @@
   - 모집글 쓰기 = 선수 연결 회원(`market_eligible`), 신청 = 로그인 회원(정지 제외), `op_apply` 는 글 행을 `for update` 로 잠가 정원 초과 방지. 오픈채팅 링크는 `https://open.kakao.com/` 만(DB 제약) + 주최자·참가자에게만 내려준다.
   - 상태: pending/open/rejected/closed(마감)/cancelled/ended/hidden/deleted. 목록 = open 이고 `ends_at > now()`. `community_daily` 가 종료 처리·승인 전 시작 지난 글 반려·30일 뒤 삭제·방 메시지 1달 삭제. 신고 kind `openpiste`(모집글)·`opmsg`(방 메시지).
   - 새 모집 알림 설정은 마이 펜싱 > 커뮤니티 설정 > 알림의 '오픈피스트' 아래(종목을 하나도 안 고르면 안 옴). 알림 종류 'openpiste' 는 새 모집 + 내 모집의 신청·취소, 승인 결과·취소·내용 변경은 'system'(끌 수 없음).
+  - **사진(2026-10-09, 마이그레이션 38):** 최대 3장(`/api/community-image?kind=openpiste`, 선수 연결 회원·하루 20장), 첫 장 = 대표(`op_json.thumb` → 목록 썸네일). 게시 중 글 수정안의 사진은 `pending_edit.uploads` 에 두고 `community_uploads.op_post_id` 를 미리 붙여 고아 정리를 피한다. 지금 사진·수정안 어디에도 없는 사진은 `private.op_release_unused` 가 연결을 끊는다(→ 사진 API 가 하루 뒤 파일 삭제).
+
+- **다가오는 대회(2026-10-09, 같은 브랜치, 마이그레이션 38):** `/competitions` 맨 위 `UpcomingCompetitions`(D-day 카드 → 상세 창: 글·사진·첨부 파일·관련 링크, 비로그인도 봄, 없으면 칸 숨김, 종료일(없으면 시작일)이 지나면 빠짐). 관리자 페이지 '다가오는 대회' 탭(`CompNoticesAdmin`). 표 `comp_notices`(RPC 전용), 버킷 `comp-notices`. **사진**(5장)은 서버 API `/api/comp-notice?type=image`(sharp, 1600 webp + 480×320 썸네일), **첨부 파일**(5개, 파일당 10MB, pdf·hwp·hwpx·doc·docx·xls·xlsx·ppt·pptx·zip·txt·jpg·png)은 같은 API 가 서명된 업로드 주소(`createSignedUploadUrl`)를 만들어 주면 브라우저가 저장소에 직접 올린다(Vercel 요청 4.5MB 한도 회피). 허용 형식은 API `FILE_TYPES` 와 버킷 `allowed_mime_types` 를 같이 바꿀 것. 글에서 뺀 파일·저장 안 한 파일은 `DELETE /api/comp-notice`(어느 글에도 안 쓰는 경로만), 글 삭제는 `DELETE ?id=`, 하루 지난 미사용 파일은 POST 때 정리. 공용 `lib/compNotice.ts`.
+
+- **법률 문서 개정·재동의(커뮤니티 6단계, 2026-10-09):** 처리방침(수집 항목·목적·보관 기간·커뮤니티/오픈피스트 공개 범위·익명 작성자 확인·Realtime·브라우저 저장소), 이용약관(제2·5·8·9조 보완, 제10조 커뮤니티·제11조 장터·제12조 오픈피스트 신설, 이후 13~16조), 운영원칙(`/guidelines` 전면 개정 — 자유톡방 규칙은 `CHAT_RULES` 를 그대로 보여 줌). `CONSENT_VERSION` = `2026-10-09` → 기존 회원은 `ConsentGate` 에서 '약관이 바뀌었어요' + `LEGAL_CHANGES` 요약을 보고 다시 동의. **주의:** main 에 합치기 전에 브랜치 화면에서 동의하면 운영 사이트(이전 버전)에서 다시 동의 창이 뜬다.
 
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 -
@@ -176,7 +181,7 @@
 - 
 
 ## 미구현 / 나중에 할 일
-- 아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는(main 에서는 숨김, `feature/community` 에서는 로그인 회원에게 메뉴 공개) `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~5단계 완료: 기반·게시판·장터/1:1 채팅·자유톡방·오픈피스트, 다음은 6단계 법률 문서 개정·재동의 후 main 합치기)
+- 아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는(main 에서는 숨김, `feature/community` 에서는 로그인 회원에게 메뉴 공개) `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~6단계 완료: 기반·게시판·장터/1:1 채팅·자유톡방·오픈피스트·법률 문서 개정/재동의, 남은 일: main 에 합쳐 공개)
 - 친구 추가(현재 상대 선택은 전체 회원 닉네임 검색), 뱃지 실제 디자인
 - 앱 이식
 

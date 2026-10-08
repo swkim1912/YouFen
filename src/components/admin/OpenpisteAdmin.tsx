@@ -2,7 +2,7 @@
 // 관리자: 오픈피스트 승인 (docs/COMMUNITY.md 5장·6장)
 // - 목록: admin_op_queue — 새 모집(승인 대기)과 게시 중인 글의 수정 요청. 오래된 요청부터.
 // - 새 모집: 내용 전체 + 주최자 유펜 닉네임·지난 모집 수. 승인하면 게시되고 주최자·새 모집 알림을 켠 회원에게 알림이 간다.
-// - 수정 요청: 바뀐 항목만 '지금 → 수정안'으로 보여 준다. 승인하면 반영되고 참가자에게도 알림.
+// - 수정 요청: 바뀐 항목만 '지금 → 수정안'으로 보여 준다(사진 포함). 승인하면 반영되고 참가자에게도 알림.
 // - 반려: 사유를 적으면 주최자에게 알림(새 모집은 '반려됨' — 주최자가 고쳐서 다시 요청 가능, 수정 요청은 수정안만 버림).
 // 처리 내역은 관리 기록(admin_audit op_approve/op_reject)에 남는다. 실제 권한 검사는 DB 함수가 한다.
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { rpcOk, fmtDateTime } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { type OpDraft, durationText, feeText, opDateText } from "@/lib/openpiste";
+import { type BoardImage, boardImageUrl } from "@/lib/community";
 
 interface QueueItem extends OpDraft {
   id: number;
@@ -22,6 +23,23 @@ interface QueueItem extends OpDraft {
   count: number;
   host_nickname: string | null;
   host_hosted: number;
+  images: BoardImage[];
+  pending_images: BoardImage[] | null; // 수정안의 사진
+}
+
+/** 사진 줄(누르면 원본). 비어 있으면 '없음' */
+function Thumbs({ list }: { list: BoardImage[] }) {
+  if (!list.length) return <span className="text-muted">없음</span>;
+  return (
+    <span className="inline-flex gap-1">
+      {list.map((im) => (
+        <a key={im.id} href={boardImageUrl(im.path)} target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={boardImageUrl(im.thumb)} alt="" className="h-12 w-12 rounded object-cover" />
+        </a>
+      ))}
+    </span>
+  );
 }
 
 /** 화면에 보일 항목(이름, 값 → 문구) */
@@ -98,6 +116,16 @@ export function OpenpisteAdmin({ onChanged }: { onChanged?: () => void }) {
                         </tr>
                       );
                     })}
+                    {/* 사진: 새 모집은 올린 사진, 수정 요청은 바뀐 경우에만 '지금 → 수정안' */}
+                    {(!next || (q.pending_images ?? []).map((i) => i.id).join() !== q.images.map((i) => i.id).join()) && (
+                      <tr className="align-top">
+                        <td className="w-20 py-0.5 pr-2 text-muted">사진</td>
+                        <td className="py-0.5">
+                          {next ? <span className="flex flex-wrap items-center gap-2"><Thumbs list={q.images} /><span className="text-muted">→</span><Thumbs list={q.pending_images ?? []} /></span>
+                            : <Thumbs list={q.images} />}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
                 <div className="flex gap-1.5 pt-1">
