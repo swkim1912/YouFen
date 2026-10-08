@@ -115,7 +115,7 @@ function ChatGate({ me, onDone, submitText }: { me: ChatMe; onDone: (m: ChatMe) 
     <div className="space-y-4">
       <section className="space-y-2">
         <h3 className="text-sm font-bold">자유톡방에서 쓸 이름</h3>
-        <button type="button" className={opt(choice === "profile")} onClick={() => setChoice("profile")}>
+        <button aria-pressed={choice === "profile"} type="button" className={opt(choice === "profile")} onClick={() => setChoice("profile")}>
           <input type="radio" readOnly checked={choice === "profile"} className="mt-1 accent-brand" />
           <span className="min-w-0 space-y-1.5">
             <span className="block text-sm font-semibold">커뮤니티 프로필</span>
@@ -125,7 +125,7 @@ function ChatGate({ me, onDone, submitText }: { me: ChatMe; onDone: (m: ChatMe) 
             </span>
           </span>
         </button>
-        <button type="button" className={opt(choice === "nick")} onClick={() => setChoice("nick")}>
+        <button aria-pressed={choice === "nick"} type="button" className={opt(choice === "nick")} onClick={() => setChoice("nick")}>
           <input type="radio" readOnly checked={choice === "nick"} className="mt-1 accent-brand" />
           <span className="min-w-0 flex-1 space-y-1.5">
             <span className="block text-sm font-semibold">자유톡방 익명 닉네임</span>
@@ -135,7 +135,7 @@ function ChatGate({ me, onDone, submitText }: { me: ChatMe; onDone: (m: ChatMe) 
         {choice === "nick" && (
           <div className="space-y-1 pl-1">
             <div className="flex gap-2">
-              <Input value={nick} maxLength={12} onChange={(e) => setNick(e.target.value)} placeholder="2~12자 한글·영문·숫자" className="h-9" />
+              <Input value={nick} maxLength={12} onChange={(e) => setNick(e.target.value)} aria-label="2~12자 한글·영문·숫자" placeholder="2~12자 한글·영문·숫자" className="h-9" />
               <Button type="button" size="sm" variant="outline" onClick={suggest} className="shrink-0">다른 이름 추천</Button>
             </div>
             {nickIssue ? <p className="text-[11px] text-loss">{nickIssue}</p> : <p className="text-[11px] text-muted">유펜·커뮤니티 닉네임, 선수 실명과 같은 이름은 쓸 수 없어요. 바꾸면 내 예전 메시지도 새 이름으로 보여요.</p>}
@@ -436,7 +436,7 @@ function ChatBody({ me, onChangeFace, onShowRules }: { me: ChatMe; onChangeFace:
                           {m.image && (
                             <a href={boardImageUrl(m.image.path)} target="_blank" rel="noopener noreferrer" className="block" onClick={(e) => e.stopPropagation()}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={boardImageUrl(m.image.thumb)} alt="보낸 사진" width={180} height={180} className="h-44 w-44 rounded-lg object-cover" />
+                              <img loading="lazy" decoding="async" src={boardImageUrl(m.image.thumb)} alt="보낸 사진" width={180} height={180} className="h-44 w-44 rounded-lg object-cover" />
                             </a>
                           )}
                           {m.body && <ChatText text={m.body} myName={myName} mine={m.mine} />}
@@ -473,7 +473,7 @@ function ChatBody({ me, onChangeFace, onShowRules }: { me: ChatMe; onChangeFace:
           <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} aria-label="사진 보내기" className="mb-1 rounded-md p-2 text-muted hover:text-foreground disabled:opacity-50"><ImagePlus size={20} /></button>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => sendPhoto(e.target.files?.[0])} />
           <Textarea ref={inputRef} value={text} maxLength={CHAT_MAX} rows={1} onChange={(e) => setText(e.target.value)} className="max-h-32 min-h-[42px] flex-1 resize-none"
-            placeholder="메시지를 입력하세요 (@닉네임 으로 부르기)"
+            aria-label="메시지를 입력하세요 (@닉네임 으로 부르기)" placeholder="메시지를 입력하세요 (@닉네임 으로 부르기)"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
           <Button disabled={busy || !text.trim()} onClick={() => send()} aria-label="보내기" className="mb-0.5"><Send size={16} /></Button>
         </div>

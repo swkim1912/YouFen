@@ -82,7 +82,7 @@ export function UserSearchBox() {
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)} // 클릭 처리 후 닫기
-        placeholder="유저·선수 검색"
+        aria-label="유저·선수 검색" placeholder="유저·선수 검색"
         className="h-9 w-36 min-w-0 rounded-md border border-line bg-panel2 px-3 text-sm outline-none focus:border-brand sm:w-56"
       />
       <Button size="sm" type="submit" aria-label="검색"><Search size={16} /></Button>

@@ -129,7 +129,7 @@ function Write() {
           {!editId && (
             <div className="flex gap-1">
               {(["sell", "buy"] as const).map((k) => (
-                <button key={k} type="button" onClick={() => { setKind(k); setImages((cur) => cur.slice(0, MARKET_IMAGE_MAX[k])); }}
+                <button aria-pressed={kind === k} key={k} type="button" onClick={() => { setKind(k); setImages((cur) => cur.slice(0, MARKET_IMAGE_MAX[k])); }}
                   className={cn("rounded px-3 py-1 text-sm", kind === k ? "bg-brand font-semibold text-brand-ink" : "bg-panel2 text-muted")}>
                   {k === "sell" ? "팝니다" : "삽니다"}
                 </button>
@@ -196,9 +196,9 @@ function Write() {
             <div>
               <Label>희망 가격대 (원)</Label>
               <div className="flex items-center gap-1.5">
-                <Input inputMode="numeric" disabled={f.price_nego} value={f.price_min} onChange={(e) => set({ price_min: digits(e.target.value) })} placeholder="최소" />
+                <Input aria-label="희망 가격 최저 (원)" inputMode="numeric" disabled={f.price_nego} value={f.price_min} onChange={(e) => set({ price_min: digits(e.target.value) })} placeholder="최소" />
                 <span className="text-muted">~</span>
-                <Input inputMode="numeric" disabled={f.price_nego} value={f.price_max} onChange={(e) => set({ price_max: digits(e.target.value) })} placeholder="최대" />
+                <Input aria-label="희망 가격 최고 (원)" inputMode="numeric" disabled={f.price_nego} value={f.price_max} onChange={(e) => set({ price_max: digits(e.target.value) })} placeholder="최대" />
               </div>
               <label className="mt-1.5 flex items-center gap-1.5 text-xs"><input type="checkbox" checked={f.price_nego} onChange={(e) => set({ price_nego: e.target.checked })} />가격 협의</label>
             </div>

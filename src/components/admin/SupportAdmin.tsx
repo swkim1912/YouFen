@@ -71,7 +71,7 @@ export function SupportAdmin({ onChanged }: { onChanged?: () => void }) {
                     <dt>접수 화면</dt><dd className="break-all">{t.page_url ?? "-"}</dd>
                     <dt>브라우저</dt><dd className="break-all">{t.user_agent ?? "-"}</dd>
                   </dl>
-                  <Textarea rows={2} placeholder="처리 메모 (관리자만 보임)" value={note} onChange={(e) => setNote(e.target.value)} />
+                  <Textarea rows={2} aria-label="처리 메모 (관리자만 보임)" placeholder="처리 메모 (관리자만 보임)" value={note} onChange={(e) => setNote(e.target.value)} />
                   <div className="flex flex-wrap gap-1.5">
                     <Button size="sm" variant="outline" onClick={() => update(t, "in_progress")}>처리 중으로</Button>
                     <Button size="sm" onClick={() => update(t, "done")}>처리 완료</Button>

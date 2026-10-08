@@ -109,7 +109,7 @@ export function AuthLanding({ initial = "login", redirectIfAuthed = false }: { i
         <section className="w-full max-w-md justify-self-center rounded-2xl border border-brand/20 bg-[#0c1b2d]/90 p-5 shadow-2xl shadow-black/40 backdrop-blur sm:p-7 md:justify-self-end">
           <div className="mb-6 flex border-b border-white/10 text-sm font-semibold">
             {([["login", "로그인"], ["signup", "회원가입"]] as const).map(([k, label]) => (
-              <button
+              <button aria-pressed={tab === k}
                 key={k}
                 type="button"
                 onClick={() => setTab(k)}

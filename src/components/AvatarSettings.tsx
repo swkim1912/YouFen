@@ -67,7 +67,7 @@ export function AvatarSettings() {
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="outline" disabled={busy || locked} onClick={() => fileRef.current?.click()}>사진 올리기</Button>
           <Button type="button" size="sm" variant="outline" disabled={busy || locked || cur === null} onClick={() => patch({ mode: "club" }, "소속팀 이미지로 바꿨어요")}>소속팀 이미지로</Button>
-          <button
+          <button aria-pressed={!!cur?.startsWith("default:")}
             type="button"
             disabled={busy || locked}
             onClick={() => patch({ mode: "default", n: 1 }, "기본 프로필로 바꿨어요")}

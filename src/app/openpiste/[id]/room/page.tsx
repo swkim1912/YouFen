@@ -236,7 +236,7 @@ function Room({ postId }: { postId: number }) {
       {room.can_send ? (
         <div className="flex items-end gap-2">
           <Textarea value={text} maxLength={1000} rows={1} onChange={(e) => setText(e.target.value)} className="max-h-32 min-h-[42px] flex-1 resize-none"
-            placeholder="메시지를 입력하세요"
+            aria-label="메시지를 입력하세요" placeholder="메시지를 입력하세요"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
           <Button disabled={busy || !text.trim()} onClick={send} aria-label="보내기" className="mb-0.5"><Send size={16} /></Button>
         </div>

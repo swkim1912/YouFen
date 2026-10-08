@@ -131,7 +131,7 @@ function Ranking() {
         <div className="min-w-0 space-y-3">
           <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold sm:text-3xl">
             {tab} {ageLabel(curAge)} {genderLabel(gender)} {weaponLabel(weapon)} 랭킹
-            <Link href="/methodology" title="랭킹과 점수는 이렇게 계산됩니다" aria-label="점수 산정 방식 안내" className="text-muted hover:text-brand">
+            <Link href="/methodology" title="랭킹과 점수는 이렇게 계산됩니다" aria-label="점수 산정 방식 안내" className="-m-2 flex h-10 w-10 items-center justify-center rounded-md text-muted hover:text-brand">
               <CircleHelp size={22} />
             </Link>
           </h1>
@@ -161,7 +161,7 @@ function Ranking() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="선수 이름 또는 소속 검색"
+            aria-label="선수 이름 또는 소속 검색" placeholder="선수 이름 또는 소속 검색"
             className="h-9 w-full rounded-md border border-line bg-panel2 pl-9 pr-3 text-sm outline-none focus:border-brand"
           />
         </div>

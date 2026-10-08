@@ -112,7 +112,7 @@ export function EdBracket({
       )}
       <div className="flex overflow-x-auto rounded-md border border-line">
         {sizes.map((s) => (
-          <button key={s} onClick={() => { setStart(s); setRegion(0); }} className={cn("min-w-[4.5rem] flex-1 border-b-2 px-3 py-2 text-sm", s === startSize ? "border-brand bg-panel2 font-bold" : "border-transparent bg-panel text-muted hover:text-foreground")}>
+          <button aria-pressed={s === startSize} key={s} onClick={() => { setStart(s); setRegion(0); }} className={cn("min-w-[4.5rem] flex-1 border-b-2 px-3 py-2 text-sm", s === startSize ? "border-brand bg-panel2 font-bold" : "border-transparent bg-panel text-muted hover:text-foreground")}>
             {roundName(s)}
           </button>
         ))}
@@ -169,8 +169,9 @@ export function MatchCard({ cl, players, linkQuery }: { cl: Cell; players: Map<n
   const row = (id: number | null, score: number | null, isBye: boolean, slot: "a" | "b") => {
     const win = id != null && cl.winner === id;
     const p = id != null ? players.get(id) : undefined;
+    // 이긴 칸은 옅은 승 바탕(DESIGN.md: 왼쪽 굵은 색 막대 대신 옅은 바탕)
     return (
-      <div className={cn("flex h-1/2 items-stretch border-l-4", win ? "border-l-win" : "border-l-transparent")}>
+      <div className={cn("flex h-1/2 items-stretch", win && "bg-win/10")}>
         <div className={cn("flex min-w-0 flex-1 flex-col justify-center px-2 leading-tight", !win && "text-muted")}>
           {id != null ? (
             <>

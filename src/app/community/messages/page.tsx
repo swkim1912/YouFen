@@ -51,7 +51,7 @@ function Inbox() {
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-panel2">
                   {t.listing_thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={boardImageUrl(t.listing_thumb)} alt="" className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={boardImageUrl(t.listing_thumb)} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted"><Package size={20} /></div>
                   )}

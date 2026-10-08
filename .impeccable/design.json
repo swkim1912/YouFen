@@ -1,0 +1,561 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-08T18:49:42.021Z",
+  "title": "Design System: 유펜 YouFen",
+  "extensions": {
+    "colorMeta": {
+      "midnight-navy": {
+        "role": "neutral",
+        "displayName": "심야 네이비",
+        "tonalRamp": [
+          "#040c16",
+          "#1a2531",
+          "#35414e",
+          "#535f6d",
+          "#758290",
+          "#96a3b2",
+          "#bbc9d9",
+          "#e2f0ff"
+        ]
+      },
+      "panel-navy": {
+        "role": "neutral",
+        "displayName": "패널 네이비",
+        "tonalRamp": [
+          "#030c18",
+          "#192533",
+          "#344151",
+          "#515f70",
+          "#738293",
+          "#94a3b6",
+          "#b9c9dc",
+          "#e0f0ff"
+        ]
+      },
+      "well-navy": {
+        "role": "neutral",
+        "displayName": "우물 네이비",
+        "tonalRamp": [
+          "#040b18",
+          "#1a2532",
+          "#354150",
+          "#535f6f",
+          "#758192",
+          "#95a3b4",
+          "#bbc9db",
+          "#e2f0ff"
+        ]
+      },
+      "line-navy": {
+        "role": "neutral",
+        "displayName": "선 네이비",
+        "tonalRamp": [
+          "#020b1b",
+          "#162536",
+          "#314154",
+          "#4e5f73",
+          "#708297",
+          "#91a3ba",
+          "#b6c9e1",
+          "#ddf1ff"
+        ]
+      },
+      "scrollbar-navy": {
+        "role": "neutral",
+        "displayName": "스크롤바 네이비",
+        "tonalRamp": [
+          "#010b1d",
+          "#152538",
+          "#304156",
+          "#4d5f76",
+          "#6f829a",
+          "#8fa3bd",
+          "#b5c9e4",
+          "#dbf1ff"
+        ]
+      },
+      "scrim-navy": {
+        "role": "neutral",
+        "displayName": "덮개 네이비",
+        "tonalRamp": [
+          "#050c12",
+          "#1d252c",
+          "#384149",
+          "#555f67",
+          "#78828b",
+          "#99a3ac",
+          "#bec9d3",
+          "#e5f0fa"
+        ]
+      },
+      "frost-text": {
+        "role": "neutral",
+        "displayName": "서리 글자",
+        "tonalRamp": [
+          "#080b10",
+          "#20242a",
+          "#3b4046",
+          "#595e65",
+          "#7b8188",
+          "#9ca2a9",
+          "#c2c8d0",
+          "#e9eff7"
+        ]
+      },
+      "slate-muted": {
+        "role": "neutral",
+        "displayName": "슬레이트 보조",
+        "tonalRamp": [
+          "#030b1a",
+          "#192436",
+          "#344053",
+          "#515f73",
+          "#738197",
+          "#94a3b9",
+          "#b9c9e0",
+          "#e0f0ff"
+        ]
+      },
+      "logo-sky": {
+        "role": "primary",
+        "displayName": "로고 Sky",
+        "tonalRamp": [
+          "#00043c",
+          "#00265c",
+          "#00467e",
+          "#0067a0",
+          "#008bc7",
+          "#25aeec",
+          "#59d5ff",
+          "#84feff"
+        ]
+      },
+      "sky-ink": {
+        "role": "primary",
+        "displayName": "Sky 잉크",
+        "tonalRamp": [
+          "#010c17",
+          "#162632",
+          "#31424f",
+          "#4f606e",
+          "#708392",
+          "#91a4b4",
+          "#b6cada",
+          "#ddf2ff"
+        ]
+      },
+      "win-blue": {
+        "role": "secondary",
+        "displayName": "승리 파랑",
+        "tonalRamp": [
+          "#080056",
+          "#000379",
+          "#00319d",
+          "#1955c1",
+          "#3e7aea",
+          "#5e9dff",
+          "#83c5ff",
+          "#a9edff"
+        ]
+      },
+      "loss-coral": {
+        "role": "secondary",
+        "displayName": "패배 코랄",
+        "tonalRamp": [
+          "#390000",
+          "#5f0000",
+          "#840015",
+          "#aa1b33",
+          "#d54855",
+          "#fc6c75",
+          "#ff9399",
+          "#ffbabf"
+        ]
+      },
+      "pending-amber": {
+        "role": "secondary",
+        "displayName": "대기 호박",
+        "tonalRamp": [
+          "#210000",
+          "#3e1900",
+          "#5d3700",
+          "#7d5700",
+          "#a17a00",
+          "#c49c00",
+          "#ebc344",
+          "#ffea70"
+        ]
+      },
+      "member-green": {
+        "role": "secondary",
+        "displayName": "회원 초록",
+        "tonalRamp": [
+          "#001900",
+          "#00360a",
+          "#005626",
+          "#007644",
+          "#009b65",
+          "#00be86",
+          "#4fe6ab",
+          "#7dffd1"
+        ]
+      },
+      "medal-gold": {
+        "role": "tertiary",
+        "displayName": "메달 금",
+        "tonalRamp": [
+          "#1f0100",
+          "#3c1b00",
+          "#5a3900",
+          "#7a5800",
+          "#9e7c00",
+          "#c19e19",
+          "#e8c44e",
+          "#ffec78"
+        ]
+      },
+      "medal-silver": {
+        "role": "tertiary",
+        "displayName": "메달 은",
+        "tonalRamp": [
+          "#070b14",
+          "#20242e",
+          "#3b404b",
+          "#585e6a",
+          "#7b808d",
+          "#9ca1af",
+          "#c1c7d5",
+          "#e8eefd"
+        ]
+      },
+      "medal-bronze": {
+        "role": "tertiary",
+        "displayName": "메달 동",
+        "tonalRamp": [
+          "#270000",
+          "#470d00",
+          "#672d00",
+          "#894c00",
+          "#af702c",
+          "#d39150",
+          "#fcb776",
+          "#ffde9c"
+        ]
+      },
+      "tier-bronze": {
+        "role": "tertiary",
+        "displayName": "브론즈",
+        "tonalRamp": [
+          "#270000",
+          "#470c00",
+          "#682c00",
+          "#8a4b1a",
+          "#b06e40",
+          "#d48f61",
+          "#fdb586",
+          "#ffdcac"
+        ]
+      },
+      "tier-silver": {
+        "role": "tertiary",
+        "displayName": "실버",
+        "tonalRamp": [
+          "#040c15",
+          "#1b252f",
+          "#36414c",
+          "#545f6a",
+          "#76828e",
+          "#97a3b0",
+          "#bcc9d6",
+          "#e3f0fe"
+        ]
+      },
+      "tier-gold": {
+        "role": "tertiary",
+        "displayName": "골드",
+        "tonalRamp": [
+          "#230000",
+          "#421500",
+          "#613400",
+          "#825300",
+          "#a77600",
+          "#cb9827",
+          "#f2be56",
+          "#ffe67f"
+        ]
+      },
+      "tier-platinum": {
+        "role": "tertiary",
+        "displayName": "플래티넘",
+        "tonalRamp": [
+          "#001613",
+          "#00322d",
+          "#005149",
+          "#007168",
+          "#00958b",
+          "#36b8ad",
+          "#65dfd3",
+          "#8ffffb"
+        ]
+      },
+      "tier-diamond": {
+        "role": "tertiary",
+        "displayName": "다이아몬드",
+        "tonalRamp": [
+          "#0c004b",
+          "#15086d",
+          "#2a308f",
+          "#4451b3",
+          "#6476db",
+          "#8398ff",
+          "#a7bfff",
+          "#cde7ff"
+        ]
+      },
+      "tier-master": {
+        "role": "tertiary",
+        "displayName": "마스터",
+        "tonalRamp": [
+          "#1f003f",
+          "#3a005f",
+          "#581681",
+          "#773ba4",
+          "#9b60cc",
+          "#be82f1",
+          "#e5a8ff",
+          "#ffcfff"
+        ]
+      },
+      "tier-challenger": {
+        "role": "tertiary",
+        "displayName": "챌린저",
+        "tonalRamp": [
+          "#200000",
+          "#3d1a00",
+          "#5c3800",
+          "#7c5700",
+          "#a07a00",
+          "#c39c25",
+          "#eac354",
+          "#ffea7e"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "랜딩 첫 문장 하나에만."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "페이지 제목(800 20px, 또는 700 18px)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "카드·섹션·모달 제목."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "본문·표 행·버튼·필터 칩. 화면 글자의 대부분."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "보조 정보·필터 이름표·입력 라벨·날짜·소속."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "세로 메뉴바·아래 탭바 이름, 작은 배지(10px)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating-window",
+        "value": "0 25px 50px -12px rgb(0 0 0 / 0.5)",
+        "purpose": "모달·확인창. 뒤에 rgb(3 8 14 / .75) 덮개 + blur(2px)."
+      },
+      {
+        "name": "floating-button",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "모바일 '+' 버튼처럼 본문 위에 고정된 부품."
+      },
+      {
+        "name": "glass-bar",
+        "value": "background: rgb(18 30 44 / 0.9); backdrop-filter: blur(12px)",
+        "purpose": "스크롤되는 본문 위 상단바."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-change",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "버튼·링크의 색·테두리·밝기 변화."
+      },
+      {
+        "name": "press",
+        "value": "transform: scale(0.98)",
+        "purpose": "버튼을 누를 때. prefers-reduced-motion 이면 끔."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "이 폭부터 오른쪽 세로 메뉴바, 미만은 아래 탭바 + '+' 버튼"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "주 동작. Sky 바탕 + Sky 잉크 글자.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>기록 추가</button>",
+      "css": ".ds-btn-primary{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:color .15s,background-color .15s,border-color .15s,filter .15s,transform .15s;border:none;background:#0ca4e1;color:#04121d;font-weight:600;} .ds-btn-primary:focus-visible{outline:2px solid #0ca4e1;outline-offset:2px;} .ds-btn-primary:active{transform:scale(.98);} .ds-btn-primary:hover{filter:brightness(1.1);}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "보조 동작, 확인창의 '취소'.",
+      "html": "<button class=\"ds-btn-outline\">취소</button>",
+      "css": ".ds-btn-outline{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:color .15s,background-color .15s,border-color .15s,filter .15s,transform .15s;border:1px solid #1f2e40;background:transparent;color:#e7edf5;} .ds-btn-outline:focus-visible{outline:2px solid #0ca4e1;outline-offset:2px;} .ds-btn-outline:active{transform:scale(.98);} .ds-btn-outline:hover{border-color:rgb(12 164 225 / .4);background:rgb(255 255 255 / .05);}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "덜 중요한 동작.",
+      "html": "<button class=\"ds-btn-ghost\">더 보기</button>",
+      "css": ".ds-btn-ghost{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:color .15s,background-color .15s,border-color .15s,filter .15s,transform .15s;border:none;background:transparent;color:#e7edf5;} .ds-btn-ghost:focus-visible{outline:2px solid #0ca4e1;outline-offset:2px;} .ds-btn-ghost:active{transform:scale(.98);} .ds-btn-ghost:hover{background:rgb(255 255 255 / .05);}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "삭제·탈퇴 같은 위험 동작.",
+      "html": "<button class=\"ds-btn-danger\">삭제</button>",
+      "css": ".ds-btn-danger{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:color .15s,background-color .15s,border-color .15s,filter .15s,transform .15s;border:none;background:#f0616b;color:#04121d;font-weight:600;} .ds-btn-danger:focus-visible{outline:2px solid #0ca4e1;outline-offset:2px;} .ds-btn-danger:active{transform:scale(.98);} .ds-btn-danger:hover{filter:brightness(1.1);}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "입력·셀렉트·여러 줄 입력 공통 모양.",
+      "html": "<label class=\"ds-label\">상대 이름</label><input class=\"ds-input\" placeholder=\"닉네임 또는 이름 검색\">",
+      "css": ".ds-label{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:block;margin-bottom:4px;font-size:12px;font-weight:500;color:#8b9ab0;} .ds-input{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;box-sizing:border-box;width:100%;height:40px;padding:0 12px;border-radius:6px;border:1px solid #1f2e40;background:#0e1825;color:#e7edf5;font-size:14px;outline:none;} .ds-input::placeholder{color:#8b9ab0;} .ds-input:focus{border-color:#0ca4e1;}"
+    },
+    {
+      "name": "Filter Row",
+      "kind": "chip",
+      "refersTo": "filter-chip",
+      "description": "한 줄 = 카테고리 하나. 선택 칩은 Sky.",
+      "html": "<div class=\"ds-filter\"><span class=\"ds-filter-label\">종목</span><div class=\"ds-filter-opts\"><button class=\"ds-chip ds-chip-on\">에페</button><button class=\"ds-chip\">플뢰레</button><button class=\"ds-chip\">사브르</button></div></div>",
+      "css": ".ds-filter{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;align-items:flex-start;gap:12px;} .ds-filter-label{width:48px;flex-shrink:0;padding-top:8px;font-size:12px;color:#8b9ab0;} .ds-filter-opts{display:flex;flex-wrap:wrap;gap:6px;} .ds-chip{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;border:none;border-radius:4px;padding:6px 12px;font-size:14px;background:#121e2c;color:#8b9ab0;cursor:pointer;transition:color .15s;} .ds-chip:hover{color:#e7edf5;} .ds-chip:focus-visible{outline:2px solid #0ca4e1;outline-offset:2px;} .ds-chip-on,.ds-chip-on:hover{background:#0ca4e1;color:#04121d;font-weight:600;}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "기본 카드: 패널 바탕, 선 테두리, 8px, 그림자 없음.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">최근 대회 경기</h2><p class=\"ds-card-body\">일반부 남자 에페 · 32강</p></section>",
+      "css": ".ds-card{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;border:1px solid #1f2e40;border-radius:8px;background:#121e2c;padding:16px;color:#e7edf5;} .ds-card-title{margin:0 0 8px;font-size:16px;font-weight:700;} .ds-card-body{margin:0;font-size:14px;color:#8b9ab0;}"
+    },
+    {
+      "name": "Match Line",
+      "kind": "custom",
+      "description": "승패 줄: 줄 전체에 옅은 승/패 바탕, 왼쪽 막대 없음. 회원 초록 점·비회원 회색 점.",
+      "html": "<div class=\"ds-match ds-win\"><b class=\"ds-res\">승</b><span class=\"ds-dot ds-dot-m\"></span><span class=\"ds-opp\">상대 회원</span><span class=\"ds-score\">15 : 11</span><span class=\"ds-meta\">오픈 · 10.08</span></div><div class=\"ds-match ds-loss\"><b class=\"ds-res\">패</b><span class=\"ds-dot\"></span><span class=\"ds-opp\">비회원 상대</span><span class=\"ds-score\">3 : 5</span><span class=\"ds-meta\">대회 · 09.21</span></div>",
+      "css": ".ds-match{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:14px;color:#e7edf5;margin-bottom:6px;} .ds-win{background:rgb(79 141 255 / .15);} .ds-loss{background:rgb(240 97 107 / .15);} .ds-res{width:20px;font-weight:700;} .ds-win .ds-res{color:#4f8dff;} .ds-loss .ds-res{color:#f0616b;} .ds-dot{width:8px;height:8px;border-radius:9999px;background:rgb(139 154 176 / .5);} .ds-dot-m{background:#34d399;} .ds-opp{flex:1;} .ds-score{font-weight:600;} .ds-meta{font-size:12px;color:#8b9ab0;}"
+    },
+    {
+      "name": "Bottom Tab Bar",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "좁은 화면 아래 탭바. 현재 탭 Sky.",
+      "html": "<nav class=\"ds-tabbar\"><a class=\"ds-tab\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><path d=\"M9 22V12h6v10\"/></svg>마이 펜싱</a><a class=\"ds-tab ds-tab-on\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 9H4.5a2.5 2.5 0 0 1 0-5H6\"/><path d=\"M18 9h1.5a2.5 2.5 0 0 0 0-5H18\"/><path d=\"M4 22h16\"/><path d=\"M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22\"/><path d=\"M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22\"/><path d=\"M18 2H6v7a6 6 0 0 0 12 0V2Z\"/></svg>랭킹</a><a class=\"ds-tab\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"15\" r=\"6\"/><path d=\"M8.2 10.2 5 2h4l3 6 3-6h4l-3.2 8.2\"/></svg>대회</a></nav>",
+      "css": ".ds-tabbar{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;height:56px;border-top:1px solid #1f2e40;background:#121e2c;} .ds-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:#8b9ab0;text-decoration:none;cursor:pointer;transition:color .15s;} .ds-tab:hover{color:#e7edf5;} .ds-tab:focus-visible{outline:2px solid #0ca4e1;outline-offset:2px;} .ds-tab-on,.ds-tab-on:hover{color:#0ca4e1;}"
+    },
+    {
+      "name": "Rank Number",
+      "kind": "custom",
+      "description": "1·2·3등 메달 색 숫자.",
+      "html": "<span class=\"ds-rank ds-r1\">1</span><span class=\"ds-rank ds-r2\">2</span><span class=\"ds-rank ds-r3\">3</span><span class=\"ds-rank\">4</span>",
+      "css": ".ds-rank{font-family:'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-block;width:28px;text-align:center;font-size:16px;font-weight:800;color:#e7edf5;} .ds-r1{color:#e5c14b;} .ds-r2{color:#c0c6d4;} .ds-r3{color:#cd8b4a;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Youfen First",
+    "overview": "유펜의 화면은 유펜다워야 한다. 출발점은 OP.GG 같은 어두운 전적 화면이지만, 남의 모양을 빌려 오지 않고 로고에서 나온 **심야 네이비 + 로고 Sky** 한 세계로 모든 화면을 통일한다. 랜딩·로그인·랭킹·기록지·커뮤니티·관리자가 전부 같은 바탕색, 같은 선, 같은 강조색 하나를 쓴다. 새 화면이 \"다른 사이트에서 본 것 같다\"면 실패이고, \"유펜 화면이구나\"가 바로 보이면 성공이다.\n\n밀도는 데이터 앱의 밀도다. 점수·순위·승패·날짜가 주인공이라 글자는 대부분 14px·12px, 숫자는 같은 폭(tabular-nums)으로 세로 정렬된다. 부품은 **단단하고 절제되어** 있다. 그림자 대신 바탕 밝기 세 단계와 1px 네이비 선으로 층을 나누고, 강조는 Sky 하나뿐이다. 화려함은 단 한 곳, **티어 엠블럼과 티어 카드 테두리**에만 허락된다. 펜서가 자기 티어를 볼 때 그 순간만 빛나야 하므로 나머지는 조용히 물러나 있다.\n\n휴대폰이 기본 화면이다. 체육관에서 한 손으로 기록을 남기므로 좁은 화면에서는 아래 탭바와 떠 있는 '+' 버튼이 중심이 되고, 넓은 화면에서는 오른쪽 세로 메뉴바로 바뀐다. 화면 문구는 전부 한글이고, 한글 단어는 줄 중간에서 끊지 않는다.",
+    "keyCharacteristics": [
+      "네이비로 물든 어두운 바탕 세 단계(바탕 → 카드 → 카드 안 칸) + 1px 네이비 선",
+      "강조색은 로고 Sky 하나, Sky 위 글자는 흰색이 아닌 진한 네이비(sky-ink)",
+      "승 = 파랑, 패 = 코랄, 수락 대기 = 호박색 — 의미가 정해진 상태색",
+      "Pretendard 한 가족, 같은 폭 숫자, 작은 글자 중심의 촘촘한 데이터 밀도",
+      "장식은 티어 엠블럼·카드 테두리에만"
+    ],
+    "rules": [
+      {
+        "name": "The One Sky Rule",
+        "body": "강조색은 로고 Sky 하나뿐이다. 새 강조색(보라·초록 버튼 등)을 만들지 않는다. 승·패·대기·회원·메달·티어 색은 의미가 정해진 상태색이라 강조로 쓰지 않는다.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink-on-Sky Rule",
+        "body": "Sky·코랄로 칠한 바탕 위 글자는 항상 sky-ink(`text-brand-ink`). 흰 글자 금지.",
+        "section": "colors"
+      },
+      {
+        "name": "The Token-Only Rule",
+        "body": "색은 `src/app/globals.css` 의 토큰 이름(`bg-panel`, `text-muted`, `bg-brand`…)으로만 쓴다. 컴포넌트에 새 hex 값을 적지 않는다(티어·메달 색은 `lib/fencing.ts` 상수 사용).",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "모든 숫자는 같은 폭(`font-variant-numeric: tabular-nums`, body 에 기본 적용). 점수·순위 열을 세로로 맞추기 위해 끄지 않는다.",
+        "section": "typography"
+      },
+      {
+        "name": "The Keep-All Rule",
+        "body": "한글은 단어 중간에서 줄을 바꾸지 않는다(`word-break: keep-all`). 좁은 화면에서 넘치면 줄을 나누는 위치를 바꾸지, 단어를 자르지 않는다.",
+        "section": "typography"
+      },
+      {
+        "name": "The Weight-Not-Size Rule",
+        "body": "위계는 크기보다 굵기(400/500/700/800)로 만든다. 데이터 화면에서 제목을 20px 넘게 키우지 않는다(랜딩 Display 만 예외).",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "카드·표·칩은 그림자가 없다. 그림자는 모달과 화면에 고정되어 떠 있는 부품에만.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** 색은 `globals.css` 토큰 이름으로만 쓴다(`bg-panel`, `bg-panel2`, `border-line`, `text-muted`, `bg-brand text-brand-ink`).",
+      "**Do** 카드는 `rounded-lg border border-line bg-panel p-4` 한 모양으로 통일한다.",
+      "**Do** 층은 바탕 밝기(심야 → 우물 → 패널)와 1px 선으로 나눈다.",
+      "**Do** 상태 바탕은 상태색 10~20% 투명도로 옅게 깐다.",
+      "**Do** 좁은 화면을 먼저 확인한다: 아래 탭바·'+' 버튼과 겹치지 않는지, 한 줄 항목이 두 줄로 잘 내려가는지.",
+      "**Do** 동작 줄이기(`prefers-reduced-motion`) 설정이면 눌림·움직임을 끈다."
+    ],
+    "donts": [
+      "**Don't** Sky 말고 다른 강조색을 만들지 않는다.",
+      "**Don't** Sky·코랄 바탕 위에 흰 글자를 쓰지 않는다.",
+      "**Don't** 순수 회색(#888, neutral-*, gray-*)을 쓰지 않는다 — 모든 중립색은 네이비로 물든다.",
+      "**Don't** 카드·표에 그림자를 넣지 않는다.",
+      "**Don't** 승패 줄에 왼쪽 굵은 색 막대를 쓰지 않는다(옅은 바탕으로 표시).",
+      "**Don't** 티어 테두리를 감싸는 부모에 `overflow: hidden` 을 쓰지 않는다.",
+      "**Don't** 외부 사이트(OP.GG 등)의 모양·문구를 그대로 따라 하지 않는다.",
+      "**Don't** 외부 글꼴 CDN을 쓰지 않는다(Pretendard 는 npm 패키지)."
+    ]
+  }
+}

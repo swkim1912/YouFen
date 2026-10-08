@@ -204,9 +204,9 @@ function Gallery({ images }: { images: BoardImage[] }) {
       {images.length > 1 && (
         <div className="flex gap-2">
           {images.map((im, j) => (
-            <button key={im.id} onClick={() => setI(j)} className={cn("h-14 w-14 overflow-hidden rounded border", j === i ? "border-brand" : "border-line opacity-70")}>
+            <button aria-pressed={j === i} key={im.id} onClick={() => setI(j)} className={cn("h-14 w-14 overflow-hidden rounded border", j === i ? "border-brand" : "border-line opacity-70")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={boardImageUrl(im.thumb)} alt="" className="h-full w-full object-cover" />
+              <img loading="lazy" decoding="async" src={boardImageUrl(im.thumb)} alt="" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

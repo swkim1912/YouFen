@@ -35,11 +35,11 @@ export function MemberRecords({
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="mr-2 font-bold">최근 전적 <span className="text-xs font-normal text-muted">유펜 회원 · {nickname}</span></h3>
         {(["ALL", "OPEN", "TOURNAMENT", ...(isMe ? (["PRIVATE"] as const) : [])] as Filter[]).map((f) => (
-          <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
+          <button aria-pressed={filter === f} key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
             {LABEL[f]}
           </button>
         ))}
-        <Input className="ml-auto h-8 w-40" placeholder="상대 이름 검색" value={oppQ} onChange={(e) => setOppQ(e.target.value)} />
+        <Input className="ml-auto h-8 w-40" aria-label="상대 이름 검색" placeholder="상대 이름 검색" value={oppQ} onChange={(e) => setOppQ(e.target.value)} />
       </div>
       {hidden && <p className="mb-2 rounded bg-panel2 px-3 py-2 text-xs text-muted">해당 유저는 유펜 전적(오픈·프라이빗 등)을 비공개로 설정했습니다. 협회 대회 경기만 표시됩니다.</p>}
       {loading ? (

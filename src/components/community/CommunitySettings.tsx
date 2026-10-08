@@ -236,11 +236,11 @@ function OpenpisteAlerts() {
     <div className="mt-2 w-full basis-full space-y-1.5 rounded-md bg-panel2 p-2.5">
       <p className="text-[11px] text-muted">새 모집 알림을 받을 종목{pref.weapons.length === 0 && <b className="text-pending"> — 하나 이상 골라야 알림이 와요</b>}</p>
       <div className="flex flex-wrap gap-1">
-        {WEAPONS.map((w) => <button key={w} className={chip(pref.weapons.includes(w))} onClick={() => save({ ...pref, weapons: flip(pref.weapons, w) })}>{w}</button>)}
+        {WEAPONS.map((w) => <button aria-pressed={pref.weapons.includes(w)} key={w} className={chip(pref.weapons.includes(w))} onClick={() => save({ ...pref, weapons: flip(pref.weapons, w) })}>{w}</button>)}
       </div>
       <p className="pt-1 text-[11px] text-muted">지역 (안 고르면 전국)</p>
       <div className="flex flex-wrap gap-1">
-        {REGIONS.map((r) => <button key={r} className={chip(pref.regions.includes(r))} onClick={() => save({ ...pref, regions: flip(pref.regions, r) })}>{r}</button>)}
+        {REGIONS.map((r) => <button aria-pressed={pref.regions.includes(r)} key={r} className={chip(pref.regions.includes(r))} onClick={() => save({ ...pref, regions: flip(pref.regions, r) })}>{r}</button>)}
       </div>
     </div>
   );

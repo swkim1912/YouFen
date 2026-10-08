@@ -129,7 +129,7 @@ export function ClubMarkRequest() {
               <li key={h.id} className="flex items-center gap-3 rounded-md bg-panel2 p-2 text-sm">
                 {h.status !== "rejected" ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={IMG_BASE + h.path} alt="" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="h-10 w-10 rounded-lg bg-white/10 object-contain" />
+                  <img loading="lazy" decoding="async" src={IMG_BASE + h.path} alt="" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="h-10 w-10 rounded-lg bg-white/10 object-contain" />
                 ) : <span className="h-10 w-10 rounded-lg bg-white/5" />}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{h.club?.name ?? "-"}</span>

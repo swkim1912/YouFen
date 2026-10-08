@@ -83,7 +83,7 @@ function Inner() {
   if (comp === null) return <p className="py-16 text-center text-muted">대회를 찾을 수 없습니다</p>;
 
   const chip = (active: boolean, disabled = false) =>
-    cn("rounded px-3 py-1.5 text-sm", active ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground", disabled && "pointer-events-none opacity-30");
+    cn("min-h-10 rounded px-3 py-1.5 text-sm md:min-h-0", active ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground", disabled && "pointer-events-none opacity-30");
 
   return (
     <div className="space-y-4">
@@ -108,16 +108,16 @@ function Inner() {
         <div className="mt-3 space-y-2">
           {bus.length > 1 && (
             <div className="flex flex-wrap gap-1.5">
-              {bus.map((b) => <button key={b} onClick={() => choose(b, ev?.gender ?? null, ev?.weapon ?? null)} className={chip(!!ev && buLabel(ev) === b)}>{b}</button>)}
+              {bus.map((b) => <button aria-pressed={!!ev && buLabel(ev) === b} key={b} onClick={() => choose(b, ev?.gender ?? null, ev?.weapon ?? null)} className={chip(!!ev && buLabel(ev) === b)}>{b}</button>)}
             </div>
           )}
           <div className="flex flex-wrap items-center gap-1.5">
             {GENDER_VALUES.map((g) => (
-              <button key={g} onClick={() => choose(ev ? buLabel(ev) : null, g, ev?.weapon ?? null)} className={chip(ev?.gender === g, !events.some((e) => (ev ? buLabel(e) === buLabel(ev) : true) && e.gender === g))}>{genderLabel(g)}</button>
+              <button aria-pressed={ev?.gender === g} key={g} onClick={() => choose(ev ? buLabel(ev) : null, g, ev?.weapon ?? null)} className={chip(ev?.gender === g, !events.some((e) => (ev ? buLabel(e) === buLabel(ev) : true) && e.gender === g))}>{genderLabel(g)}</button>
             ))}
             <span className="mx-1 text-line">|</span>
             {WEAPON_VALUES.map((w) => (
-              <button key={w} onClick={() => choose(ev ? buLabel(ev) : null, ev?.gender ?? null, w)} className={chip(ev?.weapon === w, !has(ev?.gender ?? "", w))}>{weaponLabel(w)}</button>
+              <button aria-pressed={ev?.weapon === w} key={w} onClick={() => choose(ev ? buLabel(ev) : null, ev?.gender ?? null, w)} className={chip(ev?.weapon === w, !has(ev?.gender ?? "", w))}>{weaponLabel(w)}</button>
             ))}
           </div>
         </div>
@@ -219,8 +219,8 @@ function MatchesSection({ entries, matches, byId, nameLink, poolQ }: { entries: 
         <span className="text-sm text-muted">{matches.length}경기</span>
       </div>
       <div className="mb-4 flex gap-1 border-b border-line">
-        {poule.length > 0 && <button onClick={() => setTab("POULE")} className={tabCls(tab === "POULE")}>뿔 <span className="ml-1 text-xs text-muted">{poule.length}경기</span></button>}
-        {ed.length > 0 && <button onClick={() => setTab("ED")} className={tabCls(tab === "ED")}>ED <span className="ml-1 text-xs text-muted">{mainEd.length || ed.length}경기</span></button>}
+        {poule.length > 0 && <button aria-pressed={tab === "POULE"} onClick={() => setTab("POULE")} className={tabCls(tab === "POULE")}>뿔 <span className="ml-1 text-xs text-muted">{poule.length}경기</span></button>}
+        {ed.length > 0 && <button aria-pressed={tab === "ED"} onClick={() => setTab("ED")} className={tabCls(tab === "ED")}>ED <span className="ml-1 text-xs text-muted">{mainEd.length || ed.length}경기</span></button>}
       </div>
       {tab === "POULE" ? <PouleTables entries={entries} matches={poule} nameLink={nameLink} /> : <EdTab matches={ed} byId={byId} nameLink={nameLink} poolQ={poolQ} />}
     </section>

@@ -63,7 +63,7 @@ function MyPage() {
     <div className="space-y-4">
       <div className="flex gap-1 border-b border-line">
         {([["main", "종합"], ["detail", "상세정보"], ["community", "커뮤니티 설정"]] as const).map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)} className={cn("-mb-px border-b-2 px-4 py-2 text-sm", tab === k ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
+          <button aria-pressed={tab === k} key={k} onClick={() => setTab(k)} className={cn("-mb-px border-b-2 px-4 py-2 text-sm", tab === k ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
             {label}
           </button>
         ))}
@@ -83,7 +83,7 @@ function MyPage() {
           {linked.length > 1 && (
             <div className="flex flex-wrap gap-1.5">
               {linked.map((a) => (
-                <button key={a.id} onClick={() => setPick(a.id)} className={cn("rounded px-3 py-1.5 text-sm", a.id === curAthlete.id ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>{a.name}</button>
+                <button aria-pressed={a.id === curAthlete.id} key={a.id} onClick={() => setPick(a.id)} className={cn("min-h-10 rounded px-3 py-1.5 text-sm md:min-h-0", a.id === curAthlete.id ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>{a.name}</button>
               ))}
             </div>
           )}

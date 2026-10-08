@@ -88,7 +88,7 @@ function Notes() {
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="text-lg font-bold">피드백 노트</h1>
-        <Input className="ml-auto w-full sm:w-56" placeholder="단어·기술명·상대 이름 검색" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input className="ml-auto w-full sm:w-56" aria-label="단어·기술명·상대 이름 검색" placeholder="단어·기술명·상대 이름 검색" value={q} onChange={(e) => setQ(e.target.value)} />
         <Button variant="outline" onClick={() => exportAs("xlsx")} disabled={exporting} title="엑셀(.xlsx)로 내보내기">엑셀 내보내기</Button>
         <Button variant="outline" onClick={() => exportAs("csv")} disabled={exporting} title="CSV(엑셀·구글 시트에서 열림)로 내보내기">CSV</Button>
         <Button onClick={() => setAdding(true)}>노트 추가</Button>

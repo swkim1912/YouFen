@@ -8,7 +8,7 @@ export function TierEmblem({ tier, size = 64, className }: { tier: string | null
   const key = tier ? TIER_KEY[tier] : undefined;
   if (!key) return null;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={`/tier/emblems/${key}${size <= 40 ? "-sm" : ""}.svg`} alt={`${tier} 티어`} width={size} height={size} className={className} />;
+  return <img loading="lazy" decoding="async" src={`/tier/emblems/${key}${size <= 40 ? "-sm" : ""}.svg`} alt={`${tier} 티어`} width={size} height={size} className={className} />;
 }
 
 /** 목록용 작은 표시: [엠블럼] 다이아몬드 */
@@ -22,11 +22,11 @@ export function TierPill({ tier }: { tier: string | null }) {
   );
 }
 
-/** 프로필 상단용 큰 배지: 티어가 있으면 엠블럼, 없으면(배치 중) 회색 물음표 원 */
+/** 프로필 상단용 큰 배지: 티어가 있으면 엠블럼, 없으면(배치 중) 보조 글자색(text-muted) 물음표 원 */
 export function TierCircle({ tier, size = 64 }: { tier: string | null; size?: number }) {
   if (tier) return <TierEmblem tier={tier} size={size} className="shrink-0" />;
   return (
-    <div className="flex shrink-0 items-center justify-center rounded-full border-4 text-sm font-bold" style={{ width: size, height: size, borderColor: "#6b7280", color: "#6b7280" }}>
+    <div className="flex shrink-0 items-center justify-center rounded-full border-4 border-muted/60 text-sm font-bold text-muted" style={{ width: size, height: size }}>
       ?
     </div>
   );

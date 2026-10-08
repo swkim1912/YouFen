@@ -101,7 +101,7 @@ export function PasswordChange() {
       {step === "code" && (
         <div className="space-y-2">
           <p className="text-xs text-muted">{user.email} 로 보낸 인증 코드를 입력해 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.</p>
-          <Input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="인증 코드" />
+          <Input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" aria-label="인증 코드" placeholder="인증 코드" />
           <Button type="button" className="w-full" onClick={change} disabled={busy}>{busy ? "변경 중…" : "비밀번호 변경하기"}</Button>
           {cap.widget}
           <Button type="button" variant="outline" className="w-full" onClick={sendCode} disabled={busy || wait > 0}>{wait > 0 ? `코드 다시 받기 (${wait}초)` : "코드 다시 받기"}</Button>

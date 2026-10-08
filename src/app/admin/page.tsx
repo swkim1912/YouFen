@@ -97,7 +97,7 @@ function Admin() {
       <h1 className="text-lg font-bold">관리자</h1>
       <nav className="flex gap-1 overflow-x-auto border-b border-line">
         {TABS.map(([k, label, n]) => (
-          <button key={k} onClick={() => setTab(k)} className={cn("-mb-px flex shrink-0 items-center gap-1 border-b-2 px-3 py-2 text-sm", tab === k ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
+          <button aria-pressed={tab === k} key={k} onClick={() => setTab(k)} className={cn("-mb-px flex shrink-0 items-center gap-1 border-b-2 px-3 py-2 text-sm", tab === k ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
             {label}
             {!!n && <span className="rounded-full bg-loss px-1.5 text-[10px] font-bold text-white">{n}</span>}
           </button>

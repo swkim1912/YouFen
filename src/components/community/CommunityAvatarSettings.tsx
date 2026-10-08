@@ -63,7 +63,7 @@ export function CommunityAvatarSettings({ avatarUrl, nickname, onChanged }: {
         <Avatar avatarUrl={avatarUrl} clubId={null} affiliation={null} nickname={nickname} size={56} />
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="outline" disabled={busy || locked} onClick={() => fileRef.current?.click()}>사진 올리기</Button>
-          <button
+          <button aria-pressed={!!avatarUrl?.startsWith("default:")}
             type="button"
             disabled={busy || locked}
             onClick={() => patch({ mode: "default", n: 1 }, "기본 프로필로 바꿨어요")}

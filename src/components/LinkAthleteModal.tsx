@@ -78,7 +78,7 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
       {!sel ? (
         <div className="space-y-3">
           <p className="text-sm text-muted">협회에 등록된 내 이름(또는 자녀 이름)을 검색하고, 소속·등록연도를 보고 맞는 선수를 선택하세요.</p>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="선수 이름 전체 (예: 홍길동)" autoFocus />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} aria-label="선수 이름 전체 (예: 홍길동)" placeholder="선수 이름 전체 (예: 홍길동)" autoFocus />
           {/* 결과가 한도만큼 차면 잘렸을 수 있으므로 이름 전체 입력을 안내 */}
           {cands.length >= LIMIT && <p className="text-xs text-pending">검색 결과가 많아 {LIMIT}명까지만 보여요. 이름을 끝까지 입력하면 같은 이름의 선수가 맨 위에 모두 나와요.</p>}
           <div className="max-h-72 space-y-1.5 overflow-auto">

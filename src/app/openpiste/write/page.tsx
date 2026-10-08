@@ -147,13 +147,13 @@ function Form() {
         <div>
           <Label>종목</Label>
           <div className="flex flex-wrap gap-1.5">
-            {OP_WEAPONS.map((w) => <button key={w} type="button" className={chip(weapon === w)} onClick={() => setWeapon(w)}>{w}</button>)}
+            {OP_WEAPONS.map((w) => <button aria-pressed={weapon === w} key={w} type="button" className={chip(weapon === w)} onClick={() => setWeapon(w)}>{w}</button>)}
           </div>
         </div>
         <div>
           <Label>레벨 (여러 개 고를 수 있어요)</Label>
           <div className="flex flex-wrap gap-1.5">
-            {OP_LEVELS.map((l) => <button key={l} type="button" className={chip(levels.includes(l))} onClick={() => toggleLevel(l)}>{l}</button>)}
+            {OP_LEVELS.map((l) => <button aria-pressed={levels.includes(l)} key={l} type="button" className={chip(levels.includes(l))} onClick={() => toggleLevel(l)}>{l}</button>)}
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">

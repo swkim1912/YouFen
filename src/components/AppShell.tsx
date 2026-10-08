@@ -107,7 +107,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
     cn("flex w-full flex-col items-center gap-0.5 py-2 text-[11px]", active ? "text-brand" : "text-muted hover:text-foreground");
 
   // 좁은 화면용 스타일: 보조 메뉴 줄 항목 / 아래 탭바 항목
-  const mobLink = "shrink-0 whitespace-nowrap px-2.5 py-2 text-muted hover:text-foreground";
+  const mobLink = "flex min-h-11 shrink-0 items-center whitespace-nowrap px-2.5 text-muted hover:text-foreground";
   const tabCls = (active: boolean) =>
     cn("flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]", active ? "text-brand" : "text-muted hover:text-foreground");
 
@@ -119,20 +119,20 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
           <Link href={loggedIn ? "/" : "/ranking"} aria-label="유펜 YouFen 홈" className="shrink-0">
             <Logo />
           </Link>
-          <nav className="hidden items-center gap-4 text-sm md:flex">
+          <nav aria-label="주 메뉴" className="hidden items-center gap-4 text-sm md:flex">
             {/* 아카데미 메뉴는 공개 전까지 숨김(2026-10-05). 커뮤니티·오픈피스트는 로그인 회원에게 보인다(feature/community 브랜치에서 2026-10-08·09 공개 — 읽기·쓰기 모두 로그인 필요) */}
-            {loggedIn && <Link href="/openpiste" className={path.startsWith("/openpiste") ? "text-foreground" : "text-muted hover:text-foreground"}>오픈피스트</Link>}
-            {loggedIn && <Link href="/community" className={path.startsWith("/community") ? "text-foreground" : "text-muted hover:text-foreground"}>커뮤니티</Link>}
-            <Link href="/methodology" className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
+            {loggedIn && <Link href="/openpiste" aria-current={path.startsWith("/openpiste") ? "page" : undefined} className={path.startsWith("/openpiste") ? "text-foreground" : "text-muted hover:text-foreground"}>오픈피스트</Link>}
+            {loggedIn && <Link href="/community" aria-current={path.startsWith("/community") ? "page" : undefined} className={path.startsWith("/community") ? "text-foreground" : "text-muted hover:text-foreground"}>커뮤니티</Link>}
+            <Link href="/methodology" aria-current={path === "/methodology" ? "page" : undefined} className={path === "/methodology" ? "text-foreground" : "text-muted hover:text-foreground"}>점수 안내</Link>
           </nav>
           <UserSearchBox />
         </div>
         {/* 좁은 화면 전용 보조 메뉴 줄(가로 스크롤) — 넓은 화면에서는 위 nav 가 대신한다 */}
-        <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 text-sm md:hidden">
-          <Link href="/methodology" className={cn(mobLink, path === "/methodology" && "text-foreground")}>점수 안내</Link>
-          {loggedIn && <Link href="/openpiste" className={cn(mobLink, path.startsWith("/openpiste") && "text-foreground")}>오픈피스트</Link>}
-          {loggedIn && <Link href="/community" className={cn(mobLink, path.startsWith("/community") && "text-foreground")}>커뮤니티</Link>}
-          {profile?.is_admin && <Link href="/admin" className={cn(mobLink, path === "/admin" && "text-foreground")}>관리자</Link>}
+        <nav aria-label="보조 메뉴" className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 text-sm md:hidden">
+          <Link href="/methodology" aria-current={path === "/methodology" ? "page" : undefined} className={cn(mobLink, path === "/methodology" && "text-foreground")}>점수 안내</Link>
+          {loggedIn && <Link href="/openpiste" aria-current={path.startsWith("/openpiste") ? "page" : undefined} className={cn(mobLink, path.startsWith("/openpiste") && "text-foreground")}>오픈피스트</Link>}
+          {loggedIn && <Link href="/community" aria-current={path.startsWith("/community") ? "page" : undefined} className={cn(mobLink, path.startsWith("/community") && "text-foreground")}>커뮤니티</Link>}
+          {profile?.is_admin && <Link href="/admin" aria-current={path === "/admin" ? "page" : undefined} className={cn(mobLink, path === "/admin" && "text-foreground")}>관리자</Link>}
           {loggedIn ? (
             <button onClick={signOut} className={cn(mobLink, "ml-auto")}>로그아웃</button>
           ) : (
@@ -142,7 +142,7 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
       </header>
 
       {/* 우측 메뉴바: 로그인 시 최상단 '+' = 게임 기록 추가 */}
-      <aside className="fixed right-0 top-14 z-20 hidden md:flex h-[calc(100vh-3.5rem)] w-20 flex-col items-center gap-1 overflow-y-auto border-l border-line bg-panel py-3">
+      <aside aria-label="메뉴" className="fixed right-0 top-14 z-20 hidden md:flex h-[calc(100vh-3.5rem)] w-20 flex-col items-center gap-1 overflow-y-auto border-l border-line bg-panel py-3">
         {loggedIn && (
           <>
             <button
@@ -156,29 +156,29 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
               <Bell size={20} />
               알림
               {badge > 0 && (
-                <span className="absolute right-3 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] text-white">
+                <span className="absolute right-3 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] font-semibold text-brand-ink">
                   {badge > 99 ? "99+" : badge}
                 </span>
               )}
             </button>
-            <Link href="/" className={itemCls(path === "/")}><Home size={20} />마이 펜싱</Link>
+            <Link aria-current={path === "/" ? "page" : undefined} href="/" className={itemCls(path === "/")}><Home size={20} />마이 펜싱</Link>
           </>
         )}
-        <Link href="/ranking" className={itemCls(path === "/ranking" || path.startsWith("/athletes"))}><Trophy size={20} />랭킹</Link>
-        <Link href="/competitions" className={itemCls(path.startsWith("/competitions"))}><Medal size={20} />대회</Link>
+        <Link aria-current={path === "/ranking" || path.startsWith("/athletes") ? "page" : undefined} href="/ranking" className={itemCls(path === "/ranking" || path.startsWith("/athletes"))}><Trophy size={20} />랭킹</Link>
+        <Link aria-current={path.startsWith("/competitions") ? "page" : undefined} href="/competitions" className={itemCls(path.startsWith("/competitions"))}><Medal size={20} />대회</Link>
         {/* 기록지: 누르면 펼쳐지며 개인전/단체전 선택 */}
-        <button onClick={() => setSheetOpen((o) => !o)} className={itemCls(path.startsWith("/sheet"))}>
+        <button onClick={() => setSheetOpen((o) => !o)} aria-expanded={sheetOpen} className={itemCls(path.startsWith("/sheet"))}>
           <ClipboardList size={20} />
           <span className="flex items-center">기록지<ChevronDown size={11} className={cn("transition-transform", sheetOpen && "rotate-180")} /></span>
         </button>
         {sheetOpen && (
           <div className="flex w-full flex-col items-center rounded-md bg-panel2 py-1">
-            <Link href="/sheet/pool" className={cn("w-full py-1.5 text-center text-[11px]", path === "/sheet/pool" ? "text-brand" : "text-muted hover:text-foreground")}>개인전</Link>
-            <Link href="/sheet/team" className={cn("w-full py-1.5 text-center text-[11px]", path === "/sheet/team" ? "text-brand" : "text-muted hover:text-foreground")}>단체전</Link>
+            <Link aria-current={path === "/sheet/pool" ? "page" : undefined} href="/sheet/pool" className={cn("w-full py-1.5 text-center text-[11px]", path === "/sheet/pool" ? "text-brand" : "text-muted hover:text-foreground")}>개인전</Link>
+            <Link aria-current={path === "/sheet/team" ? "page" : undefined} href="/sheet/team" className={cn("w-full py-1.5 text-center text-[11px]", path === "/sheet/team" ? "text-brand" : "text-muted hover:text-foreground")}>단체전</Link>
           </div>
         )}
-        {loggedIn && <Link href="/notes" className={itemCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>}
-        {profile?.is_admin && <Link href="/admin" className={itemCls(path === "/admin")}><ShieldCheck size={20} />관리자</Link>}
+        {loggedIn && <Link aria-current={path === "/notes" ? "page" : undefined} href="/notes" className={itemCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>}
+        {profile?.is_admin && <Link aria-current={path === "/admin" ? "page" : undefined} href="/admin" className={itemCls(path === "/admin")}><ShieldCheck size={20} />관리자</Link>}
         <div className="mt-auto w-full">
           {loggedIn ? (
             <button onClick={signOut} className="w-full py-2 text-[11px] text-muted hover:text-foreground">로그아웃</button>
@@ -202,22 +202,22 @@ export function AppShell({ children, requireAuth = false }: { children: React.Re
       )}
       {sheetOpen && (
         <div className="fixed inset-x-0 bottom-14 z-30 flex justify-center gap-2 border-t border-line bg-panel2 py-2 text-sm md:hidden">
-          <Link href="/sheet/pool" className={cn("rounded px-4 py-1.5", path === "/sheet/pool" ? "text-brand" : "text-muted")}>개인전 기록지</Link>
-          <Link href="/sheet/team" className={cn("rounded px-4 py-1.5", path === "/sheet/team" ? "text-brand" : "text-muted")}>단체전 기록지</Link>
+          <Link aria-current={path === "/sheet/pool" ? "page" : undefined} href="/sheet/pool" className={cn("flex min-h-10 items-center rounded px-4", path === "/sheet/pool" ? "text-brand" : "text-muted")}>개인전 기록지</Link>
+          <Link aria-current={path === "/sheet/team" ? "page" : undefined} href="/sheet/team" className={cn("flex min-h-10 items-center rounded px-4", path === "/sheet/team" ? "text-brand" : "text-muted")}>단체전 기록지</Link>
         </div>
       )}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-stretch border-t border-line bg-panel md:hidden">
-        {loggedIn && <Link href="/" className={tabCls(path === "/")}><Home size={20} />마이 펜싱</Link>}
-        <Link href="/ranking" className={tabCls(path === "/ranking" || path.startsWith("/athletes"))}><Trophy size={20} />랭킹</Link>
-        <Link href="/competitions" className={tabCls(path.startsWith("/competitions"))}><Medal size={20} />대회</Link>
-        <button onClick={() => setSheetOpen((o) => !o)} className={tabCls(path.startsWith("/sheet"))}><ClipboardList size={20} />기록지</button>
+      <nav aria-label="아래 메뉴" className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-stretch border-t border-line bg-panel md:hidden">
+        {loggedIn && <Link aria-current={path === "/" ? "page" : undefined} href="/" className={tabCls(path === "/")}><Home size={20} />마이 펜싱</Link>}
+        <Link aria-current={path === "/ranking" || path.startsWith("/athletes") ? "page" : undefined} href="/ranking" className={tabCls(path === "/ranking" || path.startsWith("/athletes"))}><Trophy size={20} />랭킹</Link>
+        <Link aria-current={path.startsWith("/competitions") ? "page" : undefined} href="/competitions" className={tabCls(path.startsWith("/competitions"))}><Medal size={20} />대회</Link>
+        <button onClick={() => setSheetOpen((o) => !o)} aria-expanded={sheetOpen} className={tabCls(path.startsWith("/sheet"))}><ClipboardList size={20} />기록지</button>
         {loggedIn && (
           <>
             <button onClick={() => setShowNoti(true)} className={cn(tabCls(false), "relative")}>
               <Bell size={20} />알림
-              {badge > 0 && <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] text-white">{badge > 99 ? "99+" : badge}</span>}
+              {badge > 0 && <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] font-semibold text-brand-ink">{badge > 99 ? "99+" : badge}</span>}
             </button>
-            <Link href="/notes" className={tabCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>
+            <Link aria-current={path === "/notes" ? "page" : undefined} href="/notes" className={tabCls(path === "/notes")}><NotebookPen size={20} />피드백</Link>
           </>
         )}
       </nav>

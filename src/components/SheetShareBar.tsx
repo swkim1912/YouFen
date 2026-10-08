@@ -93,7 +93,7 @@ export function SheetShareBar({ sheet, kind }: { sheet: Sheet; kind: "pool" | "t
   }
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-brand/30 bg-brand/[0.06] px-3 py-2 text-sm">
-      <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-win opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-win" /></span>
+      <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-win opacity-60 motion-safe:animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-win" /></span>
       <b>공동 편집 중</b>
       <span className="min-w-0 truncate text-muted">
         접속 {members.length}명{members.length ? ` · ${members.join(", ")}` : ""}

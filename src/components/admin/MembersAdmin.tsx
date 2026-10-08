@@ -65,7 +65,7 @@ export function MembersAdmin() {
     <section className="space-y-3 rounded-lg border border-line bg-panel p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="mr-auto text-base font-bold">회원 관리</h2>
-        <Input className="h-8 w-56" value={q} onChange={(e) => setQ(e.target.value)} placeholder="닉네임·커뮤니티 닉네임·이메일 검색" />
+        <Input className="h-8 w-56" value={q} onChange={(e) => setQ(e.target.value)} aria-label="닉네임·커뮤니티 닉네임·이메일 검색" placeholder="닉네임·커뮤니티 닉네임·이메일 검색" />
       </div>
       <p className="text-xs text-muted">검색하지 않으면 최근 가입한 회원 40명이 보여요. 관리자 권한은 이 화면이 아니라 Supabase 대시보드에서만 줄 수 있어요.</p>
       {list === null ? <p className="py-3 text-center text-sm text-muted">불러오는 중…</p> : list.length === 0 ? <p className="py-3 text-center text-sm text-muted">검색 결과가 없습니다</p> : (

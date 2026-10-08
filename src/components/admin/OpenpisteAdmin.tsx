@@ -35,7 +35,7 @@ function Thumbs({ list }: { list: BoardImage[] }) {
       {list.map((im) => (
         <a key={im.id} href={boardImageUrl(im.path)} target="_blank" rel="noopener noreferrer">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={boardImageUrl(im.thumb)} alt="" className="h-12 w-12 rounded object-cover" />
+          <img loading="lazy" decoding="async" src={boardImageUrl(im.thumb)} alt="" className="h-12 w-12 rounded object-cover" />
         </a>
       ))}
     </span>

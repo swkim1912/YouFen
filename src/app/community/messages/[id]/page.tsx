@@ -156,7 +156,7 @@ function Inner() {
                       {m.image && (
                         <a href={boardImageUrl(m.image.path)} target="_blank" rel="noopener noreferrer" className="block">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={boardImageUrl(m.image.thumb)} alt="보낸 사진" width={180} height={180} className="h-44 w-44 rounded-lg object-cover" />
+                          <img loading="lazy" decoding="async" src={boardImageUrl(m.image.thumb)} alt="보낸 사진" width={180} height={180} className="h-44 w-44 rounded-lg object-cover" />
                         </a>
                       )}
                       {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
@@ -175,7 +175,7 @@ function Inner() {
               <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} aria-label="사진 보내기" className="mb-1 rounded-md p-2 text-muted hover:text-foreground disabled:opacity-50"><ImagePlus size={20} /></button>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => sendPhoto(e.target.files?.[0])} />
               <Textarea value={text} maxLength={1000} rows={1} onChange={(e) => setText(e.target.value)} className="max-h-32 min-h-[42px] flex-1 resize-none"
-                placeholder="메시지를 입력하세요"
+                aria-label="메시지를 입력하세요" placeholder="메시지를 입력하세요"
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
               <Button disabled={busy || !text.trim()} onClick={() => send()} aria-label="보내기" className="mb-0.5"><Send size={16} /></Button>
             </div>

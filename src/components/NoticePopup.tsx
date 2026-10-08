@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Megaphone } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "./ui/button";
+import { useDialogFocus } from "./ui/modal";
 import { cn } from "@/lib/utils";
 
 interface NoticeRow { id: number; title: string; body: string; level: "info" | "important" }
@@ -48,6 +49,8 @@ export function NoticePopup() {
   }, []);
 
   const cur = queue[0];
+  // 공지 창이 떠 있는 동안 키보드 초점을 창 안에 둔다(닫히면 원래 자리로)
+  const boxRef = useDialogFocus<HTMLDivElement>(!!cur);
   if (!cur) return null;
 
   const close = () => {
@@ -62,6 +65,8 @@ export function NoticePopup() {
   return (
     <div className="fixed inset-0 z-[55] flex items-center justify-center bg-[#03080e]/75 p-4 backdrop-blur-[2px]" onMouseDown={close}>
       <div
+        ref={boxRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="공지"

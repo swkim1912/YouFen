@@ -37,7 +37,7 @@ export const TIER_META: Record<string, { color: string; short: string }> = {
   마스터: { color: "#bf83f2", short: "마" },
   챌린저: { color: "#ffd76a", short: "챌" },
 };
-export const tierColor = (tier: string | null | undefined) => (tier ? TIER_META[tier]?.color : undefined) ?? "#6b7a8f";
+export const tierColor = (tier: string | null | undefined) => (tier ? TIER_META[tier]?.color : undefined) ?? "#8b9ab0"; // 티어 없음 = 보조 글자색(text-muted, 카드 위 대비 5:1 이상)
 
 /** 랭킹 종류: 종합(대회+오픈) / 오픈게임 / 대회. 오픈게임 데이터가 생기기 전에는 종합 = 대회 점수 */
 export const MODES = ["종합", "오픈", "대회"] as const;

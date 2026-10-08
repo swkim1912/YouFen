@@ -30,7 +30,7 @@ export function CommunityHeader({ active = "board" }: { active?: (typeof MENUS)[
         <nav className="flex gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {MENUS.map((m) =>
             m.ready ? (
-              <Link key={m.key} href={m.href} className={cn("relative -mb-px shrink-0 border-b-2 px-3 py-2 text-sm", active === m.key ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
+              <Link aria-current={active === m.key ? "page" : undefined} key={m.key} href={m.href} className={cn("relative -mb-px shrink-0 border-b-2 px-3 py-2 text-sm", active === m.key ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground")}>
                 {m.label}
                 {m.key === "dm" && unreadDm && <span className="absolute right-1 top-1.5 h-1.5 w-1.5 rounded-full bg-loss" aria-label="안 읽은 메시지" />}
               </Link>

@@ -46,3 +46,6 @@ next-env.d.ts
 
 # 스킬 설치 도구가 만드는 기록 파일
 skills-lock.json
+
+# impeccable 디자인 도구의 로컬 캐시
+.impeccable/hook.cache.json

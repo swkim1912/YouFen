@@ -85,8 +85,8 @@ function Market() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 overflow-x-auto">
           {KINDS.map(([key, label]) => (
-            <button key={key} onClick={() => setParams({ k: key === "all" ? null : key })}
-              className={cn("shrink-0 rounded px-3 py-1.5 text-sm", k === key ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>
+            <button aria-pressed={k === key} key={key} onClick={() => setParams({ k: key === "all" ? null : key })}
+              className={cn("min-h-10 shrink-0 rounded px-3 py-1.5 text-sm md:min-h-0", k === key ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>
               {label}
             </button>
           ))}
@@ -106,9 +106,9 @@ function Market() {
 
       <div className="space-y-2 rounded-lg border border-line bg-panel p-3">
         <div className="flex flex-wrap gap-1.5">
-          <button onClick={() => setParams({ cat: null })} className={cn("rounded-full border px-2.5 py-1 text-xs", !cat ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:text-foreground")}>전체 장비</button>
+          <button aria-pressed={!cat} onClick={() => setParams({ cat: null })} className={cn("rounded-full border px-2.5 py-1 text-xs", !cat ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:text-foreground")}>전체 장비</button>
           {MARKET_CATEGORIES.map((c) => (
-            <button key={c} onClick={() => setParams({ cat: cat === c ? null : c })}
+            <button aria-pressed={cat === c} key={c} onClick={() => setParams({ cat: cat === c ? null : c })}
               className={cn("rounded-full border px-2.5 py-1 text-xs", cat === c ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:text-foreground")}>
               {c}
             </button>
@@ -125,7 +125,7 @@ function Market() {
             <option value="done">거래 완료</option>
           </Select>
           <form onSubmit={(e) => { e.preventDefault(); setParams({ q: qInput.trim() || null }); }} className="flex min-w-[200px] flex-1 gap-2">
-            <Input className="h-9" value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder="물품명·설명 검색" maxLength={50} />
+            <Input className="h-9" value={qInput} onChange={(e) => setQInput(e.target.value)} aria-label="물품명·설명 검색" placeholder="물품명·설명 검색" maxLength={50} />
             <Button type="submit" size="sm" variant="outline" className="h-9 shrink-0" aria-label="검색"><Search size={15} /></Button>
           </form>
         </div>

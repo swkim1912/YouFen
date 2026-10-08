@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
+import { useDialogFocus } from "@/components/ui/modal";
 import { ConsentChecks, emptyConsent, isConsentComplete } from "./ConsentChecks";
 import { CONSENT_VERSION, LEGAL_CHANGES, LEGAL_UPDATED } from "@/lib/legal";
 
@@ -16,6 +17,8 @@ export function ConsentGate() {
   const [consent, setConsent] = useState(emptyConsent);
   const [busy, setBusy] = useState(false);
   // 온보딩 전(구글 가입 직후)은 온보딩 화면에서 동의를 받는다
+  // 동의 창이 떠 있는 동안 키보드 초점을 창 안에 둔다
+  const boxRef = useDialogFocus<HTMLDivElement>(!!profile && !!profile.onboarded && profile.consent_version !== CONSENT_VERSION);
   if (!profile || !profile.onboarded || profile.consent_version === CONSENT_VERSION) return null;
 
   const agree = async () => {
@@ -34,7 +37,7 @@ export function ConsentGate() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#03080e]/80 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-lg border border-line bg-panel p-5 shadow-xl" role="dialog" aria-modal="true" aria-label="약관 동의">
+      <div ref={boxRef} tabIndex={-1} className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-lg border border-line bg-panel p-5 shadow-xl outline-none" role="dialog" aria-modal="true" aria-label="약관 동의">
         {profile.consent_version ? (
           // 예전 버전에 동의한 회원: 바뀐 내용을 요약해 보여 주고 다시 동의를 받는다
           <div className="space-y-2">

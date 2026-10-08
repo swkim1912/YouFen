@@ -6,7 +6,6 @@
 // - 내용은 하나의 문서(TeamDoc)로 관리한다. 기본은 혼자 편집, '공동 편집'을 누르면 링크(?share=)로 들어온 회원끼리 실시간으로 함께 편집(lib/sharedSheet.ts).
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { ArrowLeftRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -139,6 +138,8 @@ function Team() {
   const save = async () => {
     if (!sheetRef.current) return;
     try {
+      // 사진 저장 기능은 이 버튼을 누를 때만 불러온다(기록지 첫 화면을 가볍게)
+      const { toPng } = await import("html-to-image");
       const url = await toPng(sheetRef.current, { backgroundColor: "#0b1520", pixelRatio: 2 });
       const a = document.createElement("a");
       a.href = url;
@@ -186,7 +187,7 @@ function Team() {
             const nums = team === "A" ? [1, 2, 3] : [4, 5, 6];
             return (
               <div key={team} className="space-y-1.5 rounded-md border border-line p-3">
-                <Input className="font-bold" placeholder={`팀 ${team} 이름`} value={teamName[team]} onChange={(e) => setTeamName(team, e.target.value)} />
+                <Input className="font-bold" aria-label={`팀 ${team} 이름`} placeholder={`팀 ${team} 이름`} value={teamName[team]} onChange={(e) => setTeamName(team, e.target.value)} />
                 {nums.map((n) => (
                   <div key={n} className="flex items-center gap-2">
                     <span className="w-5 text-sm font-bold">{n}</span>
@@ -215,7 +216,7 @@ function Team() {
                   <span className="flex items-center justify-between gap-1">
                     <span>{a}. {nameOf(a, subA[i])}</span>
                     {/* 작은 화살표: 이 라운드에 뛸 선수를 등록된 팀 선수 중에서 선택 */}
-                    <button onClick={() => toggleSwap("A", i)} aria-label="교체" className={subA[i] ? "text-brand" : "text-muted"}><ArrowLeftRight size={14} /></button>
+                    <button onClick={() => toggleSwap("A", i)} aria-label="교체" aria-pressed={!!subA[i]} className={subA[i] ? "text-brand" : "text-muted"}><ArrowLeftRight size={14} /></button>
                   </span>
                   {swapOpen === `A${i}` && (
                     <Select className="mt-1 h-8 text-xs" value={subA[i] ?? ""} onChange={(e) => chooseSwap("A", i, e.target.value)}>
@@ -231,7 +232,7 @@ function Team() {
                   <span className="flex items-center justify-between gap-1">
                     <span>{b}. {nameOf(b, subB[i])}</span>
                     {/* 작은 화살표: 이 라운드에 뛸 선수를 등록된 팀 선수 중에서 선택 */}
-                    <button onClick={() => toggleSwap("B", i)} aria-label="교체" className={subB[i] ? "text-brand" : "text-muted"}><ArrowLeftRight size={14} /></button>
+                    <button onClick={() => toggleSwap("B", i)} aria-label="교체" aria-pressed={!!subB[i]} className={subB[i] ? "text-brand" : "text-muted"}><ArrowLeftRight size={14} /></button>
                   </span>
                   {swapOpen === `B${i}` && (
                     <Select className="mt-1 h-8 text-xs" value={subB[i] ?? ""} onChange={(e) => chooseSwap("B", i, e.target.value)}>

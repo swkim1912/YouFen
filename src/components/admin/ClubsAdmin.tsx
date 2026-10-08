@@ -125,7 +125,7 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="mr-auto text-sm font-bold">클럽 목록</h3>
           <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={review} onChange={(e) => setReview(e.target.checked)} />확인 필요(medium)만</label>
-          <Input className="h-8 w-44" value={q} onChange={(e) => setQ(e.target.value)} placeholder="클럽·팀 이름 검색" />
+          <Input className="h-8 w-44" value={q} onChange={(e) => setQ(e.target.value)} aria-label="클럽·팀 이름 검색" placeholder="클럽·팀 이름 검색" />
         </div>
         {clubs === null ? <p className="py-3 text-center text-sm text-muted">불러오는 중…</p> : clubs.length === 0 ? <p className="py-3 text-center text-sm text-muted">해당하는 클럽이 없습니다</p> : (
           <ul className="space-y-1.5">
@@ -133,7 +133,7 @@ export function ClubsAdmin({ onChanged }: { onChanged?: () => void }) {
               <li key={c.id} className="flex flex-wrap items-center gap-3 rounded-md bg-panel2 px-3 py-2 text-sm">
                 {c.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.image_url} alt="" className="h-10 w-10 rounded-lg bg-white/10 object-contain" />
+                  <img loading="lazy" decoding="async" src={c.image_url} alt="" className="h-10 w-10 rounded-lg bg-white/10 object-contain" />
                 ) : <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-xs text-muted">없음</span>}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2">
@@ -196,7 +196,7 @@ function MergeModal({ from, onClose, onDone }: { from: Club | null; onClose: () 
     <>
       <Modal open={!!from && !target} onClose={close} title={`'${from?.name}' 을(를) 합칠 클럽 선택`}>
         <div className="space-y-2">
-          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="남길 클럽 이름 검색" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} aria-label="남길 클럽 이름 검색" placeholder="남길 클럽 이름 검색" />
           {hits.map((c) => (
             <button key={c.id} onClick={() => setTarget(c)} className="flex w-full items-center gap-2 rounded-md bg-panel2 px-3 py-2 text-left text-sm hover:bg-white/5">
               <b>{c.name}</b><span className="text-xs text-muted">#{c.id} · {c.sido ?? "-"} · 팀 {c.teams}개</span>

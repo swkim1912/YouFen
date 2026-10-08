@@ -57,7 +57,7 @@ export function Avatar({
         <DefaultAvatar size={size} />
       ) : photo ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photo} alt="" width={size} height={size} className="h-full w-full object-cover" />
+        <img loading="lazy" decoding="async" src={photo} alt="" width={size} height={size} className="h-full w-full object-cover" />
       ) : (
         letter
       )}

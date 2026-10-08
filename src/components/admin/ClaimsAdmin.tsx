@@ -90,7 +90,7 @@ export function ClaimsAdmin({ onChanged }: { onChanged?: () => void }) {
       <div className="space-y-2 border-t border-line pt-3">
         <h3 className="text-sm font-bold">선수 연결 상태 조회</h3>
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); search(); }}>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="선수 이름" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} aria-label="선수 이름" placeholder="선수 이름" />
           <Button variant="outline">조회</Button>
         </form>
         {hits && (hits.length === 0 ? <p className="text-sm text-muted">검색 결과가 없습니다</p> : (

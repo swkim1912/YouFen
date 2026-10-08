@@ -108,8 +108,8 @@ function Board() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 overflow-x-auto">
           {TABS.map(([k, label]) => (
-            <button key={k} onClick={() => setParams({ tab: k === "all" ? null : k })}
-              className={cn("shrink-0 rounded px-3 py-1.5 text-sm", tab === k ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>
+            <button aria-pressed={tab === k} key={k} onClick={() => setParams({ tab: k === "all" ? null : k })}
+              className={cn("min-h-10 shrink-0 rounded px-3 py-1.5 text-sm md:min-h-0", tab === k ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}>
               {label}
             </button>
           ))}
@@ -122,7 +122,7 @@ function Board() {
       {tab === "hot" && (
         <div className="flex gap-3 text-sm">
           {([["like", "좋아요 많은 글"], ["comment", "댓글 많은 글"]] as const).map(([k, label]) => (
-            <button key={k} onClick={() => setParams({ hot: k === "like" ? null : k })} className={cn(hot === k ? "font-semibold text-brand" : "text-muted hover:text-foreground")}>{label}</button>
+            <button aria-pressed={hot === k} key={k} onClick={() => setParams({ hot: k === "like" ? null : k })} className={cn(hot === k ? "font-semibold text-brand" : "text-muted hover:text-foreground")}>{label}</button>
           ))}
           <span className="text-xs text-muted self-center">최근 7일 · 20개</span>
         </div>
@@ -145,7 +145,7 @@ function Board() {
               <Select className="h-9 w-28 shrink-0" value={field} onChange={(e) => setParams({ f: e.target.value === "both" ? null : e.target.value })} aria-label="검색 범위">
                 {FIELDS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
               </Select>
-              <Input className="h-9" value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder="검색어" maxLength={50} />
+              <Input className="h-9" value={qInput} onChange={(e) => setQInput(e.target.value)} aria-label="검색어" placeholder="검색어" maxLength={50} />
               <Button type="submit" size="sm" variant="outline" className="h-9 shrink-0" aria-label="검색"><Search size={15} /></Button>
             </form>
           )}

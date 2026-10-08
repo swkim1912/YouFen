@@ -6,7 +6,6 @@
 //   문서 구조: players·results 는 칸 번호를 키로 하는 객체(results["2-5"] = 2번이 5번에게 낸 점수) — 서로 다른 칸을 동시에 고쳐도 겹치지 않게.
 import { Suspense, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -129,7 +128,7 @@ function Pool() {
   const tryApply = () => {
     const hits = Number(info.hits);
     const A = Number(selA), B = Number(selB);
-    // 입력 검증: 선택 안 함 / 숫자가 아님 / 음수·소수 / Hits to win 초과 / 동점 → "잘못된 입력입니다"
+    // 입력 검증: 선택 안 함 / 숫자가 아님 / 음수·소수 / 목표 점수 초과 / 동점 → "잘못된 입력입니다"
     const bad =
       selA === "" || selB === "" || sa.trim() === "" || sb.trim() === "" ||
       !Number.isInteger(Number(sa)) || !Number.isInteger(Number(sb)) ||
@@ -149,6 +148,8 @@ function Pool() {
   const save = async () => {
     if (!sheetRef.current) return;
     try {
+      // 사진 저장 기능은 이 버튼을 누를 때만 불러온다(기록지 첫 화면을 가볍게)
+      const { toPng } = await import("html-to-image");
       const url = await toPng(sheetRef.current, { backgroundColor: "#0b1520", pixelRatio: 2 });
       const a = document.createElement("a");
       a.href = url;
@@ -177,7 +178,7 @@ function Pool() {
       const opp = slots[j];
       const a = results[me]?.[j], b = results[j]?.[me];
       if (j === me || !opp || a === undefined || b === undefined) continue;
-      if (validateScore(hits, a, b)) { skipped++; continue; } // 두 선수 모두 Hits to win 이상 등 잘못된 점수
+      if (validateScore(hits, a, b)) { skipped++; continue; } // 두 선수 모두 목표 점수 이상 등 잘못된 점수
       const isOpen = !!opp.userId; // 비유저 상대는 자동으로 프라이빗
       inserts.push({
         creator_id: user.id,
@@ -229,7 +230,7 @@ function Pool() {
           <div><Label>피스트 넘버</Label><Input value={info.strip} onChange={(e) => setInfo("strip", e.target.value)} /></div>
           <div><Label>심판</Label><Input value={info.referee} onChange={(e) => setInfo("referee", e.target.value)} /></div>
           <div><Label>날짜</Label><Input type="date" value={info.date} onChange={(e) => setInfo("date", e.target.value)} /></div>
-          <div><Label>Hits to win</Label><Input type="number" min={1} value={info.hits} onChange={(e) => setInfo("hits", e.target.value)} /></div>
+          <div><Label>목표 점수</Label><Input type="number" min={1} value={info.hits} onChange={(e) => setInfo("hits", e.target.value)} /></div>
         </div>
 
         {/* 풀 매트릭스 */}

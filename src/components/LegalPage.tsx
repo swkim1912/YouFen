@@ -16,7 +16,7 @@ export function LegalPage({ path, title, intro, children, showDate = true }: { p
       <div className="mx-auto max-w-3xl space-y-5">
         <nav className="flex flex-wrap gap-1 border-b border-line text-sm">
           {TABS.map(([href, label]) => (
-            <Link key={href} href={href} className={`-mb-px border-b-2 px-3 py-2 ${href === path ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground"}`}>{label}</Link>
+            <Link aria-current={href === path ? "page" : undefined} key={href} href={href} className={`-mb-px border-b-2 px-3 py-2 ${href === path ? "border-brand font-bold" : "border-transparent text-muted hover:text-foreground"}`}>{label}</Link>
           ))}
         </nav>
         <header>

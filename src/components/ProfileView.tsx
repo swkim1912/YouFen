@@ -133,7 +133,7 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
           <section className="rounded-lg border border-line bg-panel p-4">
             <div className="mb-3 flex gap-1">
               {([["ALL", "종합"], ["OPEN", "오픈"], ["TOURNAMENT", "대회"]] as const).map(([m, label]) => (
-                <button key={m} onClick={() => setMode(m)} className={cn("rounded px-3 py-1 text-sm", mode === m ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
+                <button aria-pressed={mode === m} key={m} onClick={() => setMode(m)} className={cn("rounded px-3 py-1 text-sm", mode === m ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
                   {label}
                 </button>
               ))}
@@ -183,11 +183,11 @@ export function ProfileView({ profile, isMe, readOnly = false }: { profile: Prof
               {(["ALL", "PRIVATE", "OPEN", "TOURNAMENT"] as const)
                 .filter((f) => isMe || f !== "PRIVATE") // 타인에게는 프라이빗 필터 없음
                 .map((f) => (
-                  <button key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
+                  <button aria-pressed={filter === f} key={f} onClick={() => { setFilter(f); setShown(10); }} className={cn("rounded px-2.5 py-1 text-xs", filter === f ? "bg-brand font-semibold text-brand-ink" : "text-muted hover:bg-white/5")}>
                     {f === "ALL" ? "전체" : KIND[f]}
                   </button>
                 ))}
-              <Input className="ml-auto h-8 w-40" placeholder="상대 이름 검색" value={oppQ} onChange={(e) => setOppQ(e.target.value)} />
+              <Input className="ml-auto h-8 w-40" aria-label="상대 이름 검색" placeholder="상대 이름 검색" value={oppQ} onChange={(e) => setOppQ(e.target.value)} />
             </div>
             {list.length === 0 && <p className="py-4 text-center text-sm text-muted">기록이 없습니다</p>}
             <div className="space-y-1.5">

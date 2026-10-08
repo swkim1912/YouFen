@@ -96,14 +96,14 @@ function List() {
       {status?.banned && <p className="rounded-md border border-loss/40 bg-loss/10 px-3 py-2 text-xs">커뮤니티 이용이 제한된 상태라 모집·신청을 할 수 없어요. <Link href="/?tab=community" className="text-brand">사유 보기</Link></p>}
 
       <nav className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <button className={tabCls(!mine && weapon === null)} onClick={() => setParams({ w: "all", mine: null })}>전체</button>
-        {OP_WEAPONS.map((w) => <button key={w} className={tabCls(!mine && weapon === w)} onClick={() => setParams({ w, mine: null })}>{w}</button>)}
-        <button className={tabCls(mine)} onClick={() => setParams({ mine: "1" })}>내 오픈피스트</button>
+        <button aria-pressed={!mine && weapon === null} className={tabCls(!mine && weapon === null)} onClick={() => setParams({ w: "all", mine: null })}>전체</button>
+        {OP_WEAPONS.map((w) => <button aria-pressed={!mine && weapon === w} key={w} className={tabCls(!mine && weapon === w)} onClick={() => setParams({ w, mine: null })}>{w}</button>)}
+        <button aria-pressed={mine} className={tabCls(mine)} onClick={() => setParams({ mine: "1" })}>내 오픈피스트</button>
       </nav>
 
       {!mine && (
         <div className="flex flex-wrap items-center gap-2">
-          <button className={chip(week)} onClick={() => setParams({ wk: week ? null : "1" })}>이번 주(7일 안)</button>
+          <button aria-pressed={week} className={chip(week)} onClick={() => setParams({ wk: week ? null : "1" })}>이번 주(7일 안)</button>
           <Select className="h-8 w-28 text-xs" value={region ?? ""} onChange={(e) => setParams({ r: e.target.value || null })} aria-label="지역">
             <option value="">모든 지역</option>
             {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}

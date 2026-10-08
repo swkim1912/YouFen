@@ -17,10 +17,10 @@ export function FilterRow<T extends string>({
       <span className="w-12 shrink-0 pt-2 text-xs text-muted">{label}</span>
       <div className="flex flex-wrap gap-1.5">
         {options.map((o) => (
-          <button
+          <button aria-pressed={o === value}
             key={o}
             onClick={() => onChange(o)}
-            className={cn("rounded px-3 py-1.5 text-sm", o === value ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}
+            className={cn("min-h-10 rounded px-3 py-1.5 text-sm md:min-h-0", o === value ? "bg-brand font-semibold text-brand-ink" : "bg-panel text-muted hover:text-foreground")}
           >
             {render ? render(o) : o}
           </button>

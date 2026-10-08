@@ -279,7 +279,7 @@ function CommentForm({ postId, parentId, onDone, onCancel }: { postId: number; p
   };
   return (
     <div className="space-y-2">
-      <Textarea value={text} maxLength={COMMENT_MAX} onChange={(e) => setText(e.target.value)} placeholder={parentId ? "답글을 입력하세요" : "댓글을 입력하세요 (@닉네임으로 회원을 부를 수 있어요)"} />
+      <Textarea value={text} maxLength={COMMENT_MAX} onChange={(e) => setText(e.target.value)} aria-label={parentId ? "답글을 입력하세요" : "댓글을 입력하세요 (@닉네임으로 회원을 부를 수 있어요)"} placeholder={parentId ? "답글을 입력하세요" : "댓글을 입력하세요 (@닉네임으로 회원을 부를 수 있어요)"} />
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} />익명</label>
         {anon && <span className="text-[11px] text-muted">익명이어도 문제가 될 경우에만 운영자가 작성자를 확인할 수 있어요</span>}

@@ -132,9 +132,9 @@ function Inner() {
             {l.images.length > 1 && (
               <div className="flex gap-1.5 overflow-x-auto">
                 {l.images.map((img, i) => (
-                  <button key={img.id} onClick={() => setIdx(i)} className={`shrink-0 overflow-hidden rounded border-2 ${i === idx ? "border-brand" : "border-transparent"}`} aria-label={`사진 ${i + 1}`}>
+                  <button aria-pressed={i === idx} key={img.id} onClick={() => setIdx(i)} className={`shrink-0 overflow-hidden rounded border-2 ${i === idx ? "border-brand" : "border-transparent"}`} aria-label={`사진 ${i + 1}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={boardImageUrl(img.thumb)} alt="" width={56} height={56} className="h-14 w-14 object-cover" />
+                    <img loading="lazy" decoding="async" src={boardImageUrl(img.thumb)} alt="" width={56} height={56} className="h-14 w-14 object-cover" />
                   </button>
                 ))}
               </div>

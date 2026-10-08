@@ -87,7 +87,7 @@ export function NewRecordModal({ open, onClose, onSaved }: { open: boolean; onCl
       {/* 1. 기록 종류 */}
       <div className="mb-4 grid grid-cols-2 gap-2">
         {(["PRIVATE", "OPEN"] as const).map((k) => (
-          <button
+          <button aria-pressed={kind === k}
             key={k}
             onClick={() => setKind(k)}
             className={cn("rounded-md border px-3 py-2 text-sm", kind === k ? "border-brand bg-brand/20" : "border-line")}
