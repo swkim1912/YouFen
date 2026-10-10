@@ -3,6 +3,8 @@
 // - 동의 내용은 user_metadata(consent_version, age14)로 보내고 DB 트리거(handle_new_user)가 profiles 에 기록한다. 생년월일로도 만 14세 미만이면 막는다(DB 도 한 번 더 검사).
 // - ④ 이메일 인증: Supabase Auth 의 'Confirm email' 설정이 켜져 있으면 가입 직후 세션이 없고 인증 메일이 발송된다 → 이 단계에서 재발송·확인을 안내한다.
 //   설정이 꺼져 있으면 가입 즉시 로그인되어 ④ 는 건너뛴다(대시보드 설정: Authentication > Providers > Email > Confirm email).
+// - 이메일 중복 확인은 ③의 가입 요청 결과로 한다(봇 확인을 거쳐야 해서 남의 이메일 가입 여부를 대량으로 조회할 수 없다).
+//   ※ 'Confirm email' 이 꺼져 있으면 Supabase 가 중복 이메일에 바로 오류('already registered')를 돌려주고, 같은 안내로 바꿔 보여 준다.
 // 랜딩 카드(AuthLanding) 안에서 쓴다.
 import { useEffect, useState } from "react";
 import { MailCheck } from "lucide-react";
@@ -45,7 +47,9 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
     setStep(2);
   };
 
-  const toStep3 = async () => {
+  // 이메일 중복은 여기서 미리 확인하지 않는다(누구나 아무 이메일의 가입 여부를 조회할 수 있던 email_available 을 없앰).
+  // 중복이면 마지막 가입 요청(봇 확인 필요) 결과로 알려 준다 — submit 참고.
+  const toStep3 = () => {
     if (!/^\S+@\S+\.\S+$/.test(email)) return toast.error("올바른 이메일을 입력해 주세요");
     const pwErr = validatePassword(pw, email);
     if (pwErr) return toast.error(pwErr);
@@ -53,12 +57,6 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
     if (!gender) return toast.error("성별을 선택해 주세요");
     if (!isCompleteBirth(birth)) return toast.error("생년월일(연/월/일)을 모두 선택해 주세요");
     if (ageOf(birth) < 14) return toast.error("만 14세 미만은 가입할 수 없습니다");
-    // 이메일(아이디) 중복 확인: 다음 단계로 넘어가기 전에 검사
-    setBusy(true);
-    const { data, error } = await supabase.rpc("email_available", { e: email });
-    setBusy(false);
-    if (error) return toast.error("중복 확인에 실패했습니다. 잠시 후 다시 시도해 주세요");
-    if (data !== true) return toast.error("이미 가입된 이메일입니다");
     setStep(3);
   };
 
@@ -85,8 +83,15 @@ export function SignupForm({ onDone }: { onDone?: () => void } = {}) {
       return toast.error(
         error.message.includes("Database error") ? "가입할 수 없습니다. 입력한 정보(생년월일 등)를 확인해 주세요"
         : error.message.toLowerCase().includes("captcha") ? "자동가입 방지 확인에 실패했어요. 다시 시도해 주세요"
+        : error.message.toLowerCase().includes("already registered") ? "이미 가입된 이메일이에요. 로그인하거나 비밀번호 찾기를 이용해 주세요"
         : error.message,
       );
+    // 이미 가입된 이메일: 이메일 인증이 켜져 있으면 Supabase 는 오류 대신 '로그인 수단(identities)이 빈' 가짜 결과를 돌려주고 메일도 보내지 않는다.
+    // (구글로 가입한 이메일도 같다.) 이메일 칸이 있는 2단계로 돌려보낸다.
+    if (data.user && data.user.identities?.length === 0) {
+      setStep(2);
+      return toast.error("이미 가입된 이메일이에요. 로그인하거나 비밀번호 찾기를 이용해 주세요");
+    }
     if (data.session) return void toast.success("가입을 환영합니다!"); // 이메일 인증 설정이 꺼진 경우 즉시 로그인
     setWait(RESEND_WAIT);
     setStep(4);
