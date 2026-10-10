@@ -177,6 +177,10 @@
   - **회원 탈퇴 재확인:** `/api/account` 는 "10분 안에 로그인한" 토큰만 받는다(`serverAuth.ts` `secondsSinceSignIn` — 토큰 `amr` 의 로그인 시각은 자동 갱신돼도 안 바뀜). 화면(`AccountDelete`)은 비밀번호 회원이면 비밀번호+봇 확인으로 다시 로그인한 뒤 요청, 구글 회원은 '구글로 다시 로그인' → `/?tab=detail` 로 돌아와 10분 안에 탈퇴.
   - 남은 권고(대시보드에서 사용자가 직접): Authentication 의 유출 비밀번호 차단(HaveIBeenPwned) 켜기, 비밀번호 최소 길이 8 확인. 나중 과제: nonce 기반 CSP(`script-src`).
 
+- **사칭 닉네임 금지·기록지 임시 저장(2026-10-11, 브랜치 `fix/nickname-sheet-draft`):**
+  - 관리자가 아닌 회원은 '관리자·운영자·운영진·유펜·youfen·admin·스태프·공식·시스템·고객센터' 등이 들어간 닉네임을 못 쓴다(대소문자 무시, 'badminton' 은 예외). DB `public.is_reserved_nickname` 이 판단하고 유펜 닉네임(`profiles_guard`)·실시간 확인(`nickname_available`)·커뮤니티/자유톡방 닉네임(`private.community_name_conflict` → 코드 `reserved`)에 적용, 기존 닉네임은 그대로 두고 새로 정하거나 바꿀 때만 검사(마이그레이션 41, `supabase/reserved_nicknames.sql`). 화면 안내용 같은 목록이 `lib/utils.ts` `RESERVED_NICK` — **두 목록을 같이 고칠 것.**
+  - 기록지 혼자 편집 내용은 고칠 때마다 이 기기(localStorage `youfen.sheetDraft.<pool|team>`, 7일)에 임시 저장 → 다른 메뉴·새로고침 뒤 돌아오면 불러오고 안내(`lib/sharedSheet.ts`). '초기화'·공동 편집 시작·기록지 나가기 때 지운다. 개인전 '등록 완료' 표시도 함께 기억(`…pool.registered`)해 같은 경기를 두 번 등록하지 않게 한다.
+
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 -
 

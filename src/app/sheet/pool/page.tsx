@@ -4,7 +4,8 @@
 // - 순위는 결과를 입력할 때마다 즉시 재계산된다 (lib/pool.ts, 승률 → Ind → TS, 동률 시 공동 순위)
 // - 내용은 하나의 문서(PoolDoc)로 관리한다. 기본은 혼자 편집, '공동 편집'을 누르면 링크(?share=)로 들어온 회원끼리 실시간으로 함께 편집(lib/sharedSheet.ts).
 //   문서 구조: players·results 는 칸 번호를 키로 하는 객체(results["2-5"] = 2번이 5번에게 낸 점수) — 서로 다른 칸을 동시에 고쳐도 겹치지 않게.
-import { Suspense, useMemo, useRef, useState } from "react";
+// - 혼자 편집 내용은 이 기기에 임시 저장돼 다른 메뉴에 갔다 와도 그대로 돌아온다. '등록 완료' 표시도 함께 기억해 같은 경기를 두 번 등록하지 않게 한다.
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
@@ -42,6 +43,7 @@ interface PoolDoc {
   players: Record<string, PoolPlayer>; // 칸 번호 → 참가자 (빈 칸은 키 없음)
   results: Record<string, number>; // "i-j" → i번이 j번과 싸워 낸 점수
 }
+const REGISTERED_KEY = "youfen.sheetDraft.pool.registered"; // lib/sharedSheet.ts clearDraft 가 함께 지운다
 const newPool = (): PoolDoc => ({ info: { title: "", horn: "", strip: "", referee: "", date: today(), hits: "5" }, n: 6, players: {}, results: {} });
 
 function Pool() {
@@ -50,7 +52,17 @@ function Pool() {
   const sheet = useSheetDoc<PoolDoc>("pool", newPool, shareId);
   const { doc, patch } = sheet;
   const { info, n } = doc;
-  const [registered, setRegistered] = useState(false);
+  const [registered, setRegisteredState] = useState(false);
+  // '등록 완료' 표시: 혼자 편집이면 임시 저장된 기록지와 함께 이 기기에 기억한다(돌아와서 같은 경기를 다시 등록하지 않게)
+  const setRegistered = (v: boolean) => {
+    setRegisteredState(v);
+    if (shareId) return;
+    try { if (v) localStorage.setItem(REGISTERED_KEY, "1"); else localStorage.removeItem(REGISTERED_KEY); } catch { /* 무시 */ }
+  };
+  useEffect(() => {
+    if (shareId) return;
+    try { if (localStorage.getItem(REGISTERED_KEY) === "1") setRegisteredState(true); } catch { /* 무시 */ }
+  }, [shareId]);
 
   // 팝업 상태 (각자 화면에만 있는 상태 — 공동 편집해도 공유하지 않음)
   const [addOpen, setAddOpen] = useState(false);

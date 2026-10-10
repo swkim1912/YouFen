@@ -45,6 +45,7 @@ export const NAME_REASON: Record<string, string> = {
   youfen: "유펜 닉네임과 같은 이름은 쓸 수 없어요(내 유펜 닉네임 포함)",
   community: "이미 사용 중인 닉네임이에요",
   realname: "선수 실명과 같은 이름은 쓸 수 없어요",
+  reserved: "관리자·운영자·유펜처럼 운영진으로 오해할 수 있는 이름은 쓸 수 없어요",
   login: "로그인이 필요해요",
 };
 

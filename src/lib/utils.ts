@@ -33,6 +33,13 @@ export function validateNickname(n: string): string | null {
   return null;
 }
 
+/** 운영진 사칭 금지어(관리자가 아닌 회원은 이 말이 들어간 닉네임을 못 씀). 화면에서 이유를 바로 알려 주는 용도이고,
+ *  최종 판단은 DB public.is_reserved_nickname(supabase/reserved_nicknames.sql) — 목록을 바꾸면 양쪽을 같이 고칠 것.
+ *  'badminton'(배드민턴) 안의 'admin' 은 사칭이 아니라 빼고 본다. */
+const RESERVED_NICK = /(관리자|관리인|관리팀|운영자|운영진|운영팀|운영위원|유펜|유팬|youfen|youfan|yufen|어드민|admin|스태프|스탭|staff|공식|official|시스템|system|고객센터|고객지원|상담원|모더레이터|moderator)/;
+export const RESERVED_NICK_MESSAGE = "관리자·운영자·유펜처럼 운영진으로 오해할 수 있는 닉네임은 사용할 수 없습니다";
+export const isReservedNickname = (n: string) => RESERVED_NICK.test(n.toLowerCase().replaceAll("badminton", ""));
+
 /** 다른 사람이 읽을 수 있는 profiles 공개 컬럼 (select("*") 대신 사용)
  *  - 이메일·생년월일·관리자 여부(is_admin)·사진 제한(avatar_locked)·동의 기록은 비공개 → 내 정보는 get_my_profile() 로만 읽는다.
  *  - 여기에 열을 추가하면 DB 에서도 grant select (열) on public.profiles to anon, authenticated 를 해야 한다(안 하면 조회 전체가 실패). */

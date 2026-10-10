@@ -3,7 +3,9 @@
 //
 // - 기록지 화면은 내용 전체를 하나의 문서(doc, JSON)로 들고, 바꿀 때는 patch([{p: 경로, v: 값}]) 로 '어느 칸을 무엇으로' 만 알린다.
 //   (경로 예: ["info","title"], ["results","0-1"], ["tsA","3"] / 삭제는 {p, d: 1} / 경로가 빈 배열이면 전체 교체 = 초기화)
-// - 혼자 편집: 이 기기 화면 상태만 바꾼다(지금까지와 같음).
+// - 혼자 편집: 이 기기 화면 상태를 바꾸고, 고칠 때마다 이 기기(localStorage)에 임시 저장한다(2026-10-11).
+//   → 다른 메뉴로 갔다 오거나 새로고침·탭을 닫았다 열어도 쓰던 기록지가 그대로 돌아온다(7일 지난 임시 저장은 버림).
+//   '초기화'(빈 기록지로 전체 교체)·'공동 편집 시작'·'기록지 나가기'를 하면 임시 저장을 지운다.
 // - 공동 편집(주소에 ?share=<id>): 서버 문서(shared_sheets) + 아직 서버에 반영 안 된 내 수정(pending)을 겹쳐서 보여준다.
 //   수정은 RPC sheet_patch 로 보내 서버가 차례로 적용하고(다른 칸을 동시에 고쳐도 덮어쓰지 않음),
 //   다른 사람의 수정은 Supabase Realtime(postgres_changes, 참여자만 받음)으로 받아 버전이 더 새로우면 서버 문서를 바꾼다.
@@ -68,6 +70,26 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
   const seqRef = useRef(0);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const initialRef = useRef(initial);
+  const dirtyRef = useRef(false); // 혼자 편집에서 사용자가 고쳤는가(그때만 임시 저장 — 불러오기만 한 것은 다시 저장하지 않음)
+
+  // ---- 혼자 편집: 처음 열 때 이 기기에 임시 저장된 기록지를 불러온다(공동 편집 주소로 들어오면 불러오지 않음) ----
+  // 서버에서 미리 그린 화면과 맞추기 위해 처음 그린 뒤(useEffect)에 불러온다.
+  const startedShared = useRef(!!shareId);
+  useEffect(() => {
+    if (startedShared.current) return;
+    const saved = loadDraft<T>(kind);
+    if (!saved) return;
+    setLocalDoc({ ...initialRef.current(), ...saved }); // 그동안 문서 모양이 바뀌었어도 빠진 칸은 기본값으로
+    toast.info("편집하던 기록지를 불러왔어요. 새로 쓰려면 '초기화'를 눌러 주세요", { id: `sheet-draft-${kind}` }); // id: 같은 안내가 겹쳐 뜨지 않게
+  }, [kind]);
+
+  // 사용자가 고친 뒤 화면 문서가 바뀌면 임시 저장(빈 기록지와 같아지면 = 초기화 → 지움)
+  useEffect(() => {
+    if (!dirtyRef.current || shareId) return;
+    dirtyRef.current = false;
+    if (JSON.stringify(localDoc) === JSON.stringify(initialRef.current())) clearDraft(kind);
+    else saveDraft(kind, localDoc);
+  }, [localDoc, kind, shareId]);
 
   // 서버 문서를 받을 때 빠진 칸이 있어도 화면이 깨지지 않게 기본 문서와 합친다
   const adopt = useCallback((data: unknown, version: number) => {
@@ -133,7 +155,7 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
 
   /** 수정 알리기. debounceKey 를 주면(글자 입력) 같은 칸의 연속 입력을 묶어 잠시 뒤 한 번만 보낸다 */
   const patch = useCallback((ops: Op[], opts?: { debounceKey?: string }) => {
-    if (!shareId) { setLocalDoc((d) => applyOps(d, ops)); return; }
+    if (!shareId) { dirtyRef.current = true; setLocalDoc((d) => applyOps(d, ops)); return; }
     const key = opts?.debounceKey;
     if (key) {
       const hit = pendingRef.current.find((e) => e.key === key && !e.sent);
@@ -206,6 +228,7 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
     const { data, error } = await supabase.rpc("sheet_create", { p_kind: kind, p_data: localDoc });
     if (error || !data) return toast.error(error?.message ?? "공동 편집을 시작하지 못했어요");
     const id = data as string;
+    clearDraft(kind); // 내용은 이제 공동 기록지에 있다(혼자 편집 임시 저장은 지움)
     verRef.current = 1;
     setServerDoc(localDoc);
     setMode("loading");
@@ -215,6 +238,7 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
 
   /** 혼자 편집으로 전환: 지금 보이는 내용을 이 기기로 복사하고 공동 편집 주소에서 나온다(다른 사람의 기록지는 그대로) */
   const leaveShare = useCallback(() => {
+    dirtyRef.current = true; // 혼자 편집으로 옮긴 내용도 이 기기에 임시 저장
     setLocalDoc(doc);
     setServerDoc(null);
     setPending(() => []);
@@ -224,12 +248,13 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
 
   /** 기록지 나가기: 빈 기록지로 돌아간다(공동 기록지는 그대로 남아 링크·최근 목록으로 다시 들어올 수 있음) */
   const exitShare = useCallback(() => {
+    clearDraft(kind);
     setLocalDoc(initialRef.current());
     setServerDoc(null);
     setPending(() => []);
     verRef.current = 0;
     router.replace(pathname);
-  }, [router, pathname, setPending]);
+  }, [kind, router, pathname, setPending]);
 
   /** 나가기 확인 팝업에서 '나가기'를 누르면 원래 가려던 메뉴로 이동 */
   const confirmLeave = useCallback(() => {
@@ -243,6 +268,31 @@ export function useSheetDoc<T extends object>(kind: "pool" | "team", initial: ()
     link, copyLink, linkOpen, setLinkOpen,
     leaveTo, confirmLeave, cancelLeave: () => setLeaveTo(null),
   };
+}
+
+// ---- 혼자 편집 임시 저장 (localStorage, 종류별 1개, 7일) ----
+const DRAFT_DAYS = 7;
+const draftKey = (kind: string) => `youfen.sheetDraft.${kind}`;
+
+function loadDraft<T>(kind: string): T | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(draftKey(kind)) ?? "null") as { at: number; doc: T } | null;
+    if (!raw?.doc) return null;
+    if (Date.now() - raw.at > DRAFT_DAYS * 24 * 3600 * 1000) { clearDraft(kind); return null; } // 오래된 임시 저장은 버린다
+    return raw.doc;
+  } catch {
+    return null; // 저장소를 못 쓰거나 내용이 깨졌으면 빈 기록지로 시작
+  }
+}
+function saveDraft(kind: string, doc: unknown) {
+  try { localStorage.setItem(draftKey(kind), JSON.stringify({ at: Date.now(), doc })); } catch { /* 저장소를 못 쓰면 임시 저장 없이 동작 */ }
+}
+/** 혼자 편집 임시 저장 지우기(초기화·공동 편집 시작·기록지 나가기). 화면에서 '등록 완료' 표시 등 함께 지울 때도 쓴다 */
+export function clearDraft(kind: string) {
+  try {
+    localStorage.removeItem(draftKey(kind));
+    localStorage.removeItem(`${draftKey(kind)}.registered`);
+  } catch { /* 무시 */ }
 }
 
 // ---- 이 기기의 최근 공동 편집 기록지 (localStorage, 최대 5개) ----
