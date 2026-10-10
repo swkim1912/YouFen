@@ -27,7 +27,7 @@
 - `src/app/`: `/`(마이 펜싱, 비로그인은 `/ranking`으로), `/login`, `/signup`, `/onboarding`, `/reset-password`, `/admin`(관리자), `/terms`, `/privacy`, `/guidelines`(커뮤니티 운영원칙), `/community`(커뮤니티: 게시판·`/chat` 자유톡방·`/market` 장터·`/messages` 1:1 채팅), `/openpiste`(오픈피스트 모집·참가자 방), `/support`, `/search`(회원+선수), `/ranking`(시즌·종류·풀별 점수 랭킹+포디움), `/methodology`(점수 안내), `/athletes/[id]`(선수 프로필), `/competitions`(대회 목록), `/competitions/[id]`(대회 상세), `/notes`, `/sheet/pool`(개인전), `/sheet/team`(단체전)
 
 ## 핵심 설계 결정 (지키거나, 바꿀 땐 관련 영역 전부 수정)
-- **로그인 ID = 이메일.** 가입 1단계에서 `email_available` RPC로 중복 확인. 닉네임은 `nickname_available` RPC로 실시간 확인.
+- **로그인 ID = 이메일.** 이메일 중복은 가입 요청(봇 확인 필요) 결과로 알린다 — 이미 가입된 이메일이면 Supabase 가 `identities` 가 빈 결과를 돌려준다(`SignupForm`). 예전의 `email_available` RPC(누구나 가입 여부 조회 가능)는 쓰지 않는다(2026-10-10). 닉네임은 `nickname_available` RPC로 실시간 확인.
 - **profiles의 `email`, `birth_date`는 컬럼 권한으로 비공개.** 다른 사람/비로그인은 못 읽음. 내 전체 프로필은 `get_my_profile()` RPC로만 조회. 그래서 `profiles`를 읽을 땐 `select("*")` 금지, `PUBLIC_COLS` 사용.
 - **비로그인도 이용 가능**(랭킹·검색·기록지). 마이 펜싱/피드백 노트만 `AppShell requireAuth`로 로그인 요구. anon은 profiles 공개 컬럼과 `ACCEPTED` 오픈/대회 기록만 읽음.
 - **game_records는 등록자(creator) 기준으로 저장** (`my_score`=등록자 점수). 보는 사람 기준으로는 `toView()`로 뒤집는다. 상대가 비회원이면 `opponent_id` null + `opponent_name` 텍스트만(동명이인을 하나의 ID로 합치지 않음).
@@ -170,6 +170,12 @@
 - **다가오는 대회(2026-10-09, 같은 브랜치, 마이그레이션 38):** `/competitions` 맨 위 `UpcomingCompetitions`(D-day 카드 → 상세 창: 글·사진·첨부 파일·관련 링크, 비로그인도 봄, 없으면 칸 숨김, 종료일(없으면 시작일)이 지나면 빠짐). 관리자 페이지 '다가오는 대회' 탭(`CompNoticesAdmin`). 표 `comp_notices`(RPC 전용), 버킷 `comp-notices`. **사진**(5장)은 서버 API `/api/comp-notice?type=image`(sharp, 1600 webp + 480×320 썸네일), **첨부 파일**(5개, 파일당 10MB, pdf·hwp·hwpx·doc·docx·xls·xlsx·ppt·pptx·zip·txt·jpg·png)은 같은 API 가 서명된 업로드 주소(`createSignedUploadUrl`)를 만들어 주면 브라우저가 저장소에 직접 올린다(Vercel 요청 4.5MB 한도 회피). 허용 형식은 API `FILE_TYPES` 와 버킷 `allowed_mime_types` 를 같이 바꿀 것. 글에서 뺀 파일·저장 안 한 파일은 `DELETE /api/comp-notice`(어느 글에도 안 쓰는 경로만), 글 삭제는 `DELETE ?id=`, 하루 지난 미사용 파일은 POST 때 정리. 공용 `lib/compNotice.ts`.
 
 - **법률 문서 개정·재동의(커뮤니티 6단계, 2026-10-09):** 처리방침(수집 항목·목적·보관 기간·커뮤니티/오픈피스트 공개 범위·익명 작성자 확인·Realtime·브라우저 저장소), 이용약관(제2·5·8·9조 보완, 제10조 커뮤니티·제11조 장터·제12조 오픈피스트 신설, 이후 13~16조), 운영원칙(`/guidelines` 전면 개정 — 자유톡방 규칙은 `CHAT_RULES` 를 그대로 보여 줌). `CONSENT_VERSION` = `2026-10-09` → 기존 회원은 `ConsentGate` 에서 '약관이 바뀌었어요' + `LEGAL_CHANGES` 요약을 보고 다시 동의. **주의:** main 에 합치기 전에 브랜치 화면에서 동의하면 운영 사이트(이전 버전)에서 다시 동의 창이 뜬다.
+
+- **보안 재점검·보완(2026-10-10, 브랜치 `security/hardening-2`, SQL `supabase/security_hardening_4.sql`):** 점검 결과 심각·높음 없음(비로그인·회원 권한 33개 항목 롤백 시험, 공개 JS·git 기록 비밀 키 없음, 서버 측 CAPTCHA 강제, IP 위조로 요청 제한 우회 불가). 보완 3가지:
+  - **이메일 가입 여부 조회 차단:** 가입 2단계의 `email_available` 사전 확인을 없애고 가입 요청 결과(`identities` 빈 배열 = 이미 가입)로 안내. 함수 실행 권한 회수(마이그레이션 40)는 **배포 뒤에** 적용한다(먼저 하면 옛 코드의 가입 2단계가 막힘).
+  - **검색 경로 고정:** `private.market_clean`·`private.op_clean` 에 `search_path = ''`(마이그레이션 39, 적용 완료).
+  - **회원 탈퇴 재확인:** `/api/account` 는 "10분 안에 로그인한" 토큰만 받는다(`serverAuth.ts` `secondsSinceSignIn` — 토큰 `amr` 의 로그인 시각은 자동 갱신돼도 안 바뀜). 화면(`AccountDelete`)은 비밀번호 회원이면 비밀번호+봇 확인으로 다시 로그인한 뒤 요청, 구글 회원은 '구글로 다시 로그인' → `/?tab=detail` 로 돌아와 10분 안에 탈퇴.
+  - 남은 권고(대시보드에서 사용자가 직접): Authentication 의 유출 비밀번호 차단(HaveIBeenPwned) 켜기, 비밀번호 최소 길이 8 확인. 나중 과제: nonce 기반 CSP(`script-src`).
 
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
 -

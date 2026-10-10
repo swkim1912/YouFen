@@ -7,10 +7,15 @@
 //          ② 고객지원 접수 — 처리방침대로 계정과 분리되어 1년 보관 ③ 체육인번호 — 처리방침대로 선수 정보에 연결된 형태로 보관.
 // 내가 신청한 클럽 마크: 검토 중인 신청만 삭제하고, 승인되어 등록된 마크는 클럽 정보로 그대로 둔다.
 // 관리자 계정은 탈퇴할 수 없다(관리자가 사라지는 사고 방지 — 먼저 Supabase 대시보드에서 관리자 권한을 해제).
-import { authed, fail } from "@/lib/serverAuth";
+// 재확인(2026-10-10): 로그인 토큰을 누가 훔쳐도 계정을 지울 수 없게 "방금(REAUTH_SECONDS 안에) 다시 로그인한" 토큰만 받는다.
+//   비밀번호 회원 = 탈퇴 창에서 비밀번호를 다시 입력(봇 확인 포함)하면 화면이 새로 로그인한 뒤 이 API 를 부른다.
+//   구글 회원 = 비밀번호가 없어 구글로 다시 로그인한 뒤 10분 안에 탈퇴한다. 오래된 로그인이면 403 + code 'reauth'.
+import { authed, fail, secondsSinceSignIn } from "@/lib/serverAuth";
 import { DELETE_CONFIRM as CONFIRM_TEXT } from "@/lib/utils";
 
 export const runtime = "nodejs";
+
+const REAUTH_SECONDS = 10 * 60; // '방금 로그인'으로 인정하는 시간(10분) — 화면 안내 문구(AccountDelete)와 같이 바꿀 것
 
 export async function DELETE(req: Request) {
   const a = await authed(req);
@@ -18,6 +23,10 @@ export async function DELETE(req: Request) {
   const body = await req.json().catch(() => ({}));
   if (String(body.confirm ?? "").trim() !== CONFIRM_TEXT) return fail(400, `확인 문구 '${CONFIRM_TEXT}' 를 정확히 입력해 주세요`);
   if (a.isAdmin) return fail(400, "관리자 계정은 탈퇴할 수 없어요. 먼저 관리자 권한을 해제해 주세요");
+  const age = secondsSinceSignIn(req);
+  if (age === null || age > REAUTH_SECONDS) {
+    return Response.json({ ok: false, code: "reauth", message: "보안을 위해 다시 로그인한 뒤 10분 안에 탈퇴할 수 있어요" }, { status: 403 });
+  }
 
   // ① 다른 회원 기록의 상대 이름(내 닉네임)을 지운다. 회원 연결(opponent_id)은 계정 삭제 때 DB 가 비운다.
   const { error: e1 } = await a.admin.from("game_records").update({ opponent_name: "탈퇴 회원" }).eq("opponent_id", a.uid);
