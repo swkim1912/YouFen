@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Input, Label, Select } from "./ui/input";
 import { ClubPicker } from "./ClubPicker";
-import { DIVISIONS, REGIONS, ROLES, WEAPONS, validateNickname } from "@/lib/utils";
+import { DIVISIONS, REGIONS, RESERVED_NICK_MESSAGE, ROLES, WEAPONS, isReservedNickname, validateNickname } from "@/lib/utils";
+import { useAuth } from "./AuthProvider";
 
 export interface ExtraInfo {
   weapon: string;
@@ -28,7 +29,8 @@ export function validateExtra(v: ExtraInfo): string | null {
   return validateNickname(v.nickname);
 }
 
-/** 닉네임 입력 + 실시간 중복 확인 (nickname_available RPC 호출) */
+/** 닉네임 입력 + 실시간 중복 확인 (nickname_available RPC 호출).
+ *  운영진 사칭 닉네임(관리자·운영자·유펜 등)은 관리자가 아니면 바로 이유를 알려 준다(DB 도 nickname_available·profiles_guard 에서 다시 막는다). */
 export function NicknameField({
   value,
   onChange,
@@ -41,6 +43,7 @@ export function NicknameField({
   onStatus?: (ok: boolean) => void;
 }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const isAdmin = !!useAuth().profile?.is_admin;
 
   useEffect(() => {
     if (!value) {
@@ -59,6 +62,11 @@ export function NicknameField({
       onStatus?.(true);
       return;
     }
+    if (!isAdmin && isReservedNickname(value)) {
+      setMsg({ ok: false, text: RESERVED_NICK_MESSAGE });
+      onStatus?.(false);
+      return;
+    }
     const t = setTimeout(async () => {
       const { data, error } = await supabase.rpc("nickname_available", { n: value });
       const ok = !error && data === true;
@@ -67,7 +75,7 @@ export function NicknameField({
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, current]);
+  }, [value, current, isAdmin]);
 
   return (
     <div>
