@@ -1,6 +1,7 @@
 "use client";
 // 관리자: 회원 관리 — 검색(닉네임·커뮤니티 닉네임·이메일), 가입일·마지막 접속·연결 선수 수, 이용 정지/해제, 프로필 사진 변경 제한,
-//   커뮤니티 정지/해제(CommunityBanModal, RPC admin_community_ban/unban — 커뮤니티 쓰기만 막음).
+//   커뮤니티 정지/해제(CommunityBanModal, RPC admin_community_ban/unban — 커뮤니티 쓰기만 막음),
+//   쪽지 보내기(AdminMessageModal, RPC admin_send_message — 회원에게 알림 + 고객지원 페이지 '운영팀 메시지').
 // - 이용 정지는 서버 API(/api/admin/users)가 Supabase Auth 의 ban 으로 처리한다(로그인·토큰 갱신 차단). 생년월일 등 민감 정보는 관리자에게도 보여주지 않는다.
 // - 관리자 권한의 부여·해제는 웹에서 하지 않고 Supabase 대시보드 SQL 로만 한다(아래 안내 문구 참고).
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Label, Select } from "@/components/ui/input";
 import { CommunityBanModal } from "./CommunityBanModal";
+import { AdminMessageModal, type MessageTarget } from "./AdminMessageModal";
 
 interface Member {
   id: string; nickname: string | null; email: string | null; role: string | null; leader_status: string | null; weapon: string | null; region: string | null; affiliation: string | null;
@@ -27,6 +29,7 @@ export function MembersAdmin() {
   const [days, setDays] = useState("7");
   const [ban, setBan] = useState<Member | null>(null);
   const [cban, setCban] = useState<{ id: string; name: string } | null>(null);
+  const [msg, setMsg] = useState<MessageTarget | null>(null); // 쪽지 보내기 창 대상
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc("admin_members", { p_q: q, p_limit: 40 });
@@ -87,6 +90,7 @@ export function MembersAdmin() {
               </div>
               {!m.is_admin && (
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <Button size="sm" variant="outline" onClick={() => setMsg({ id: m.id, name: m.nickname ?? "이 회원" })}>쪽지 보내기</Button>
                   {isBanned(m) ? <Button size="sm" variant="outline" onClick={() => unsuspend(m)}>정지 해제</Button> : <Button size="sm" variant="danger" onClick={() => setBan(m)}>이용 정지</Button>}
                   <Button size="sm" variant="outline" onClick={() => lock(m)}>{m.avatar_locked ? "사진 제한 풀기" : "사진 변경 제한"}</Button>
                   {m.community_ban
@@ -98,6 +102,7 @@ export function MembersAdmin() {
           ))}
         </ul>
       )}
+      <AdminMessageModal target={msg} onClose={() => setMsg(null)} onSent={() => {}} />
       <CommunityBanModal target={cban} onClose={() => setCban(null)} onDone={() => { toast.success("커뮤니티 이용을 정지했어요(회원에게 알림)"); load(); }} />
       <Modal open={!!ban} onClose={() => setBan(null)} title="이용 정지">
         <div className="space-y-3">

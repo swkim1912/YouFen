@@ -1,6 +1,9 @@
 "use client";
 // 관리자: 고객지원 접수함 — 버그 신고·문의·신고·계정 문의를 보고 처리 상태와 메모를 남긴다(접수 테이블 support_tickets, 관리자는 RLS 로 전체 읽기·수정).
-// 답변은 접수자가 남긴 이메일(또는 가입 이메일)로 직접 보낸다 — 화면에서 이메일을 복사할 수 있게 보여준다.
+// 답변 방법 두 가지:
+//  ① 회원 접수(profile_id 있음) → '회원에게 답장' = 사이트 안 메시지(AdminMessageModal → RPC admin_send_message). 회원에게 알림이 가고
+//     고객지원 페이지의 '운영팀 메시지'(MyAdminMessages)에서 읽는다. 보내면 접수 상태가 '처리 중'/'처리 완료'로 바뀐다.
+//  ② 비회원 접수 또는 접수자가 남긴 이메일 → '메일 쓰기'(mailto 링크로 메일 앱을 열어 직접 보낸다. 사이트에는 메일 발송 기능이 없다).
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +11,7 @@ import { fmtDateTime } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { Select, Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { AdminMessageModal, type MessageTarget } from "./AdminMessageModal";
 
 interface Ticket {
   id: number; category: string; title: string; content: string; contact_email: string | null; page_url: string | null; user_agent: string | null;
@@ -23,6 +27,7 @@ export function SupportAdmin({ onChanged }: { onChanged?: () => void }) {
   const [list, setList] = useState<Ticket[] | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   const [note, setNote] = useState("");
+  const [reply, setReply] = useState<MessageTarget | null>(null); // 답장 창 대상
 
   const load = useCallback(async () => {
     let q = supabase.from("support_tickets").select("*, profile:profiles!support_tickets_profile_id_fkey(nickname)").order("created_at", { ascending: false }).limit(100);
@@ -67,12 +72,21 @@ export function SupportAdmin({ onChanged }: { onChanged?: () => void }) {
                 <div className="space-y-2 border-t border-line px-3 py-3">
                   <p className="whitespace-pre-wrap break-words">{t.content}</p>
                   <dl className="grid gap-x-4 gap-y-1 text-xs text-muted sm:grid-cols-[auto_1fr]">
+                    <dt>접수자</dt><dd className="text-foreground">{t.profile_id ? `회원 · ${t.profile?.nickname ?? "(닉네임 없음)"}` : "비회원 (사이트 안 답장 불가 — 이메일로 답변)"}</dd>
                     <dt>답변 이메일</dt><dd className="select-all break-all text-foreground">{t.contact_email ?? "(입력 없음 — 회원이면 가입 이메일)"}</dd>
                     <dt>접수 화면</dt><dd className="break-all">{t.page_url ?? "-"}</dd>
                     <dt>브라우저</dt><dd className="break-all">{t.user_agent ?? "-"}</dd>
                   </dl>
                   <Textarea rows={2} aria-label="처리 메모 (관리자만 보임)" placeholder="처리 메모 (관리자만 보임)" value={note} onChange={(e) => setNote(e.target.value)} />
                   <div className="flex flex-wrap gap-1.5">
+                    {/* 답변: 회원이면 사이트 안 메시지, 이메일이 있으면 메일 쓰기(메일 앱이 열림) */}
+                    {t.profile_id && <Button size="sm" onClick={() => setReply({ id: t.profile_id!, name: t.profile?.nickname ?? "이 회원", ticket: { id: t.id, title: t.title } })}>회원에게 답장</Button>}
+                    {t.contact_email && (
+                      <a
+                        className="inline-flex h-8 items-center rounded-md border border-line px-3 text-xs font-medium hover:bg-white/5"
+                        href={`mailto:${t.contact_email}?subject=${encodeURIComponent(`[유펜] Re: ${t.title}`)}`}
+                      >메일 쓰기</a>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => update(t, "in_progress")}>처리 중으로</Button>
                     <Button size="sm" onClick={() => update(t, "done")}>처리 완료</Button>
                     {t.status !== "new" && <Button size="sm" variant="ghost" onClick={() => update(t, "new")}>접수됨으로 되돌리기</Button>}
@@ -83,6 +97,7 @@ export function SupportAdmin({ onChanged }: { onChanged?: () => void }) {
           ))}
         </ul>
       )}
+      <AdminMessageModal target={reply} onClose={() => setReply(null)} onSent={() => { load(); onChanged?.(); }} />
     </section>
   );
 }

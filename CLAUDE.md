@@ -181,8 +181,13 @@
   - 관리자가 아닌 회원은 '관리자·운영자·운영진·유펜·youfen·admin·스태프·공식·시스템·고객센터' 등이 들어간 닉네임을 못 쓴다(대소문자 무시, 'badminton' 은 예외). DB `public.is_reserved_nickname` 이 판단하고 유펜 닉네임(`profiles_guard`)·실시간 확인(`nickname_available`)·커뮤니티/자유톡방 닉네임(`private.community_name_conflict` → 코드 `reserved`)에 적용, 기존 닉네임은 그대로 두고 새로 정하거나 바꿀 때만 검사(마이그레이션 41, `supabase/reserved_nicknames.sql`). 화면 안내용 같은 목록이 `lib/utils.ts` `RESERVED_NICK` — **두 목록을 같이 고칠 것.**
   - 기록지 혼자 편집 내용은 고칠 때마다 이 기기(localStorage `youfen.sheetDraft.<pool|team>`, 7일)에 임시 저장 → 다른 메뉴·새로고침 뒤 돌아오면 불러오고 안내(`lib/sharedSheet.ts`). '초기화'·공동 편집 시작·기록지 나가기 때 지운다. 개인전 '등록 완료' 표시도 함께 기억(`…pool.registered`)해 같은 경기를 두 번 등록하지 않게 한다.
 
+- **관리자 답장·쪽지 + 체육인번호 안내(2026-10-23, 브랜치 `feature/admin-reply-and-sports-no-guide`):**
+  - **관리자 → 회원 메시지:** 표 `admin_messages`(받는 회원·접수 연결 `ticket_id`·제목 100자·본문 2000자·`read_at`)는 권한을 전부 회수해 **직접 읽고 쓸 수 없고** RPC 로만 다룬다 — `admin_send_message(p_user,p_title,p_body,p_ticket,p_done)`(관리자; 접수 답장이면 그 접수를 낸 회원에게만, 접수 상태를 '처리 중'/'처리 완료'로 바꿈, 받는 회원에게 알림 kind `system`=끌 수 없음·링크 `/support?msg=<id>`, 커뮤니티 차단과 무관, `admin_audit` `admin_message` 기록(본문 제외)), `admin_messages_of(p_user,p_ticket)`(관리자 보낸 내역), `my_admin_messages()`(회원 받은 글 50건, **보낸 관리자 정보 없음** → 화면에는 '유펜 운영팀'), `read_admin_message(id)`. 1년 지난 글은 pg_cron `admin-messages-cleanup` 이 삭제(고객지원 접수 보관 기간과 동일). 마이그레이션 42(`supabase/admin_messages.sql`) — **운영 DB 적용 여부는 `supabase/README.md` 42번 참고.**
+  - 화면: 관리자 `AdminMessageModal`(제목·내용·처리 완료 표시·이미 보낸 내역) — 고객지원 접수함(`SupportAdmin`)의 '회원에게 답장'(회원 접수만)과 회원 관리(`MembersAdmin`)의 '쪽지 보내기'에서 공용. 비회원 접수(`profile_id` 없음)는 사이트 안 전달이 불가해 **'메일 쓰기'(mailto)** 로 접수자 이메일에 직접 보낸다(사이트에 메일 발송 기능 없음). 회원 `MyAdminMessages`(`/support` 맨 위 '운영팀 메시지', 안 읽은 표시·`?msg=` 자동 펼침). 회원이 답장하는 기능은 없고 새 접수로 이어 간다.
+  - **체육인번호 안내:** `components/SportsNoGuide.tsx`(선수 연결 창 1·2단계에서 사용). 경로 = 스포츠지원포털(g1.sports.or.kr) 로그인 → 상단 '내 생애주기' → 화면의 '내 생애주기 개인정보' 영역 → '체육인번호'(2026-10-23 직접 확인, 포털 화면이 바뀌면 `STEPS` 문구만 고칠 것). 번호 형식만 설명하고 **실제 번호는 예시로도 쓰지 않는다.**
+
 ## 현재 상태 (사용자가 작업 종료 시 GitHub에서 직접 갱신)
--
+- 오픈피스트 및 커뮤니티 기능 업데이트 완료
 
 ## 다음 할 일 (TODO, 기존 PROGRESS.md에서 통합)
 -
@@ -191,7 +196,6 @@
 - 
 
 ## 미구현 / 나중에 할 일
-- 아카데미: 메뉴 숨김. 커뮤니티·오픈피스트는(main 에서는 숨김, `feature/community` 에서는 로그인 회원에게 메뉴 공개) `docs/COMMUNITY.md` 순서대로 `feature/community` 에서 개발 중(1~6단계 완료: 기반·게시판·장터/1:1 채팅·자유톡방·오픈피스트·법률 문서 개정/재동의, 남은 일: main 에 합쳐 공개)
-- 친구 추가(현재 상대 선택은 전체 회원 닉네임 검색), 뱃지 실제 디자인
+- 뱃지 실제 디자인
 - 앱 이식
 

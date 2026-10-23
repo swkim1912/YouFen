@@ -3,11 +3,13 @@
 // - 로그인 회원은 자동으로 계정이 연결되고, 비로그인(로그인이 안 되는 문제 등)은 답변 받을 이메일이 필수.
 // - 접수한 화면 주소(?from=)와 브라우저 정보가 함께 저장돼 버그 재현에 쓰인다. 개인정보(비밀번호 등)는 적지 않도록 안내한다.
 // - 내가 낸 접수와 처리 상태는 로그인 상태에서 아래에 보인다.
+// - 관리자가 보낸 답장·쪽지는 맨 위 '운영팀 메시지'(MyAdminMessages)에 보인다(알림 링크 ?msg=<번호> 로 바로 펼침).
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { LegalPage } from "@/components/LegalPage";
 import { useAuth } from "@/components/AuthProvider";
+import { MyAdminMessages } from "@/components/MyAdminMessages";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
@@ -26,7 +28,7 @@ interface Ticket { id: number; category: string; title: string; status: string; 
 
 export default function SupportPage() {
   return (
-    <LegalPage path="/support" title="고객지원 · 버그 신고" intro="오류, 불편한 점, 신고할 내용을 알려 주세요. 접수하신 내용은 운영자가 확인하고 답변이 필요하면 이메일로 안내합니다." showDate={false}>
+    <LegalPage path="/support" title="고객지원 · 버그 신고" intro="오류, 불편한 점, 신고할 내용을 알려 주세요. 접수하신 내용은 운영자가 확인하고, 답변이 필요하면 회원은 알림과 이 화면의 '운영팀 메시지'로, 비회원은 남겨 주신 이메일로 안내합니다." showDate={false}>
       <Suspense>
         <SupportForm />
       </Suspense>
@@ -75,6 +77,9 @@ function SupportForm() {
 
   return (
     <>
+      {/* 관리자가 보낸 답장·쪽지 (없으면 아무것도 안 그림) */}
+      <MyAdminMessages />
+
       <form onSubmit={submit} className="space-y-3 rounded-lg border border-line bg-panel p-4">
         <div>
           <Label>접수 종류</Label>
@@ -90,7 +95,7 @@ function SupportForm() {
           <p className="mt-1 text-xs text-muted">{content.length}/3000 · 비밀번호, 체육인번호 등 민감한 정보는 적지 마세요.</p>
         </div>
         <div>
-          <Label>{user ? "답변 받을 이메일 (비워두면 가입 이메일로 안내해요)" : "답변 받을 이메일 (필수)"}</Label>
+          <Label>{user ? "답변 받을 이메일 (선택 — 회원은 답변이 알림과 '운영팀 메시지'로 도착해요)" : "답변 받을 이메일 (필수)"}</Label>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={user ? profile?.email ?? "" : "name@example.com"} required={!user} />
         </div>
         <Button className="w-full" disabled={busy}>{busy ? "접수 중…" : "접수하기"}</Button>

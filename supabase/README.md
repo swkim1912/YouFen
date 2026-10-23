@@ -46,6 +46,8 @@ DB 스키마는 Supabase 프로젝트(`hocesfgcueioartmvbcp`)에 마이그레이
 40. `revoke_email_available` (2026-10-10, 배포 뒤 적용) — `supabase/security_hardening_4.sql` ②. `email_available` 실행 권한을 public·anon·authenticated 에서 회수(누구나 이메일 가입 여부를 조회하던 문제). 가입 화면은 이 함수를 더 이상 쓰지 않는다.
 41. `reserved_nicknames` (2026-10-11, 브랜치 `fix/nickname-sheet-draft`) — `supabase/reserved_nicknames.sql`. 운영진 사칭 닉네임 금지: `public.is_reserved_nickname`(로그인 회원만 실행), `profiles_guard`·`nickname_available`·`private.community_name_conflict`(코드 `reserved`)에 적용, 관리자는 예외, 기존 닉네임은 그대로. 적용 후 회원(차단 6건)·관리자(허용 2건)·일반 닉네임 변경을 시험(롤백)해 확인.
 
+42. `admin_messages` (2026-10-23, 브랜치 `feature/admin-reply-and-sports-no-guide`, **운영 DB 미적용 — 사용자 확인 후 적용**) — `supabase/admin_messages.sql`. 관리자 → 회원 쪽지·고객지원 답장: 표 `admin_messages`(권한 전부 회수, RPC 전용), RPC `admin_send_message`/`admin_messages_of`/`my_admin_messages`/`read_admin_message`, 알림 kind `system`·링크 `/support?msg=<id>`, `admin_audit` `admin_message`, pg_cron `admin-messages-cleanup`(1년). 운영 DB 에서 **실행 후 롤백**하는 트랜잭션으로 시험: 관리자 발송·다른 회원 접수 답장 거절·접수 상태 '처리 중' 전환·회원 받은 글(관리자 id 미포함)·읽음·회원의 발송/직접 조회/`admin_messages_of` 차단·anon 실행 차단·알림·감사 기록 모두 확인.
+
 ## 대회 결과 데이터
 - 수집/갱신 절차: `supabase/refresh_competitions.sql` (대회 목록 → 종목 등록 → 종목별 원문 수집 → `build_comp` 정규화). 현재 2022-01 ~ 2026-09 개인전 96개 대회(95개 결과): 종목 1,607개(결과 있음), 선수 7,993명, 참가 75,066건, 예선 198,884경기, 예선ED 6,840경기, 본선ED 49,629경기. 단체전은 미수집.
 - 선수 동일성은 협회 선수번호 기준이며, 번호는 `private.athlete_keys` 에만 있다(public 테이블에는 없음).

@@ -3,13 +3,13 @@
 // 체육인번호(스포츠지원포털 발급)는 협회 선수번호와 다른 번호이며, DB 의 private 에만 저장되고 화면에는 다시 나오지 않는다.
 // 이미 다른 계정에 연결된 선수면 막고, '본인이 맞다면 문의' 로 문의(athlete_claim_requests)를 남기게 한다.
 import { useEffect, useState } from "react";
-import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { publicData } from "@/lib/fencing";
 import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Input, Label, Select, Textarea } from "./ui/input";
+import { SportsNoGuide } from "./SportsNoGuide";
 
 const LIMIT = 30; // 한 번에 보여줄 후보 수(DB 함수 최대값). 같은 이름 선수는 현재 최대 19명이라 이름을 끝까지 입력하면 모두 나온다
 
@@ -21,8 +21,6 @@ interface Cand {
   is_linked: boolean;
   club: { name: string } | null;
 }
-
-const PORTAL = "https://g1.sports.or.kr/index.do";
 
 export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; onClose: () => void; onLinked: () => void }) {
   const [q, setQ] = useState("");
@@ -78,6 +76,8 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
       {!sel ? (
         <div className="space-y-3">
           <p className="text-sm text-muted">협회에 등록된 내 이름(또는 자녀 이름)을 검색하고, 소속·등록연도를 보고 맞는 선수를 선택하세요.</p>
+          {/* 다음 단계에서 체육인번호가 필요하니 미리 찾아 두도록 안내 */}
+          <SportsNoGuide />
           <Input value={q} onChange={(e) => setQ(e.target.value)} aria-label="선수 이름 전체 (예: 홍길동)" placeholder="선수 이름 전체 (예: 홍길동)" autoFocus />
           {/* 결과가 한도만큼 차면 잘렸을 수 있으므로 이름 전체 입력을 안내 */}
           {cands.length >= LIMIT && <p className="text-xs text-pending">검색 결과가 많아 {LIMIT}명까지만 보여요. 이름을 끝까지 입력하면 같은 이름의 선수가 맨 위에 모두 나와요.</p>}
@@ -113,9 +113,9 @@ export function LinkAthleteModal({ open, onClose, onLinked }: { open: boolean; o
               <Input value={no} onChange={(e) => setNo(e.target.value.toUpperCase())} placeholder="체육인번호 입력" maxLength={16} />
             </div>
           </div>
-          <a href={PORTAL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand hover:underline">
-            체육인번호는 스포츠지원포털에서 확인할 수 있어요 <ExternalLink size={12} />
-          </a>
+          {/* 체육인번호 찾는 방법: 포털 접속 → 내 생애주기 → 내 생애주기 개인정보 (SportsNoGuide) */}
+          <SportsNoGuide defaultOpen />
+          <p className="text-[11px] text-muted">체육인번호 형식: 생년월일 6자리-영문·숫자</p>
           <p className="text-xs text-muted">입력한 번호는 선수 본인 확인과 동명이인 구분에만 쓰이며, 다른 사용자에게 보이지 않습니다. 한 선수는 한 계정에만 연결할 수 있고, 자녀 등 여러 선수를 연결할 수 있습니다.</p>
           {/* 실명 공개 안내: 연결하면 닉네임 ↔ 실명이 공개적으로 이어진다(학부모 신분은 합치지 않음 — lib/members.ts isMergeable) */}
           <p className="rounded-md border border-pending/40 bg-pending/[0.08] p-2.5 text-xs text-foreground">
